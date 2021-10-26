@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200112L
 #include <assert.h>
 #include <epoxy/egl.h>
 #include <epoxy/gl.h>
@@ -14,6 +13,8 @@
 #include <wayland-client.h>
 #include <wayland-egl.h>
 #include <xkbcommon/xkbcommon.h>
+#include "client.h"
+#include "egl.h"
 #include "xdg-shell-client-protocol.h"
 
 /* Shared memory support code */
@@ -64,30 +65,6 @@ allocate_shm_file(size_t size)
 }
 
 /* Wayland code */
-struct client_state {
-    /* Globals */
-    struct wl_display *wl_display;
-    struct wl_registry *wl_registry;
-    struct wl_shm *wl_shm;
-    struct wl_compositor *wl_compositor;
-    struct wl_seat *wl_seat;
-    struct xdg_wm_base *xdg_wm_base;
-    /* Objects */
-    struct wl_surface *wl_surface;
-    struct wl_keyboard *wl_keyboard;
-    struct xdg_surface *xdg_surface;
-    struct xdg_toplevel *xdg_toplevel;
-    /* State */
-    float offset;
-    uint32_t last_frame;
-    int width;
-    int height;
-    bool closed;
-    /* Keyboard state */
-    struct xkb_state *xkb_state;
-    struct xkb_context *xkb_context;
-    struct xkb_keymap *xkb_keymap;
-};
 
 static void
 wl_buffer_release(void *data, struct wl_buffer *wl_buffer)
@@ -407,51 +384,8 @@ main(int argc, char *argv[])
 
     wl_surface_commit(state.wl_surface);
 
-
-    /* Setup EGL */
-    EGLDisplay egl_dpy = eglGetPlatformDisplayEXT(EGL_PLATFORM_WAYLAND_KHR,
-		    state.wl_display, NULL);
-    assert(egl_dpy != NULL);
-    bool res = eglInitialize(egl_dpy, NULL, NULL);
-    assert(res);
-
-   const char *egl_extension_st = eglQueryString (egl_dpy, EGL_EXTENSIONS);
-   assert (strstr (egl_extension_st, "EGL_KHR_create_context") != NULL);
-
-   static const EGLint config_attribs[] = {
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-      EGL_NONE
-   };
-   EGLConfig cfg;
-   EGLint count;
- 
-   res = eglChooseConfig (egl_dpy, config_attribs, &cfg, 1, &count);
-   assert (res);
- 
-   res = eglBindAPI (EGL_OPENGL_ES_API);
-   assert (res);
- 
-   static const EGLint attribs[] = {
-      EGL_CONTEXT_MAJOR_VERSION, 2,
-      EGL_NONE
-   };
-   EGLContext core_ctx = eglCreateContext (egl_dpy,
-                                           cfg,
-                                           EGL_NO_CONTEXT,
-                                           attribs);
-   assert (core_ctx != EGL_NO_CONTEXT);
-
-   struct wl_egl_window *egl_window = wl_egl_window_create(state.wl_surface, state.width, state.height);
-   EGLSurface surface = eglCreatePlatformWindowSurfaceEXT(egl_dpy, cfg, egl_window, NULL);
-   assert (surface != EGL_NO_SURFACE);
- 
-   res = eglMakeCurrent (egl_dpy, surface, surface, core_ctx);
-   assert (res);
-
-
-
-   /* */
+    egl_create_window(&state);
+    egl_create_context(&state);
 
     struct wl_callback *cb = wl_surface_frame(state.wl_surface);
     wl_callback_add_listener(cb, &wl_surface_frame_listener, &state);

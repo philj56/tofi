@@ -15,6 +15,9 @@ project(
 )
 
 debug = get_option('buildtype').startswith('debug')
+if debug
+  add_project_arguments('-DDEBUG', language : 'c')
+endif
 
 data_location = join_paths(
   get_option('prefix'),
@@ -34,7 +37,9 @@ add_project_arguments(
 )
 
 sources = files(
-  'src/client.c',
+  'src/main.c',
+  'src/log.c',
+  'src/egl.c',
   'src/xdg-shell-protocol.c',
 )
 
