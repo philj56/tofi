@@ -25,6 +25,12 @@ data_location = join_paths(
   'greetd-mini-wl-greeter'
 )
 
+shader_location = join_paths(
+  debug ? '' : data_location,
+  'shaders',
+  ''
+)
+
 add_project_arguments(
   [
     '-pedantic',
@@ -32,20 +38,23 @@ add_project_arguments(
     '-Wshadow',
     '-Wno-unused-parameter',
     '-D_POSIX_C_SOURCE=200809L',
+    '-DSHADER_PATH="@0@"'.format(shader_location),
   ],
   language: 'c'
 )
 
 sources = files(
   'src/main.c',
-  'src/log.c',
   'src/egl.c',
+  'src/gl.c',
+  'src/log.c',
+  'src/png.c',
   'src/xdg-shell-protocol.c',
 )
 
 cc = meson.get_compiler('c')
 epoxy = dependency('epoxy')
-rt = cc.find_library('rt')
+png = dependency('libpng')
 wayland_client = dependency('wayland-client')
 wayland_egl = dependency('wayland-egl')
 xkbcommon = dependency('xkbcommon')
@@ -53,7 +62,7 @@ xkbcommon = dependency('xkbcommon')
 executable(
   'greetd-mini-wl-greeter',
   sources,
-  dependencies: [epoxy, rt, wayland_client, wayland_egl, xkbcommon],
+  dependencies: [epoxy, png, wayland_client, wayland_egl, xkbcommon],
   install: true
 )
 

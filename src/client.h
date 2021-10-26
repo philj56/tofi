@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "egl.h"
+#include "gl.h"
 
 struct client_state {
 	/* Globals */
@@ -25,6 +26,18 @@ struct client_state {
 	int height;
 	bool closed;
 	struct egl egl;
+	struct gl gl;
+	struct {
+		uint8_t *buffer;
+		uint32_t width;
+		uint32_t height;
+	} background_image;
+	struct color {
+		float r;
+		float g;
+		float b;
+		float a;
+	} background_color;
 	/* Keyboard state */
 	struct xkb_state *xkb_state;
 	struct xkb_context *xkb_context;

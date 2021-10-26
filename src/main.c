@@ -3,26 +3,25 @@
 #include <epoxy/egl.h>
 #include <epoxy/gl.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <time.h>
 #include <unistd.h>
 #include <wayland-client.h>
 #include <xkbcommon/xkbcommon.h>
 #include "client.h"
 #include "egl.h"
+#include "gl.h"
+#include "png.h"
 #include "xdg-shell-client-protocol.h"
 
 void draw_frame(struct client_state *state)
 {
-	glClearColor(rand() / (double)RAND_MAX, rand() / (double)RAND_MAX, rand() / (double)RAND_MAX, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	gl_draw(state);
 	eglSwapBuffers(state->egl.display, state->egl.surface);
+	wl_surface_damage_buffer(state->wl_surface, 0, 0, 50, 50);
 }
 
 static void
@@ -39,7 +38,6 @@ xdg_toplevel_configure(void *data,
 	if (width != state->width || height != state->height) {
 		state->width = width;
 		state->height = height;
-		printf("Resize: %d x %d\n", width, height);
 		wl_egl_window_resize(state->egl.window, width, height, 0, 0);
 		draw_frame(state);
 	}
@@ -224,7 +222,6 @@ wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t time)
 	}
 
 	/* Submit a frame for this event */
-	wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
 	wl_surface_commit(state->wl_surface);
 
 	state->last_frame = time;
@@ -273,6 +270,8 @@ static const struct wl_registry_listener wl_registry_listener = {
 int main(int argc, char *argv[])
 {
     struct client_state state = { 0 };
+    load_background(&state, "Night-1800.png");
+    state.background_color = (struct color){ 0.2, 0.8, 0.8, 1.0 };
     state.width = 640;
     state.height = 480;
     state.wl_display = wl_display_connect(NULL);
@@ -294,6 +293,7 @@ int main(int argc, char *argv[])
 
     egl_create_window(&state);
     egl_create_context(&state);
+    gl_initialise(&state);
 
     struct wl_callback *cb = wl_surface_frame(state.wl_surface);
     wl_callback_add_listener(cb, &wl_surface_frame_listener, &state);
