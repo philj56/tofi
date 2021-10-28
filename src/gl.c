@@ -14,11 +14,11 @@ static GLuint create_shader_program(const char *vert, const char *frag);
 
 void gl_initialise(struct client_state *state)
 {
-	if (state->background_image.buffer == NULL) {
+	if (state->window.background_image.buffer == NULL) {
 		return;
 	}
 
-	struct gl *gl = &state->gl;
+	struct gl *gl = &state->window.surface.gl;
 
 	/* Compile and link the shader programs */
 	gl->shader = create_shader_program(
@@ -71,8 +71,8 @@ void gl_initialise(struct client_state *state)
 	/* Create the texture we'll draw to */
 	glGenTextures(1, &gl->texture);
 	glBindTexture(GL_TEXTURE_2D, gl->texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, state->background_image.width, state->background_image.height, 0, GL_RGBA,
-			GL_UNSIGNED_BYTE, (GLvoid *)state->background_image.buffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, state->window.background_image.width, state->window.background_image.height, 0, GL_RGBA,
+			GL_UNSIGNED_BYTE, (GLvoid *)state->window.background_image.buffer);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -86,26 +86,25 @@ void gl_initialise(struct client_state *state)
 void gl_draw(struct client_state *state)
 {
 	glClearColor(
-		state->background_color.r,
-		state->background_color.g,
-		state->background_color.b,
-		state->background_color.a
+		state->window.background_color.r,
+		state->window.background_color.g,
+		state->window.background_color.b,
+		state->window.background_color.a
 		);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	if (state->background_image.buffer == NULL) {
+	if (state->window.background_image.buffer == NULL) {
 		return;
 	}
 
 	double scale = max(
-		(double)state->width / state->background_image.width,
-		(double)state->height / state->background_image.height
+		(double)state->window.surface.width / state->window.background_image.width,
+		(double)state->window.surface.height / state->window.background_image.height
 		);
-	uint32_t width = (uint32_t)(scale * state->background_image.width);
-	uint32_t height = (uint32_t)(scale * state->background_image.height);
-	int32_t x = -((int32_t)width - (int32_t)state->width) / 2;
-	int32_t y = -((int32_t)height - (int32_t)state->height) / 2;
-	printf("%d, %d\n", x, y);
+	uint32_t width = (uint32_t)(scale * state->window.background_image.width);
+	uint32_t height = (uint32_t)(scale * state->window.background_image.height);
+	int32_t x = -((int32_t)width - (int32_t)state->window.surface.width) / 2;
+	int32_t y = -((int32_t)height - (int32_t)state->window.surface.height) / 2;
 	glViewport(x, y, width, height);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }

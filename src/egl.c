@@ -1,28 +1,26 @@
 #include <assert.h>
 #include <string.h>
 #include <wayland-egl.h>
-#include "client.h"
+#include "egl.h"
 #include "log.h"
 
-static void egl_log_error();
 static const char *egl_error_string();
 
-void egl_create_window(struct client_state *state)
+void egl_create_window(struct egl *egl, struct wl_surface *wl_surface, uint32_t width, uint32_t height)
 {
-	state->egl.window = wl_egl_window_create(
-			state->wl_surface,
-			state->width,
-			state->height);
+	egl->window = wl_egl_window_create(
+			wl_surface,
+			width,
+			height);
 
-	if (state->egl.window == EGL_NO_SURFACE) {
+	if (egl->window == EGL_NO_SURFACE) {
 		egl_log_error("Couldn't create EGL window");
 	}
 }
 
-void egl_create_context(struct client_state *state)
+void egl_create_context(struct egl *egl, struct wl_display *wl_display)
 {
-	struct egl *egl = &state->egl;
-	egl->display = eglGetDisplay(state->wl_display);
+	egl->display = eglGetDisplay(wl_display);
 	if (egl->display == EGL_NO_DISPLAY) {
 		egl_log_error("Couldn't get EGL display");
 		return;
@@ -83,6 +81,18 @@ void egl_create_context(struct client_state *state)
 
 void egl_log_error(const char *msg) {
 	log_error("%s: %s\n", msg, egl_error_string());
+}
+
+void egl_make_current(struct egl *egl) {
+	bool result = eglMakeCurrent(egl->display, egl->surface, egl->surface, egl->context);
+	if (!result) {
+		egl_log_error("Couldn't make EGL context current");
+		return;
+	}
+}
+
+void egl_swap_buffers(struct egl *egl) {
+	eglSwapBuffers(egl->display, egl->surface);
 }
 
 const char *egl_error_string() {

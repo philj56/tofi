@@ -4,7 +4,7 @@
 #include <png.h>
 #include "client.h"
 #include "log.h"
-#include "png.h"
+#include "background.h"
 
 #define HEADER_BYTES 8
 
@@ -85,7 +85,7 @@ void load_background(struct client_state *state, const char *filename)
 	free(row_pointers);
 	fclose(fp);
 
-	state->background_image.width = width;
-	state->background_image.height = height;
-	state->background_image.buffer = buffer;
+	state->window.background_image.width = width;
+	state->window.background_image.height = height;
+	state->window.background_image.buffer = buffer;
 }
