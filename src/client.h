@@ -3,30 +3,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "egl.h"
-#include "gl.h"
-
-struct surface {
-	struct egl egl;
-	struct gl gl;
-	struct wl_surface *wl_surface;
-	int32_t width;
-	int32_t height;
-	bool redraw;
-};
-
-struct image {
-	uint8_t *buffer;
-	uint32_t width;
-	uint32_t height;
-};
-
-struct color {
-	float r;
-	float g;
-	float b;
-	float a;
-};
+#include "entry.h"
+#include "surface.h"
+#include "util.h"
 
 struct client_state {
 	/* Globals */
@@ -57,11 +36,7 @@ struct client_state {
 		struct xdg_toplevel *xdg_toplevel;
 		struct image background_image;
 		struct color background_color;
-		struct {
-			struct surface surface;
-			struct wl_subsurface *wl_subsurface;
-			struct image image;
-		} entry;
+		struct entry entry;
 		uint32_t scale;
 	} window;
 

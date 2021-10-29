@@ -47,13 +47,17 @@ sources = files(
   'src/main.c',
   'src/background.c',
   'src/egl.c',
+  'src/entry.c',
   'src/gl.c',
   'src/log.c',
+  'src/surface.c',
   'src/xdg-shell-protocol.c',
 )
 
 cc = meson.get_compiler('c')
 epoxy = dependency('epoxy')
+glib = dependency('glib-2.0')
+pangocairo = dependency('pangocairo')
 png = dependency('libpng')
 wayland_client = dependency('wayland-client')
 wayland_egl = dependency('wayland-egl')
@@ -62,7 +66,7 @@ xkbcommon = dependency('xkbcommon')
 executable(
   'greetd-mini-wl-greeter',
   sources,
-  dependencies: [epoxy, png, wayland_client, wayland_egl, xkbcommon],
+  dependencies: [epoxy, glib, pangocairo, png, wayland_client, wayland_egl, xkbcommon],
   install: true
 )
 

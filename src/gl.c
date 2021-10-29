@@ -12,13 +12,11 @@
 static void load_shader(GLuint shader, const char *filename);
 static GLuint create_shader_program(const char *vert, const char *frag);
 
-void gl_initialise(struct client_state *state)
+void gl_initialise(struct gl *gl, struct image *texture)
 {
-	if (state->window.background_image.buffer == NULL) {
+	if (texture == NULL) {
 		return;
 	}
-
-	struct gl *gl = &state->window.surface.gl;
 
 	/* Compile and link the shader programs */
 	gl->shader = create_shader_program(
@@ -71,40 +69,39 @@ void gl_initialise(struct client_state *state)
 	/* Create the texture we'll draw to */
 	glGenTextures(1, &gl->texture);
 	glBindTexture(GL_TEXTURE_2D, gl->texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, state->window.background_image.width, state->window.background_image.height, 0, GL_RGBA,
-			GL_UNSIGNED_BYTE, (GLvoid *)state->window.background_image.buffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture->width, texture->height, 0, GL_RGBA,
+			GL_UNSIGNED_BYTE, (GLvoid *)texture->buffer);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	if (texture->swizzle) {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
+	}
 
 	/* Bind the actual bits we'll be using to render */
 	glBindVertexArray(gl->vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->ebo);
 }
 
-void gl_draw(struct client_state *state)
+void gl_clear(struct gl *gl, struct color *color)
 {
-	glClearColor(
-		state->window.background_color.r,
-		state->window.background_color.g,
-		state->window.background_color.b,
-		state->window.background_color.a
-		);
+	glClearColor(color->r, color->g, color->b, color->a);
 	glClear(GL_COLOR_BUFFER_BIT);
+}
 
-	if (state->window.background_image.buffer == NULL) {
-		return;
+void gl_draw_texture(struct gl *gl, struct image *texture, int32_t x, int32_t y, int32_t width, int32_t height)
+{
+	if (texture->redraw) {
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texture->width, texture->height, GL_RGBA,
+				GL_UNSIGNED_BYTE, (GLvoid *)texture->buffer);
+		texture->redraw = false;
 	}
 
-	double scale = max(
-		(double)state->window.surface.width / state->window.background_image.width,
-		(double)state->window.surface.height / state->window.background_image.height
-		);
-	uint32_t width = (uint32_t)(scale * state->window.background_image.width);
-	uint32_t height = (uint32_t)(scale * state->window.background_image.height);
-	int32_t x = -((int32_t)width - (int32_t)state->window.surface.width) / 2;
-	int32_t y = -((int32_t)height - (int32_t)state->window.surface.height) / 2;
 	glViewport(x, y, width, height);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }

@@ -3,7 +3,9 @@
 
 #include <epoxy/gl.h>
 
-struct client_state;
+struct color;
+struct image;
+
 struct gl {
 	GLuint vbo;
 	GLuint vao;
@@ -12,7 +14,8 @@ struct gl {
 	GLuint shader;
 };
 
-void gl_initialise(struct client_state *state);
-void gl_draw(struct client_state *state);
+void gl_initialise(struct gl *gl, struct image *texture);
+void gl_clear(struct gl *gl, struct color *color);
+void gl_draw_texture(struct gl *gl, struct image *texture, int32_t x, int32_t y, int32_t width, int32_t height);
 
 #endif /* GL_H */

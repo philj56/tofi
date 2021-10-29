@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <wayland-egl.h>
-#include <epoxy/egl.h>
 #include <epoxy/gl.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -13,22 +12,19 @@
 #include <wctype.h>
 #include <xkbcommon/xkbcommon.h>
 #include <locale.h>
+#include "background.h"
 #include "client.h"
 #include "egl.h"
+#include "entry.h"
 #include "gl.h"
-#include "background.h"
+#include "nelem.h"
 #include "xdg-shell-client-protocol.h"
 
+#undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-
-static void wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t time);
-static const struct wl_callback_listener wl_surface_frame_listener = {
-	.done = wl_surface_frame_done,
-};
 
 void draw_frame(struct surface *surface)
 {
-	printf("DRAW\n");
 	surface->redraw = true;
 }
 
@@ -51,10 +47,6 @@ xdg_toplevel_configure(void *data,
 		state->window.surface.height = scaled_height;
 		wl_egl_window_resize(state->window.surface.egl.window, scaled_width, scaled_height, 0, 0);
 
-		printf("%d, %d\n",
-				(width - state->window.entry.surface.width / state->window.scale) / 2,
-				(height - state->window.entry.surface.height / state->window.scale) / 2
-				);
 		wl_subsurface_set_position(state->window.entry.wl_subsurface,
 				(width - state->window.entry.surface.width / state->window.scale) / 2,
 				(height - state->window.entry.surface.height / state->window.scale) / 2
@@ -127,11 +119,23 @@ wl_keyboard_key(void *data, struct wl_keyboard *wl_keyboard,
        xkb_keysym_t sym = xkb_state_key_get_one_sym(client_state->xkb_state, keycode);
        xkb_keysym_get_name(sym, buf, sizeof(buf));
        if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+	       struct entry *entry = &client_state->window.entry;
 	       int len = xkb_state_key_get_utf8(client_state->xkb_state, keycode, buf, sizeof(buf));
 	       wchar_t ch;
 	       mbtowc(&ch, buf, sizeof(buf));
 	       if (len > 0 && iswprint(ch)) {
-		       fprintf(stderr, "%s\n", buf);
+		       if (entry->password_length < N_ELEM(entry->password) - 1) {
+			       entry->password[entry->password_length] = ch;
+			       entry->password_length++;
+		       }
+		       fprintf(stderr, "%ls\n", entry->password);
+		       entry_update(&client_state->window.entry);
+		       draw_frame(&client_state->window.entry.surface);
+	       } else if (entry->password_length > 0 && sym == XKB_KEY_BackSpace) {
+		       entry->password[entry->password_length - 1] = '\0';
+		       entry->password_length--;
+		       entry_update(&client_state->window.entry);
+		       draw_frame(&client_state->window.entry.surface);
 	       }
        }
 }
@@ -188,7 +192,7 @@ wl_seat_capabilities(void *data, struct wl_seat *wl_seat, uint32_t capabilities)
 static void
 wl_seat_name(void *data, struct wl_seat *wl_seat, const char *name)
 {
-	fprintf(stderr, "seat name: %s\n", name);
+	/* Deliberately left blank */
 }
 
 static const struct wl_seat_listener wl_seat_listener = {
@@ -205,22 +209,6 @@ xdg_wm_base_ping(void *data, struct xdg_wm_base *xdg_wm_base, uint32_t serial)
 static const struct xdg_wm_base_listener xdg_wm_base_listener = {
     .ping = xdg_wm_base_ping,
 };
-
-static void
-wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t time)
-{
-	/* Destroy this callback */
-	wl_callback_destroy(cb);
-	fprintf(stderr, "callback\n");
-
-	/* Request another frame */
-	struct client_state *state = data;
-	cb = wl_surface_frame(state->window.surface.wl_surface);
-	wl_callback_add_listener(cb, &wl_surface_frame_listener, state);
-
-	/* Submit a frame for this event */
-	wl_surface_commit(state->window.surface.wl_surface);
-}
 
 static void output_geometry(void *data, struct wl_output *wl_output,
 		int32_t x, int32_t y, int32_t physical_width, int32_t physical_height,
@@ -297,12 +285,14 @@ static const struct wl_registry_listener wl_registry_listener = {
 
 static void surface_enter(void *data, struct wl_surface *wl_surface, struct wl_output *wl_output)
 {
-	fprintf(stderr, "enter\n");
+	/* TODO */
+	fprintf(stderr, "TODO: enter\n");
 }
 
 static void surface_leave(void *data, struct wl_surface *wl_surface, struct wl_output *wl_output)
 {
-	fprintf(stderr, "leave\n");
+	/* TODO */
+	fprintf(stderr, "TODO: leave\n");
 }
 
 static const struct wl_surface_listener wl_surface_listener = {
@@ -320,6 +310,8 @@ int main(int argc, char *argv[])
 	state.window.surface.height = 480;
 	state.window.entry.surface.width = 80;
 	state.window.entry.surface.height = 40;
+	state.window.entry.border.width = 12;
+	state.window.entry.border.outline_width = 3;
 	state.wl_display = wl_display_connect(NULL);
 	state.wl_registry = wl_display_get_registry(state.wl_display);
 	state.xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
@@ -337,41 +329,36 @@ int main(int argc, char *argv[])
 	xdg_toplevel_set_title(state.window.xdg_toplevel, "Greetd mini wayland greeter");
 	wl_surface_commit(state.window.surface.wl_surface);
 
+	entry_init(&state.window.entry);
+	xdg_toplevel_set_min_size(state.window.xdg_toplevel,
+			state.window.entry.surface.width,
+			state.window.entry.surface.height);
+
 	state.window.entry.surface.wl_surface = wl_compositor_create_surface(state.wl_compositor);
 	state.window.entry.wl_subsurface = wl_subcompositor_get_subsurface(state.wl_subcompositor, state.window.entry.surface.wl_surface, state.window.surface.wl_surface);
 	wl_subsurface_set_desync(state.window.entry.wl_subsurface);
 	wl_surface_commit(state.window.entry.surface.wl_surface);
 
-
-	struct surface *surface = &state.window.surface;
-	egl_create_window(&surface->egl, surface->wl_surface, surface->width, surface->height);
-	egl_create_context(&surface->egl, state.wl_display);
-	gl_initialise(&state);
-
-	surface = &state.window.entry.surface;
-	egl_create_window(&surface->egl, surface->wl_surface, surface->width, surface->height);
-	egl_create_context(&surface->egl, state.wl_display);
-
+	surface_initialise(&state.window.surface, state.wl_display, &state.window.background_image);
+	surface_initialise(&state.window.entry.surface, state.wl_display, &state.window.entry.image);
 
 	wl_display_roundtrip(state.wl_display);
 	egl_make_current(&state.window.surface.egl);
-	eglSwapBuffers(state.window.surface.egl.display, state.window.surface.egl.surface);
+	egl_swap_buffers(&state.window.surface.egl);
 	egl_make_current(&state.window.entry.surface.egl);
-	eglSwapBuffers(state.window.entry.surface.egl.display, state.window.entry.surface.egl.surface);
+	egl_swap_buffers(&state.window.entry.surface.egl);
 	draw_frame(&state.window.surface);
+	draw_frame(&state.window.entry.surface);
 	while (wl_display_dispatch(state.wl_display) != -1) {
 		if (state.closed) {
 			break;
 		}
 		if (state.window.surface.redraw) {
-			egl_make_current(&state.window.surface.egl);
-			gl_draw(&state);
-			egl_swap_buffers(&state.window.surface.egl);
+			surface_draw(&state.window.surface, &state.window.background_color, &state.window.background_image);
 			state.window.surface.redraw = false;
 		}
 		if (state.window.entry.surface.redraw) {
-			egl_make_current(&state.window.entry.surface.egl);
-			egl_swap_buffers(&state.window.entry.surface.egl);
+			surface_draw(&state.window.entry.surface, &state.window.background_color, &state.window.entry.image);
 			state.window.entry.surface.redraw = false;
 		}
 	}
