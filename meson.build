@@ -31,6 +31,11 @@ shader_location = join_paths(
   ''
 )
 
+install_subdir(
+  'shaders',
+  install_dir: data_location
+)
+
 add_project_arguments(
   [
     '-pedantic',

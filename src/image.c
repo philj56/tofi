@@ -11,6 +11,7 @@
 
 void image_load(struct image *image, const char *filename)
 {
+	log_debug("Loading image %s\n", filename);
 	FILE *fp = fopen(filename, "rb");
 	uint8_t header[HEADER_BYTES];
 	if (!fp) {
@@ -91,4 +92,5 @@ void image_load(struct image *image, const char *filename)
 	image->width = width;
 	image->height = height;
 	image->buffer = buffer;
+	log_debug("Image loaded.\n");
 }
