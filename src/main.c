@@ -19,12 +19,24 @@
 #include "entry.h"
 #include "image.h"
 #include "gl.h"
+#include "greetd.h"
 #include "log.h"
 #include "nelem.h"
 #include "xdg-shell-client-protocol.h"
 
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+
+static void handle_response(
+		struct client_state *state,
+		struct json_object *response,
+		enum greetd_request_type request);
+static void create_session(struct client_state *state);
+static void start_session(struct client_state *state);
+static void post_auth_message_response(struct client_state *state);
+static void cancel_session(struct client_state *state);
+static void restart_session(struct client_state *state);
 
 static void resize(struct client_state *state)
 {
@@ -192,7 +204,6 @@ static void wl_keyboard_key(
 				entry->password_length++;
 				entry->password[entry->password_length] = L'\0';
 			}
-			fprintf(stderr, "%ls\n", entry->password);
 		} else if (entry->password_length > 0 && sym == XKB_KEY_BackSpace) {
 			entry->password[entry->password_length - 1] = '\0';
 			entry->password_length--;
@@ -210,8 +221,15 @@ static void wl_keyboard_key(
 		} else if (entry->password_length > 0
 				&& (sym == XKB_KEY_Return
 					|| sym == XKB_KEY_KP_Enter)) {
+			const wchar_t *src = entry->password;
+			wcsrtombs(
+					entry->password_mb,
+					&src,
+					N_ELEM(entry->password_mb),
+					NULL);
 			entry->password[0] = '\0';
 			entry->password_length = 0;
+			client_state->submit = true;
 		}
 		entry_update(&client_state->window.entry);
 		client_state->window.entry.surface.redraw = true;
@@ -359,21 +377,21 @@ static void registry_global(
 		uint32_t version)
 {
 	struct client_state *state = data;
-	if (strcmp(interface, wl_compositor_interface.name) == 0) {
+	if (!strcmp(interface, wl_compositor_interface.name)) {
 		state->wl_compositor = wl_registry_bind(
 				wl_registry,
 				name,
 				&wl_compositor_interface,
 				4);
 		log_debug("Bound to compositor %u.\n", name);
-	} else if (strcmp(interface, wl_subcompositor_interface.name) == 0) {
+	} else if (!strcmp(interface, wl_subcompositor_interface.name)) {
 		state->wl_subcompositor = wl_registry_bind(
 				wl_registry,
 				name,
 				&wl_subcompositor_interface,
 				1);
 		log_debug("Bound to subcompositor %u.\n", name);
-	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
+	} else if (!strcmp(interface, wl_seat_interface.name)) {
 		state->wl_seat = wl_registry_bind(
 				wl_registry,
 				name,
@@ -384,7 +402,7 @@ static void registry_global(
 				&wl_seat_listener,
 				state);
 		log_debug("Bound to seat %u.\n", name);
-	} else if (strcmp(interface, wl_output_interface.name) == 0) {
+	} else if (!strcmp(interface, wl_output_interface.name)) {
 		state->wl_output = wl_registry_bind(
 				wl_registry,
 				name,
@@ -395,7 +413,7 @@ static void registry_global(
 				&wl_output_listener,
 				state);
 		log_debug("Bound to output %u.\n", name);
-	} else if (strcmp(interface, xdg_wm_base_interface.name) == 0) {
+	} else if (!strcmp(interface, xdg_wm_base_interface.name)) {
 		state->xdg_wm_base = wl_registry_bind(
 				wl_registry,
 				name,
@@ -449,6 +467,8 @@ int main(int argc, char *argv[])
 {
 	setlocale(LC_ALL, "");
 	struct client_state state = {
+		.username = "nobody",
+		.command = "false",
 		.window = {
 			.background_color = {0.89, 0.8, 0.824, 1.0},
 			.scale = 1,
@@ -485,12 +505,14 @@ int main(int argc, char *argv[])
 		{"text_color", required_argument, NULL, 'T'},
 		{"font_name", required_argument, NULL, 'f'},
 		{"font_size", required_argument, NULL, 'F'},
-		{"password_character", required_argument, NULL, 'c'},
+		{"password_character", required_argument, NULL, 'C'},
+		{"command", required_argument, NULL, 'c'},
+		{"username", required_argument, NULL, 'u'},
 		{"width_characters", required_argument, NULL, 'n'},
 		{"wide_layout", no_argument, NULL, 'w'},
 		{NULL, 0, NULL, 0}
 	};
-	const char *short_options = "b:B:e:E:f:F:r:R:n:o:O:c:T:w";
+	const char *short_options = "b:B:c:C:e:E:f:F:r:R:n:o:O:T:u:w";
 
 	int opt = getopt_long(argc, argv, short_options, long_options, NULL);
 	while (opt != -1) {
@@ -539,16 +561,23 @@ int main(int argc, char *argv[])
 				state.window.entry.font_size =
 					strtol(optarg, NULL, 0);
 				break;
-			case 'c':
+			case 'C':
 				mbrtowc(
 					&state.window.entry.password_character,
 					optarg,
 					4,
 					NULL);
 				break;
+			case 'c':
+				state.command = optarg;
+				break;
+			case 'u':
+				state.username = optarg;
+				break;
 			case 'n':
 				state.window.entry.num_characters =
 					strtol(optarg, NULL, 0);
+				break;
 			case 'w':
 				state.window.entry.tight_layout = false;
 				break;
@@ -724,6 +753,8 @@ int main(int argc, char *argv[])
 	state.window.surface.redraw = false;
 	state.window.entry.surface.redraw = false;
 
+	create_session(&state);
+
 	while (wl_display_dispatch(state.wl_display) != -1) {
 		if (state.closed) {
 			break;
@@ -746,6 +777,10 @@ int main(int argc, char *argv[])
 					&state.window.entry.image);
 			state.window.entry.surface.redraw = false;
 		}
+		if (state.submit) {
+			post_auth_message_response(&state);
+			state.submit = false;
+		}
 	}
 
 	log_info("Window closed, performing cleanup.\n");
@@ -753,4 +788,114 @@ int main(int argc, char *argv[])
 
 	log_info("Finished, exiting.\n");
 	return 0;
+}
+
+void handle_response(
+		struct client_state *state,
+		struct json_object *response,
+		enum greetd_request_type request)
+{
+	if (response == NULL) {
+		return;
+	}
+	enum greetd_response_type type = greetd_parse_response_type(response);
+
+	switch (type) {
+		case GREETD_RESPONSE_SUCCESS:
+			switch (request) {
+				case GREETD_REQUEST_CREATE_SESSION:
+				case GREETD_REQUEST_POST_AUTH_MESSAGE_RESPONSE:
+					start_session(state);
+					break;
+				case GREETD_REQUEST_START_SESSION:
+					exit(EXIT_SUCCESS);
+					break;
+				case GREETD_REQUEST_CANCEL_SESSION:
+					break;
+			}
+			break;
+		case GREETD_RESPONSE_ERROR:
+			switch (request) {
+				case GREETD_REQUEST_POST_AUTH_MESSAGE_RESPONSE:
+				case GREETD_REQUEST_START_SESSION:
+					log_error(
+						"Failed to create greetd session: %s\n",
+						json_object_get_string(
+							json_object_object_get(
+								response,
+								"description")
+							)
+						);
+					restart_session(state);
+					break;
+				case GREETD_REQUEST_CREATE_SESSION:
+					log_error("Failed to connect to greetd session.\n");
+					break;
+				case GREETD_REQUEST_CANCEL_SESSION:
+					break;
+			}
+			break;
+		case GREETD_RESPONSE_AUTH_MESSAGE:
+			switch (greetd_parse_auth_message_type(response)) {
+				case GREETD_AUTH_MESSAGE_VISIBLE:
+					state->window.entry.password_visible = true;
+					break;
+				case GREETD_AUTH_MESSAGE_SECRET:
+					state->window.entry.password_visible = false;
+					break;
+				case GREETD_AUTH_MESSAGE_INFO:
+				case GREETD_AUTH_MESSAGE_ERROR:
+					/* TODO */
+					restart_session(state);
+					break;
+				case GREETD_AUTH_MESSAGE_INVALID:
+					break;
+			}
+			break;
+		case GREETD_RESPONSE_INVALID:
+			break;
+	}
+	json_object_put(response);
+}
+
+void create_session(struct client_state *state)
+{
+	log_debug("Creating greetd session for user '%s'.\n", state->username);
+	handle_response(
+			state,
+			greetd_create_session(state->username),
+			GREETD_REQUEST_CREATE_SESSION);
+}
+
+void start_session(struct client_state *state)
+{
+	log_debug("Starting session with command '%s'.\n", state->command);
+	handle_response(
+			state,
+			greetd_start_session(state->command),
+			GREETD_REQUEST_START_SESSION);
+}
+
+void post_auth_message_response(struct client_state *state)
+{
+	log_debug("Posting auth message response.\n");
+	handle_response(
+			state,
+			greetd_post_auth_message_response(state->window.entry.password_mb),
+			GREETD_REQUEST_POST_AUTH_MESSAGE_RESPONSE);
+}
+
+void cancel_session(struct client_state *state)
+{
+	log_debug("Cancelling session.\n");
+	handle_response(
+			state,
+			greetd_cancel_session(),
+			GREETD_REQUEST_CANCEL_SESSION);
+}
+
+void restart_session(struct client_state *state)
+{
+	cancel_session(state);
+	create_session(state);
 }

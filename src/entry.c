@@ -133,15 +133,12 @@ void entry_update(struct entry *entry)
 	/* Draw our text with Pango. */
 	color = entry->foreground_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	//const wchar_t *src = entry->password;
-	//wcsrtombs(entry->password_mb, &src, N_ELEM(entry->password_mb), NULL);
 	size_t len = 0;
 	for (unsigned int i = 0; i < entry->password_length; i++) {
-		len += wcrtomb(entry->password_mb + len, entry->password_character, NULL);
+		len += wcrtomb(entry->password_mb_print + len, entry->password_character, NULL);
 	}
-	entry->password_mb[len] = '\0';
-	fprintf(stderr, "%s\n", entry->password_mb);
-	pango_layout_set_text(layout, entry->password_mb, -1);
+	entry->password_mb_print[len] = '\0';
+	pango_layout_set_text(layout, entry->password_mb_print, -1);
 	pango_cairo_update_layout(cr, layout);
 	pango_cairo_show_layout(cr, layout);
 

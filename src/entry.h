@@ -6,7 +6,7 @@
 #include "image.h"
 #include "surface.h"
 
-#define MAX_PASSWORD_LENGTH 256
+#define MAX_PASSWORD_LENGTH 64
 
 struct entry {
 	struct surface surface;
@@ -22,7 +22,9 @@ struct entry {
 	wchar_t password[MAX_PASSWORD_LENGTH];
 	/* Assume maximum of 4 bytes per wchar_t (for UTF-8) */
 	char password_mb[4*MAX_PASSWORD_LENGTH];
+	char password_mb_print[4*MAX_PASSWORD_LENGTH];
 	uint32_t password_length;
+	bool password_visible;
 
 	/* Options */
 	uint32_t font_size;

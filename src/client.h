@@ -48,6 +48,11 @@ struct client_state {
 	struct xkb_state *xkb_state;
 	struct xkb_context *xkb_context;
 	struct xkb_keymap *xkb_keymap;
+
+	/* greetd state */
+	const char *username;
+	const char *command;
+	bool submit;
 };
 
 #endif /* CLIENT_H */

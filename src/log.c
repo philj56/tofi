@@ -29,7 +29,7 @@ void log_debug(const char *const fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	fprintf(stderr, "[%ld.%03ld][DEBUG]: ", t.tv_sec, t.tv_nsec / 1000000);
-	vprintf(fmt, args);
+	vfprintf(stderr, fmt, args);
 	va_end(args);
 }
 
