@@ -166,30 +166,36 @@ void calculate_font_extents(struct entry *entry, uint32_t scale)
 	 */
 	PangoFontMap *font_map = pango_cairo_font_map_get_default();
 	PangoContext *context = pango_font_map_create_context(font_map);
-	PangoLayout *layout = pango_layout_new(context);
 
 	PangoFontDescription *font_description =
 		pango_font_description_from_string(entry->font_name);
 	pango_font_description_set_size(
 			font_description,
 			entry->font_size * PANGO_SCALE);
-	pango_layout_set_font_description(layout, font_description);
-	PangoFont *font =
-		pango_font_map_load_font(font_map, context, font_description);
+	pango_context_set_font_description(context, font_description);
+
+#ifdef DEBUG
+	{
+		PangoFont *font =
+			pango_context_load_font(context, font_description);
+		PangoFontDescription *desc = pango_font_describe(font);
+		log_debug("Using font: %s\n",
+			pango_font_description_to_string(desc));
+
+		pango_font_description_free(desc);
+		g_object_unref(font);
+	}
+#endif
 	pango_font_description_free(font_description);
 
-	font_description = pango_font_describe(font);
-	log_info("Using font: %s\n",
-			pango_font_description_to_string(font_description));
-	g_object_unref(font);
-
+	PangoLayout *layout = pango_layout_new(context);
 	char *buf = calloc(MAX_PASSWORD_LENGTH, 4);
 	size_t len = 0;
 	for (unsigned int i = 0; i < entry->num_characters; i++) {
 		len += wcrtomb(buf + len, entry->password_character, NULL);
 	}
 	buf[len] = '\0';
-	pango_layout_set_text(layout,buf, -1);
+	pango_layout_set_text(layout, buf, -1);
 	free(buf);
 
 	PangoRectangle rect;
@@ -198,6 +204,14 @@ void calculate_font_extents(struct entry *entry, uint32_t scale)
 	} else {
 		pango_layout_get_pixel_extents(layout, NULL, &rect);
 	}
+	/*
+	 * TODO: This extra 1px padding is needed for certain fonts, why?
+	 */
+	rect.width += 2;
+	rect.height += 2;
+	rect.x -= 1;
+	rect.y -= 1;
+
 	int width = rect.width;
 	int height = rect.height;
 	width += 2 * (
