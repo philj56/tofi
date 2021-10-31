@@ -45,10 +45,11 @@ add_project_arguments(
 
 sources = files(
   'src/main.c',
-  'src/background.c',
+  'src/color.c',
   'src/egl.c',
   'src/entry.c',
   'src/gl.c',
+  'src/image.c',
   'src/log.c',
   'src/surface.c',
   'src/xdg-shell-protocol.c',

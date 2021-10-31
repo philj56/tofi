@@ -4,19 +4,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-struct image {
-	uint8_t *buffer;
-	uint32_t width;
-	uint32_t height;
-	bool swizzle;
-	bool redraw;
-};
-
 struct color {
 	float r;
 	float g;
 	float b;
 	float a;
 };
+
+struct color hex_to_color(const char *hex);
 
 #endif /* UTIL_H */

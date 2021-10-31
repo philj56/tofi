@@ -1,28 +1,31 @@
-#include <stdlib.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <png.h>
-#include "client.h"
 #include "log.h"
-#include "background.h"
+#include "image.h"
 
 #define HEADER_BYTES 8
 
-void load_background(struct client_state *state, const char *filename)
+void image_load(struct image *image, const char *filename)
 {
 	FILE *fp = fopen(filename, "rb");
 	uint8_t header[HEADER_BYTES];
 	if (!fp) {
-		log_error("Couldn't open %s\n", filename);
+		log_error("Couldn't open '%s': %s.\n",
+				filename, strerror(errno));
 		return;
 	}
 	if (fread(header, 1, HEADER_BYTES, fp) != HEADER_BYTES) {
-		log_error("Failed to read camera data: %s\n", filename);
+		log_error("Failed to read '%s': %s.\n",
+				filename, strerror(errno));
 		fclose(fp);
 		return;
 	}
 	if (png_sig_cmp(header, 0, HEADER_BYTES)) {
-		log_error("Not a PNG file: %s\n", filename);
+		log_error("'%s' isn't a PNG file.\n", filename);
 		fclose(fp);
 		return;
 	}
@@ -63,7 +66,7 @@ void load_background(struct client_state *state, const char *filename)
 	png_set_expand(png_ptr);
 	png_set_gray_to_rgb(png_ptr);
 	png_set_filler(png_ptr, 0xFFu, PNG_FILLER_AFTER);
-	
+
 	png_read_update_info(png_ptr, info_ptr);
 
 	uint32_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
@@ -85,7 +88,7 @@ void load_background(struct client_state *state, const char *filename)
 	free(row_pointers);
 	fclose(fp);
 
-	state->window.background_image.width = width;
-	state->window.background_image.height = height;
-	state->window.background_image.buffer = buffer;
+	image->width = width;
+	image->height = height;
+	image->buffer = buffer;
 }

@@ -9,61 +9,108 @@
 #include "log.h"
 #include "nelem.h"
 
-static void calculate_font_extents(struct entry *entry);
+static void calculate_font_extents(struct entry *entry, uint32_t scale);
 
-void entry_init(struct entry *entry)
+void entry_init(struct entry *entry, uint32_t scale)
 {
-	calculate_font_extents(entry);
+	calculate_font_extents(entry, scale);
+	struct color color;
 
-	/* 
-	 * Cairo uses native 32 bit integers for pixels, so if this computer is
-	 * little endian we have to tell OpenGL to swizzle the texture.
+	/*
+	 * Cairo uses native 32 bit integers for pixels, so if this processor
+	 * is little endian we have to tell OpenGL to swizzle the texture.
 	 */
 	if (htonl(0xFFu) != 0xFFu) {
 		entry->image.swizzle = true;
 	}
 
+	/*
+	 * Create the cairo surface and context we'll be using.
+	 */
 	cairo_surface_t *surface = cairo_image_surface_create(
 			CAIRO_FORMAT_ARGB32,
 			entry->surface.width,
 			entry->surface.height
 			);
+	cairo_surface_set_device_scale(surface, scale, scale);
 	cairo_t *cr = cairo_create(surface);
-	cairo_set_source_rgb(cr, 0.031, 0.031, 0);
+
+	/* Running size of current drawing area. */
+	int32_t width = entry->surface.width / scale;
+	int32_t height = entry->surface.height / scale;
+
+	/* Draw the outer outline */
+	color = entry->border.outline_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_paint(cr);
 
-	cairo_translate(cr, entry->border.outline_width, entry->border.outline_width);
-	cairo_rectangle(cr,
-		0,
-		0,
-		entry->surface.width - 2*entry->border.outline_width,
-		entry->surface.height - 2*entry->border.outline_width
-		);
+	/* Move and clip following draws to be within this outline */
+	cairo_translate(
+			cr,
+			entry->border.outline_width,
+			entry->border.outline_width);
+	width -= 2 * entry->border.outline_width;
+	height -= 2 * entry->border.outline_width;
+	cairo_rectangle(cr, 0, 0, width, height);
 	cairo_clip(cr);
-	cairo_set_source_rgb(cr, 0.976, 0.149, 0.447);
+
+	/* Draw the border */
+	color = entry->border.color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_paint(cr);
 
+	/* Move and clip following draws to be within the border */
 	cairo_translate(cr, entry->border.width, entry->border.width);
-	cairo_rectangle(cr,
-		0,
-		0,
-		entry->surface.width - 2*(entry->border.outline_width + entry->border.width),
-		entry->surface.height - 2*(entry->border.outline_width + entry->border.width)
-		);
+	width -= 2 * entry->border.width;
+	height -= 2 * entry->border.width;
+	cairo_rectangle(cr, 0, 0, width, height);
 	cairo_clip(cr);
-	cairo_set_source_rgb(cr, 0.106, 0.114, 0.118);
+
+	/* Draw the inner outline */
+	color = entry->border.outline_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_paint(cr);
 
-	PangoLayout *layout = pango_cairo_create_layout(cr);
+	/* Move and clip following draws to be within this outline */
+	cairo_translate(
+			cr,
+			entry->border.outline_width,
+			entry->border.outline_width);
+	width -= 2 * entry->border.outline_width;
+	height -= 2 * entry->border.outline_width;
+	cairo_rectangle(cr, 0, 0, width, height);
+	cairo_clip(cr);
+
+	/* Draw the entry background */
+	color = entry->background_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	cairo_paint(cr);
+
+	/* Move and clip following draws to be within the specified padding */
+	cairo_translate(cr, entry->padding, entry->padding);
+	width -= 2 * entry->padding;
+	height -= 2 * entry->padding;
+	cairo_rectangle(cr, 0, 0, width, height);
+	cairo_clip(cr);
+
+	/*
+	 * Move the cursor back up, so that Pango draws in the correct place if
+	 * we're doing a tight layout.
+	 */
+	cairo_translate(cr, -entry->text_bounds.x, -entry->text_bounds.y);
+
+	/* Setup Pango. */
+	PangoContext *context = pango_cairo_create_context(cr);
+	PangoLayout *layout = pango_layout_new(context);
 	pango_layout_set_text(layout, "", -1);
 
-	PangoFontDescription *font_description = pango_font_description_from_string("Rubik Bold 48");
+	PangoFontDescription *font_description =
+		pango_font_description_from_string(entry->font_name);
+	pango_font_description_set_size(
+			font_description,
+			entry->font_size * PANGO_SCALE);
 	pango_layout_set_font_description(layout, font_description);
 	pango_font_description_free(font_description);
-
-	cairo_set_source_rgb(cr, 0.973, 0.973, 0.941);
-	pango_cairo_update_layout(cr, layout);
-	pango_cairo_show_layout(cr, layout);
 
 	entry->pangocairo.surface = surface;
 	entry->pangocairo.cr = cr;
@@ -77,49 +124,95 @@ void entry_update(struct entry *entry)
 {
 	cairo_t *cr = entry->pangocairo.cr;
 	PangoLayout *layout = entry->pangocairo.layout;
-	cairo_set_source_rgb(cr, 0.106, 0.114, 0.118);
+
+	/* Redraw the background. */
+	struct color color = entry->background_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_paint(cr);
-	cairo_set_source_rgb(cr, 0.973, 0.973, 0.941);
+
+	/* Draw our text with Pango. */
+	color = entry->foreground_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	//const wchar_t *src = entry->password;
 	//wcsrtombs(entry->password_mb, &src, N_ELEM(entry->password_mb), NULL);
+	size_t len = 0;
 	for (unsigned int i = 0; i < entry->password_length; i++) {
-		entry->password_mb[2 * i] = '\xC2';
-		entry->password_mb[2 * i + 1] = '\xB7';
+		len += wcrtomb(entry->password_mb + len, entry->password_character, NULL);
 	}
-	entry->password_mb[2 * entry->password_length] = '\0';
+	entry->password_mb[len] = '\0';
 	fprintf(stderr, "%s\n", entry->password_mb);
 	pango_layout_set_text(layout, entry->password_mb, -1);
 	pango_cairo_update_layout(cr, layout);
 	pango_cairo_show_layout(cr, layout);
+
 	entry->image.redraw = true;
 }
 
-void calculate_font_extents(struct entry *entry)
+void entry_set_scale(struct entry *entry, uint32_t scale)
 {
+	cairo_surface_set_device_scale(entry->pangocairo.surface, scale, scale);
+}
+
+void calculate_font_extents(struct entry *entry, uint32_t scale)
+{
+	/*
+	 * To calculate the size of the password box, we do the following:
+	 * 	1. Load the font we're going to use.
+	 * 	2. Create a string of the desired length using the specified
+	 * 	   password character, e.g. "·······".
+	 * 	3. Render the string with Pango in some abstract layout.
+	 * 	4. Measure the bounding box of the layout.
+	 * 	5. Add on the size of the border / outline.
+	 */
 	PangoFontMap *font_map = pango_cairo_font_map_get_default();
 	PangoContext *context = pango_font_map_create_context(font_map);
 	PangoLayout *layout = pango_layout_new(context);
-	{
-		PangoFontDescription *font_description = pango_font_description_from_string("Rubik Bold 48");
-		pango_layout_set_font_description(layout, font_description);
-		PangoFont *font = pango_font_map_load_font(font_map, context, font_description);
-		g_object_unref(font);
-		pango_font_description_free(font_description);
 
-		font_description = pango_context_get_font_description(context);
-		log_info("Using family: %s\n", pango_font_description_get_family(font_description));
+	PangoFontDescription *font_description =
+		pango_font_description_from_string(entry->font_name);
+	pango_font_description_set_size(
+			font_description,
+			entry->font_size * PANGO_SCALE);
+	pango_layout_set_font_description(layout, font_description);
+	PangoFont *font =
+		pango_font_map_load_font(font_map, context, font_description);
+	pango_font_description_free(font_description);
+
+	font_description = pango_font_describe(font);
+	log_info("Using font: %s\n",
+			pango_font_description_to_string(font_description));
+	g_object_unref(font);
+
+	char *buf = calloc(MAX_PASSWORD_LENGTH, 4);
+	size_t len = 0;
+	for (unsigned int i = 0; i < entry->num_characters; i++) {
+		len += wcrtomb(buf + len, entry->password_character, NULL);
 	}
-	pango_layout_set_text(layout, "············", -1);
+	buf[len] = '\0';
+	pango_layout_set_text(layout,buf, -1);
+	free(buf);
 
-	int width;
-	int height;
-	pango_layout_get_pixel_size(layout, &width, &height);
-	fprintf(stderr, "%d x %d\n", width, height);
-	fprintf(stderr, "%d, %d\n", entry->border.width, entry->border.outline_width);
-	width += 2 * (entry->border.width + entry->border.outline_width);
-	height += 2 * (entry->border.width + entry->border.outline_width);
-	entry->surface.width = width;
-	entry->surface.height = height;
+	PangoRectangle rect;
+	if (entry->tight_layout) {
+		pango_layout_get_pixel_extents(layout, &rect, NULL);
+	} else {
+		pango_layout_get_pixel_extents(layout, NULL, &rect);
+	}
+	int width = rect.width;
+	int height = rect.height;
+	width += 2 * (
+			entry->border.width
+			+ 2 * entry->border.outline_width
+			+ entry->padding
+		     );
+	height += 2 * (
+			entry->border.width
+			+ 2 * entry->border.outline_width
+			+ entry->padding
+		     );
+	entry->surface.width = width * scale;
+	entry->surface.height = height * scale;
+	entry->text_bounds = rect;
 
 	g_object_unref(layout);
 	g_object_unref(context);

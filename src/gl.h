@@ -16,6 +16,12 @@ struct gl {
 
 void gl_initialise(struct gl *gl, struct image *texture);
 void gl_clear(struct gl *gl, struct color *color);
-void gl_draw_texture(struct gl *gl, struct image *texture, int32_t x, int32_t y, int32_t width, int32_t height);
+void gl_draw_texture(
+		struct gl *gl,
+		struct image *texture,
+		int32_t x,
+		int32_t y,
+		int32_t width,
+		int32_t height);
 
 #endif /* GL_H */

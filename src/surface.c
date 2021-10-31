@@ -5,14 +5,24 @@
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-void surface_initialise(struct surface *surface, struct wl_display *wl_display, struct image *texture)
+void surface_initialise(
+		struct surface *surface,
+		struct wl_display *wl_display,
+		struct image *texture)
 {
-	egl_create_window(&surface->egl, surface->wl_surface, surface->width, surface->height);
+	egl_create_window(
+			&surface->egl,
+			surface->wl_surface,
+			surface->width,
+			surface->height);
 	egl_create_context(&surface->egl, wl_display);
 	gl_initialise(&surface->gl, texture);
 }
 
-void surface_draw(struct surface *surface, struct color *color, struct image *texture)
+void surface_draw(
+		struct surface *surface,
+		struct color *color,
+		struct image *texture)
 {
 	egl_make_current(&surface->egl);
 	gl_clear(&surface->gl, color);

@@ -6,12 +6,13 @@
 
 static const char *egl_error_string();
 
-void egl_create_window(struct egl *egl, struct wl_surface *wl_surface, uint32_t width, uint32_t height)
+void egl_create_window(
+		struct egl *egl,
+		struct wl_surface *wl_surface,
+		uint32_t width,
+		uint32_t height)
 {
-	egl->window = wl_egl_window_create(
-			wl_surface,
-			width,
-			height);
+	egl->window = wl_egl_window_create(wl_surface, width, height);
 
 	if (egl->window == EGL_NO_SURFACE) {
 		egl_log_error("Couldn't create EGL window");
@@ -49,13 +50,22 @@ void egl_create_context(struct egl *egl, struct wl_display *wl_display)
 		return;
 	}
 
-	result = eglChooseConfig(egl->display, config_attribs, &config, 1, &num_configs);
+	result = eglChooseConfig(
+			egl->display,
+			config_attribs,
+			&config,
+			1,
+			&num_configs);
 	if ((result != EGL_TRUE) || (num_configs != 1)) {
 		egl_log_error("Failed to choose EGL config");
 		return;
 	}
 
-	egl->surface = eglCreateWindowSurface(egl->display, config, egl->window, NULL);
+	egl->surface = eglCreateWindowSurface(
+			egl->display,
+			config,
+			egl->window,
+			NULL);
 	if (egl->surface == EGL_NO_SURFACE) {
 		egl_log_error("Couldn't create EGL window surface");
 		return;
@@ -66,13 +76,21 @@ void egl_create_context(struct egl *egl, struct wl_display *wl_display)
 		EGL_NONE
 	};
 
-	egl->context = eglCreateContext(egl->display, config, EGL_NO_CONTEXT, context_attribs);
+	egl->context = eglCreateContext(
+			egl->display,
+			config,
+			EGL_NO_CONTEXT,
+			context_attribs);
 	if (egl->context == EGL_NO_CONTEXT) {
 		egl_log_error("Couldn't create EGL context");
 		return;
 	}
 
-	result = eglMakeCurrent(egl->display, egl->surface, egl->surface, egl->context);
+	result = eglMakeCurrent(
+			egl->display,
+			egl->surface,
+			egl->surface,
+			egl->context);
 	if (!result) {
 		egl_log_error("Couldn't make EGL context current");
 		return;
@@ -84,7 +102,11 @@ void egl_log_error(const char *msg) {
 }
 
 void egl_make_current(struct egl *egl) {
-	bool result = eglMakeCurrent(egl->display, egl->surface, egl->surface, egl->context);
+	bool result = eglMakeCurrent(
+			egl->display,
+			egl->surface,
+			egl->surface,
+			egl->context);
 	if (!result) {
 		egl_log_error("Couldn't make EGL context current");
 		return;

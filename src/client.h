@@ -3,9 +3,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "color.h"
 #include "entry.h"
+#include "image.h"
 #include "surface.h"
-#include "util.h"
 
 struct client_state {
 	/* Globals */
@@ -37,7 +38,10 @@ struct client_state {
 		struct image background_image;
 		struct color background_color;
 		struct entry entry;
+		int32_t width;
+		int32_t height;
 		uint32_t scale;
+		bool resize;
 	} window;
 
 	/* Keyboard state */
