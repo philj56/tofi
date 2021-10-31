@@ -196,7 +196,15 @@ static void wl_keyboard_key(
 		} else if (entry->password_length > 0 && sym == XKB_KEY_BackSpace) {
 			entry->password[entry->password_length - 1] = '\0';
 			entry->password_length--;
-		} else if (sym == XKB_KEY_Escape) {
+		} else if (sym == XKB_KEY_Escape
+				|| (sym == XKB_KEY_c
+					&& xkb_state_mod_name_is_active(
+						client_state->xkb_state,
+						XKB_MOD_NAME_CTRL,
+						XKB_STATE_MODS_EFFECTIVE)
+				   )
+			  )
+		{
 			entry->password[0] = '\0';
 			entry->password_length = 0;
 		} else if (entry->password_length > 0
