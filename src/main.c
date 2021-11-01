@@ -510,7 +510,7 @@ int main(int argc, char *argv[])
 				.font_size = 24,
 				.padding = 8,
 				.tight_layout = true,
-				.password_character = L'·',
+				.password_character = '.',
 				.num_characters = 12,
 				.background_color = {0.106, 0.114, 0.118, 1.0},
 				.foreground_color = {1.0, 1.0, 1.0, 1.0}

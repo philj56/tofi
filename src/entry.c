@@ -165,7 +165,7 @@ void calculate_font_extents(struct entry *entry, uint32_t scale)
 	 * To calculate the size of the password box, we do the following:
 	 * 	1. Load the font we're going to use.
 	 * 	2. Create a string of the desired length using the specified
-	 * 	   password character, e.g. "·······".
+	 * 	   password character, e.g. ".......".
 	 * 	3. Render the string with Pango in some abstract layout.
 	 * 	4. Measure the bounding box of the layout.
 	 * 	5. Add on the size of the border / outline.

@@ -55,7 +55,7 @@ All options which take a color expect a 3- or 6-digit hex code, e.g. F9A733.
 	Point size of the password text.
 
 *-C, --password-character* <character>
-	Character to use to hide the password. Defaults to '·'.
+	Character to use to hide the password. Defaults to full-stop.
 
 *-n, --width-characters* <value>
 	Make the password entry box big enough to fit this many characters.
