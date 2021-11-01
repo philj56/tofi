@@ -1,4 +1,4 @@
-#version 300 es
+#version 100
 
 /*
  * Copyright (C) 2021 Philip Jones
@@ -11,15 +11,13 @@
  * I don't think you can really copyright this shader though :)
  */
 
-precision highp float;
+precision mediump float;
 
-in vec2 Texcoord;
-
-out vec4 FragColor;
+varying vec2 Texcoord;
 
 uniform sampler2D tex;
 
 void main()
 {
-	FragColor = texture(tex, Texcoord);
+	gl_FragColor = texture2D(tex, Texcoord);
 }

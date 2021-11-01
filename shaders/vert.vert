@@ -1,4 +1,4 @@
-#version 300 es
+#version 100
 
 /*
  * Copyright (C) 2017-2020 Philip Jones
@@ -10,10 +10,10 @@
  *
  */
 
-in vec2 position;
-in vec2 texcoord;
+attribute vec2 position;
+attribute vec2 texcoord;
 
-out vec2 Texcoord;
+varying vec2 Texcoord;
 
 void main()
 {

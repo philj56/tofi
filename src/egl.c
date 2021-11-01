@@ -37,7 +37,7 @@ void egl_create_context(struct egl *egl, struct wl_display *wl_display)
 	EGLint num_configs;
 	static const EGLint config_attribs[] = {
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
 		EGL_RED_SIZE, 8,
 		EGL_GREEN_SIZE, 8,
 		EGL_BLUE_SIZE, 8,
@@ -72,7 +72,7 @@ void egl_create_context(struct egl *egl, struct wl_display *wl_display)
 	}
 
 	static const EGLint context_attribs[] = {
-		EGL_CONTEXT_MAJOR_VERSION, 3,
+		EGL_CONTEXT_MAJOR_VERSION, 2,
 		EGL_NONE
 	};
 
