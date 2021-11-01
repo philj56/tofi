@@ -357,8 +357,6 @@ static void output_scale(
 
 static void output_done(void *data, struct wl_output *wl_output)
 {
-	//struct client_state *state = data;
-	/* TODO */
 	log_debug("Output configuration done.\n");
 }
 
@@ -463,9 +461,37 @@ static const struct wl_surface_listener wl_surface_listener = {
 	.leave = surface_leave
 };
 
+static void usage()
+{
+	fprintf(stderr,
+"Usage: greetd-mini-wl-greeter -u username -c command [options]\n"
+"  -u, --user=NAME                The user to login as.\n"
+"  -c, --command=COMMAND          The command to run on login.\n"
+"  -b, --background_image=PATH    An image to use as the background.\n"
+"  -B, --background_color=COLOR   Color of the background.\n"
+"  -o, --outline_width=VALUE      Width of the border outlines in pixels.\n"
+"  -O, --outline_color=COLOR      Color of the border outlines.\n"
+"  -r, --border_width=VALUE       Width of the border in pixels.\n"
+"  -R, --border_color=COLOR       Color of the border.\n"
+"  -e, --entry_padding=VALUE      Padding around the password text in pixels.\n"
+"  -E, --entry_color=COLOR        Color of the password entry box.\n"
+"  -f, --font_name=NAME           Font to use for the password entry.\n"
+"  -F, --font_size=VALUE          Point size of the password text.\n"
+"  -C, --password_character=CHAR  Character to use to hide the password.\n"
+"  -n, --width_characters=VALUE   Width of the password entry box in characters.\n"
+"  -w, --wide_layout              Make the password entry box full height.\n"
+	);
+}
+
 int main(int argc, char *argv[])
 {
+	/*
+	 * Set the locale to the user's default, so we can deal with non-ASCII
+	 * characters.
+	 */
 	setlocale(LC_ALL, "");
+
+	/* Default options. */
 	struct client_state state = {
 		.username = "nobody",
 		.command = "false",
@@ -493,6 +519,7 @@ int main(int argc, char *argv[])
 	};
 
 
+	/* Option parsing with getopt. */
 	struct option long_options[] = {
 		{"background_image", required_argument, NULL, 'b'},
 		{"background_color", required_argument, NULL, 'B'},
@@ -507,12 +534,12 @@ int main(int argc, char *argv[])
 		{"font_size", required_argument, NULL, 'F'},
 		{"password_character", required_argument, NULL, 'C'},
 		{"command", required_argument, NULL, 'c'},
-		{"username", required_argument, NULL, 'u'},
+		{"user", required_argument, NULL, 'u'},
 		{"width_characters", required_argument, NULL, 'n'},
 		{"wide_layout", no_argument, NULL, 'w'},
 		{NULL, 0, NULL, 0}
 	};
-	const char *short_options = "b:B:c:C:e:E:f:F:r:R:n:o:O:T:u:w";
+	const char *short_options = ":b:B:c:C:e:E:f:F:r:R:n:o:O:T:u:w";
 
 	int opt = getopt_long(argc, argv, short_options, long_options, NULL);
 	while (opt != -1) {
@@ -581,10 +608,23 @@ int main(int argc, char *argv[])
 			case 'w':
 				state.window.entry.tight_layout = false;
 				break;
+			case ':':
+				log_error("Option -%c requires an argument.\n", optopt);
+				usage();
+				exit(EXIT_FAILURE);
+				break;
 			case '?':
+				log_error("Unknown option -%c.\n", optopt);
+				usage();
+				exit(EXIT_FAILURE);
 				break;
 		}
 		opt = getopt_long(argc, argv, short_options, long_options, NULL);
+	}
+	if (optind < argc) {
+		log_error("Unexpected non-option argument '%s'.\n", argv[optind]);
+		usage();
+		exit(EXIT_FAILURE);
 	}
 
 
@@ -753,6 +793,7 @@ int main(int argc, char *argv[])
 	state.window.surface.redraw = false;
 	state.window.entry.surface.redraw = false;
 
+	/* Create the greetd session. */
 	create_session(&state);
 
 	while (wl_display_dispatch(state.wl_display) != -1) {
@@ -808,7 +849,7 @@ void handle_response(
 					start_session(state);
 					break;
 				case GREETD_REQUEST_START_SESSION:
-					exit(EXIT_SUCCESS);
+					state->closed = true;
 					break;
 				case GREETD_REQUEST_CANCEL_SESSION:
 					break;

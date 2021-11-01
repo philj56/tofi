@@ -1,0 +1,1 @@
+option('man-pages', type: 'feature', value: 'auto', description: 'Install man pages.')

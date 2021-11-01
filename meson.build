@@ -79,21 +79,21 @@ executable(
   install: true
 )
 
-# scdoc = find_program('scdoc', required: get_option('man-pages'))
-# if scdoc.found()
-#   sed = find_program('sed')
-#   sh = find_program('sh')
-#   mandir = get_option('mandir')
-#   manpage = 'doc/greetd-mini-greeter.1.scd'
-#   output = 'greetd-mini-greeter.1'
-#   custom_target(
-#     output,
-#     input: manpage,
-#     output: output,
-#     command: [
-#       sh, '-c', '@0@ < @INPUT@ | sed "s|CSS_PATH|@1@|g;" > @2@'.format(scdoc.path(), css_location, output)
-#     ],
-#     install: true,
-#     install_dir: '@0@/man1'.format(mandir)
-#   )
-# endif
+scdoc = find_program('scdoc', required: get_option('man-pages'))
+if scdoc.found()
+  sed = find_program('sed')
+  sh = find_program('sh')
+  mandir = get_option('mandir')
+  manpage = 'doc/greetd-mini-wl-greeter.1.scd'
+  output = 'greetd-mini-wl-greeter.1'
+  custom_target(
+    output,
+    input: manpage,
+    output: output,
+    command: [
+      sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc.path(), output)
+    ],
+    install: true,
+    install_dir: '@0@/man1'.format(mandir)
+  )
+endif
