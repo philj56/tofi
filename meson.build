@@ -31,9 +31,21 @@ shader_location = join_paths(
   ''
 )
 
+completion_location = join_paths(
+  get_option('prefix'),
+  get_option('datadir'),
+  'bash-completion',
+  'completions'
+)
+
 install_subdir(
   'shaders',
   install_dir: data_location
+)
+
+install_data(
+  'completions/greetd-mini-wl-greeter',
+  install_dir: completion_location
 )
 
 add_project_arguments(

@@ -24,43 +24,43 @@ All options which take a color expect a 3- or 6-digit hex code, e.g. F9A733.
 *-c, --command* <command>
 	The command to run on login.
 
-*-b, --background_image* <image>
+*-b, --background-image* <image>
 	An image to use as the background. Currently only PNG images are supported.
 
-*-B, --background_color* <color>
+*-B, --background-color* <color>
 	Color of the background in the absence of an image.
 
-*-o, --outline_width* <value>
+*-o, --outline-width* <value>
 	Width of the outlines around the border, in pixels.
 
-*-O, --outline_color* <color>
+*-O, --outline-color* <color>
 	Color of the outlines around the border.
 
-*-r, --border_width* <value>
+*-r, --border-width* <value>
 	Width of the border in pixels.
 
-*-R, --border_color* <color>
+*-R, --border-color* <color>
 	Color of the border.
 
-*-e, --entry_padding* <value>
+*-e, --entry-padding* <value>
 	Padding around the password text in pixels.
 
-*-E, --entry_color* <color>
+*-E, --entry-color* <color>
 	Color of the password entry box.
 
-*-f, --font_name* <name>
+*-f, --font-name* <name>
 	Font to use for the password entry.
 
-*-F, --font_size* <value>
+*-F, --font-size* <value>
 	Point size of the password text.
 
-*-C, --password_character* <character>
+*-C, --password-character* <character>
 	Character to use to hide the password. Defaults to '·'.
 
-*-n, --width_characters* <value>
+*-n, --width-characters* <value>
 	Make the password entry box big enough to fit this many characters.
 
-*-w, --wide_layout*
+*-w, --wide-layout*
 	By default, the password entry box will be shrunk vertically to exactly fit
 	the specified password character. Use this option if you'd rather that it got
 	laid out like normal text, i.e. the box remains one full character tall.

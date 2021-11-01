@@ -467,19 +467,19 @@ static void usage()
 "Usage: greetd-mini-wl-greeter -u username -c command [options]\n"
 "  -u, --user=NAME                The user to login as.\n"
 "  -c, --command=COMMAND          The command to run on login.\n"
-"  -b, --background_image=PATH    An image to use as the background.\n"
-"  -B, --background_color=COLOR   Color of the background.\n"
-"  -o, --outline_width=VALUE      Width of the border outlines in pixels.\n"
-"  -O, --outline_color=COLOR      Color of the border outlines.\n"
-"  -r, --border_width=VALUE       Width of the border in pixels.\n"
-"  -R, --border_color=COLOR       Color of the border.\n"
-"  -e, --entry_padding=VALUE      Padding around the password text in pixels.\n"
-"  -E, --entry_color=COLOR        Color of the password entry box.\n"
-"  -f, --font_name=NAME           Font to use for the password entry.\n"
-"  -F, --font_size=VALUE          Point size of the password text.\n"
-"  -C, --password_character=CHAR  Character to use to hide the password.\n"
-"  -n, --width_characters=VALUE   Width of the password entry box in characters.\n"
-"  -w, --wide_layout              Make the password entry box full height.\n"
+"  -b, --background-image=PATH    An image to use as the background.\n"
+"  -B, --background-color=COLOR   Color of the background.\n"
+"  -o, --outline-width=VALUE      Width of the border outlines in pixels.\n"
+"  -O, --outline-color=COLOR      Color of the border outlines.\n"
+"  -r, --border-width=VALUE       Width of the border in pixels.\n"
+"  -R, --border-color=COLOR       Color of the border.\n"
+"  -e, --entry-padding=VALUE      Padding around the password text in pixels.\n"
+"  -E, --entry-color=COLOR        Color of the password entry box.\n"
+"  -f, --font-name=NAME           Font to use for the password entry.\n"
+"  -F, --font-size=VALUE          Point size of the password text.\n"
+"  -C, --password-character=CHAR  Character to use to hide the password.\n"
+"  -n, --width-characters=VALUE   Width of the password entry box in characters.\n"
+"  -w, --wide-layout              Make the password entry box full height.\n"
 	);
 }
 
@@ -521,22 +521,22 @@ int main(int argc, char *argv[])
 
 	/* Option parsing with getopt. */
 	struct option long_options[] = {
-		{"background_image", required_argument, NULL, 'b'},
-		{"background_color", required_argument, NULL, 'B'},
-		{"border_width", required_argument, NULL, 'r'},
-		{"border_color", required_argument, NULL, 'R'},
-		{"outline_width", required_argument, NULL, 'o'},
-		{"outline_color", required_argument, NULL, 'O'},
-		{"entry_padding", required_argument, NULL, 'e'},
-		{"entry_color", required_argument, NULL, 'E'},
-		{"text_color", required_argument, NULL, 'T'},
-		{"font_name", required_argument, NULL, 'f'},
-		{"font_size", required_argument, NULL, 'F'},
-		{"password_character", required_argument, NULL, 'C'},
+		{"background-image", required_argument, NULL, 'b'},
+		{"background-color", required_argument, NULL, 'B'},
+		{"border-width", required_argument, NULL, 'r'},
+		{"border-color", required_argument, NULL, 'R'},
+		{"outline-width", required_argument, NULL, 'o'},
+		{"outline-color", required_argument, NULL, 'O'},
+		{"entry-padding", required_argument, NULL, 'e'},
+		{"entry-color", required_argument, NULL, 'E'},
+		{"text-color", required_argument, NULL, 'T'},
+		{"font-name", required_argument, NULL, 'f'},
+		{"font-size", required_argument, NULL, 'F'},
+		{"password-character", required_argument, NULL, 'C'},
 		{"command", required_argument, NULL, 'c'},
 		{"user", required_argument, NULL, 'u'},
-		{"width_characters", required_argument, NULL, 'n'},
-		{"wide_layout", no_argument, NULL, 'w'},
+		{"width-characters", required_argument, NULL, 'n'},
+		{"wide-layout", no_argument, NULL, 'w'},
 		{NULL, 0, NULL, 0}
 	};
 	const char *short_options = ":b:B:c:C:e:E:f:F:r:R:n:o:O:T:u:w";
@@ -609,12 +609,16 @@ int main(int argc, char *argv[])
 				state.window.entry.tight_layout = false;
 				break;
 			case ':':
-				log_error("Option -%c requires an argument.\n", optopt);
+				log_error(
+					"Option %s requires an argument.\n",
+					argv[optind - 1]);
 				usage();
 				exit(EXIT_FAILURE);
 				break;
 			case '?':
-				log_error("Unknown option -%c.\n", optopt);
+				log_error(
+					"Unknown option %s.\n",
+					argv[optind - 1]);
 				usage();
 				exit(EXIT_FAILURE);
 				break;
@@ -622,7 +626,9 @@ int main(int argc, char *argv[])
 		opt = getopt_long(argc, argv, short_options, long_options, NULL);
 	}
 	if (optind < argc) {
-		log_error("Unexpected non-option argument '%s'.\n", argv[optind]);
+		log_error(
+			"Unexpected non-option argument '%s'.\n",
+			argv[optind]);
 		usage();
 		exit(EXIT_FAILURE);
 	}
