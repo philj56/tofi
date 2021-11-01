@@ -15,6 +15,7 @@ struct gl {
 };
 
 void gl_initialise(struct gl *gl, struct image *texture);
+void gl_destroy(struct gl *gl);
 void gl_clear(struct gl *gl, struct color *color);
 void gl_draw_texture(
 		struct gl *gl,

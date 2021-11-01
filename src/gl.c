@@ -141,6 +141,15 @@ void gl_initialise(struct gl *gl, struct image *texture)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->ebo);
 }
 
+void gl_destroy(struct gl *gl)
+{
+	glDeleteProgram(gl->shader);
+	glDeleteTextures(1, &gl->texture);
+	glDeleteBuffers(1, &gl->ebo);
+	glDeleteVertexArrays(1, &gl->vao);
+	glDeleteBuffers(1, &gl->vbo);
+}
+
 void gl_clear(struct gl *gl, struct color *color)
 {
 	glClearColor(color->r, color->g, color->b, color->a);
@@ -241,6 +250,10 @@ GLuint create_shader_program(const char *vert, const char *frag)
 	glAttachShader(shader, vertex_shader);
 	glAttachShader(shader, fragment_shader);
 	glLinkProgram(shader);
+	glDetachShader(shader, fragment_shader);
+	glDetachShader(shader, vertex_shader);
+	glDeleteShader(fragment_shader);
+	glDeleteShader(vertex_shader);
 	return shader;
 }
 

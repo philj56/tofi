@@ -114,10 +114,19 @@ void entry_init(struct entry *entry, uint32_t scale)
 
 	entry->pangocairo.surface = surface;
 	entry->pangocairo.cr = cr;
+	entry->pangocairo.context = context;
 	entry->pangocairo.layout = layout;
 	entry->image.width = entry->surface.width;
 	entry->image.height = entry->surface.height;
 	entry->image.buffer = cairo_image_surface_get_data(surface);
+}
+
+void entry_destroy(struct entry *entry)
+{
+	g_object_unref(entry->pangocairo.layout);
+	g_object_unref(entry->pangocairo.context);
+	cairo_destroy(entry->pangocairo.cr);
+	cairo_surface_destroy(entry->pangocairo.surface);
 }
 
 void entry_update(struct entry *entry)
@@ -176,9 +185,10 @@ void calculate_font_extents(struct entry *entry, uint32_t scale)
 		PangoFont *font =
 			pango_context_load_font(context, font_description);
 		PangoFontDescription *desc = pango_font_describe(font);
-		log_debug("Using font: %s\n",
-			pango_font_description_to_string(desc));
+		char *string = pango_font_description_to_string(desc);
+		log_debug("Using font: %s\n", string);
 
+		g_free(string);
 		pango_font_description_free(desc);
 		g_object_unref(font);
 	}

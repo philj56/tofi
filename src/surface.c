@@ -19,6 +19,13 @@ void surface_initialise(
 	gl_initialise(&surface->gl, texture);
 }
 
+void surface_destroy(struct surface *surface)
+{
+	egl_make_current(&surface->egl);
+	gl_destroy(&surface->gl);
+	egl_destroy(&surface->egl);
+}
+
 void surface_draw(
 		struct surface *surface,
 		struct color *color,

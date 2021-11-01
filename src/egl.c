@@ -97,11 +97,20 @@ void egl_create_context(struct egl *egl, struct wl_display *wl_display)
 	}
 }
 
-void egl_log_error(const char *msg) {
+void egl_destroy(struct egl *egl)
+{
+	eglMakeCurrent(egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	eglDestroySurface(egl->display, egl->surface);
+	wl_egl_window_destroy(egl->window);
+}
+
+void egl_log_error(const char *msg)
+{
 	log_error("%s: %s\n", msg, egl_error_string());
 }
 
-void egl_make_current(struct egl *egl) {
+void egl_make_current(struct egl *egl)
+{
 	bool result = eglMakeCurrent(
 			egl->display,
 			egl->surface,
@@ -113,11 +122,13 @@ void egl_make_current(struct egl *egl) {
 	}
 }
 
-void egl_swap_buffers(struct egl *egl) {
+void egl_swap_buffers(struct egl *egl)
+{
 	eglSwapBuffers(egl->display, egl->surface);
 }
 
-const char *egl_error_string() {
+const char *egl_error_string()
+{
 	switch(eglGetError()) {
 		case EGL_SUCCESS:
 			return "EGL_SUCCESS";

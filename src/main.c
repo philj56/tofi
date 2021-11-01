@@ -830,10 +830,43 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	log_info("Window closed, performing cleanup.\n");
+	log_debug("Window closed, performing cleanup.\n");
+#ifdef DEBUG
+	/*
+	 * For debug builds, try to cleanup as much as possible, to make using
+	 * e.g. Valgrind easier. There's still a few unavoidable leaks though,
+	 * mostly from OpenGL libs and Pango.
+	 */
+	entry_destroy(&state.window.entry);
+	surface_destroy(&state.window.entry.surface);
+	surface_destroy(&state.window.surface);
+	if (state.window.background_image.buffer != NULL) {
+		free(state.window.background_image.buffer);
+		state.window.background_image.buffer = NULL;
+	}
+	eglTerminate(state.window.surface.egl.display);
+	wl_subsurface_destroy(state.window.entry.wl_subsurface);
+	wl_surface_destroy(state.window.entry.surface.wl_surface);
+	xdg_toplevel_destroy(state.window.xdg_toplevel);
+	xdg_surface_destroy(state.window.xdg_surface);
+	wl_surface_destroy(state.window.surface.wl_surface);
+	wl_keyboard_release(state.wl_keyboard);
+	wl_compositor_destroy(state.wl_compositor);
+	wl_subcompositor_destroy(state.wl_subcompositor);
+	wl_seat_release(state.wl_seat);
+	wl_output_release(state.wl_output);
+	xdg_wm_base_destroy(state.xdg_wm_base);
+	xkb_state_unref(state.xkb_state);
+	xkb_keymap_unref(state.xkb_keymap);
+	xkb_context_unref(state.xkb_context);
+	wl_registry_destroy(state.wl_registry);
+#endif
+	/*
+	 * For release builds, skip straight to display disconnection and quit.
+	 */
 	wl_display_disconnect(state.wl_display);
 
-	log_info("Finished, exiting.\n");
+	log_debug("Finished, exiting.\n");
 	return 0;
 }
 

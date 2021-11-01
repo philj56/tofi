@@ -13,6 +13,7 @@ struct entry {
 	struct wl_subsurface *wl_subsurface;
 	struct image image;
 	struct {
+		PangoContext *context;
 		PangoLayout *layout;
 		cairo_surface_t *surface;
 		cairo_t *cr;
@@ -44,6 +45,7 @@ struct entry {
 };
 
 void entry_init(struct entry *entry, uint32_t scale);
+void entry_destroy(struct entry *entry);
 void entry_update(struct entry *entry);
 void entry_set_scale(struct entry *entry, uint32_t scale);
 

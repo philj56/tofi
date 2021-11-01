@@ -19,6 +19,7 @@ void surface_initialise(
 		struct surface *surface,
 		struct wl_display *wl_display,
 		struct image *texture);
+void surface_destroy(struct surface *surface);
 void surface_draw(
 		struct surface *surface,
 		struct color *color,

@@ -17,6 +17,7 @@ void egl_create_window(
 		uint32_t width,
 		uint32_t height);
 void egl_create_context(struct egl *egl, struct wl_display *wl_display);
+void egl_destroy(struct egl *egl);
 void egl_log_error(const char *msg);
 void egl_make_current(struct egl *egl);
 void egl_swap_buffers(struct egl *egl);
