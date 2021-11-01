@@ -33,7 +33,7 @@ ninja -C build
 
 It's quite entertaining to set the password character to one from the
 [combining diacritical
-marks] (https://en.wikipedia.org/wiki/Combining_Diacritical_Marks) page, e.g.
+marks](https://en.wikipedia.org/wiki/Combining_Diacritical_Marks) page, e.g.
 ```sh
 greetd-mini-wl-greeter -C ̣
 ```
