@@ -117,24 +117,17 @@ void gl_initialise(struct gl *gl, struct image *texture)
 			texture->width,
 			texture->height,
 			0,
-			GL_RGBA,
+			/*
+			 * On little-endian processors, textures from Cairo
+			 * have to have their red and blue channels swapped.
+			 */
+			texture->swizzle ? GL_BGRA : GL_RGBA,
 			GL_UNSIGNED_BYTE,
 			(GLvoid *)texture->buffer);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	/*
-	 * On little-endian processors, textures from Cairo have to have their
-	 * red and blue channels swapped.
-	 */
-	if (texture->swizzle) {
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
-	}
 
 	/* Bind the actual bits we'll be using to render */
 	glBindVertexArray(gl->vao);
@@ -172,7 +165,7 @@ void gl_draw_texture(
 				0,
 				texture->width,
 				texture->height,
-				GL_RGBA,
+				texture->swizzle ? GL_BGRA : GL_RGBA,
 				GL_UNSIGNED_BYTE,
 				(GLvoid *)texture->buffer);
 		glGetError();
