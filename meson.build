@@ -5,7 +5,7 @@ project(
   default_options: [
     'c_std=c2x',
     'optimization=3',
-    'buildtype=release',
+    'buildtype=debugoptimized',
     'warning_level=3',
     'b_lto=true',
     'b_lto_threads=-1',
