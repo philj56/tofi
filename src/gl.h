@@ -2,9 +2,8 @@
 #define GL_H
 
 #include <epoxy/gl.h>
-
-struct color;
-struct image;
+#include "color.h"
+#include "image.h"
 
 struct gl {
 	GLuint vbo;
