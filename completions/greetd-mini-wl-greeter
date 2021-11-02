@@ -13,7 +13,7 @@ _greetd_mini_wl_greeter()
 	COMPREPLY=()
 	cur="${COMP_WORDS[COMP_CWORD]}"
 	prev="${COMP_WORDS[COMP_CWORD-1]}"
-	opts="--background-image --background-color --border-width --border-color --outline-width --outline-color --entry-padding --entry-color --text-color --font-name --font-size --password-character --command --user --width-characters --wide-layout"
+	opts="--background-image --background-color --border-width --border-color --outline-width --outline-color --entry-padding --entry-color --text-color --font-name --font-size --password-character --command --user --width-characters --wide-layout --hide-cursor --help"
 
 
 	case "${prev}" in
@@ -30,7 +30,13 @@ _greetd_mini_wl_greeter()
 			fi
 			return 0
 			;;
-		--?[^w]*)
+		--wide-layout|-w)
+			;& # Fallthrough
+		--hide-cursor|-H)
+			;& # Fallthrough
+		--help|-h)
+			;;
+		*)
 			return 0
 			;;
 	esac

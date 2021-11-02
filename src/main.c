@@ -274,6 +274,102 @@ static const struct wl_keyboard_listener wl_keyboard_listener = {
 	.repeat_info = wl_keyboard_repeat_info,
 };
 
+static void wl_pointer_enter(
+		void *data,
+		struct wl_pointer *pointer,
+		uint32_t serial,
+		struct wl_surface *surface,
+		wl_fixed_t surface_x,
+		wl_fixed_t surface_y)
+{
+	struct client_state *state = data;
+	/* Hide the cursor by setting its surface to NULL. */
+	wl_pointer_set_cursor(state->wl_pointer, serial, NULL, 0, 0);
+}
+
+static void wl_pointer_leave(
+		void *data,
+		struct wl_pointer *pointer,
+		uint32_t serial,
+		struct wl_surface *surface)
+{
+	/* Deliberately left blank */
+}
+
+static void wl_pointer_motion(
+		void *data,
+		struct wl_pointer *pointer,
+		uint32_t time,
+		wl_fixed_t surface_x,
+		wl_fixed_t surface_y)
+{
+	/* Deliberately left blank */
+}
+
+static void wl_pointer_button(
+		void *data,
+		struct wl_pointer *pointer,
+		uint32_t serial,
+		uint32_t time,
+		uint32_t button,
+		enum wl_pointer_button_state state)
+{
+	/* Deliberately left blank */
+}
+
+static void wl_pointer_axis(
+		void *data,
+		struct wl_pointer *pointer,
+		uint32_t time,
+		enum wl_pointer_axis axis,
+		wl_fixed_t value)
+{
+	/* Deliberately left blank */
+}
+
+static void wl_pointer_frame(void *data, struct wl_pointer *pointer)
+{
+	/* Deliberately left blank */
+}
+
+static void wl_pointer_axis_source(
+		void *data,
+		struct wl_pointer *pointer,
+		enum wl_pointer_axis_source axis_source)
+{
+	/* Deliberately left blank */
+}
+
+static void wl_pointer_axis_stop(
+		void *data,
+		struct wl_pointer *pointer,
+		uint32_t time,
+		enum wl_pointer_axis axis)
+{
+	/* Deliberately left blank */
+}
+
+static void wl_pointer_axis_discrete(
+		void *data,
+		struct wl_pointer *pointer,
+		enum wl_pointer_axis axis,
+		int32_t discrete)
+{
+	/* Deliberately left blank */
+}
+
+static const struct wl_pointer_listener wl_pointer_listener = {
+	.enter = wl_pointer_enter,
+	.leave = wl_pointer_leave,
+	.motion = wl_pointer_motion,
+	.button = wl_pointer_button,
+	.axis = wl_pointer_axis,
+	.frame = wl_pointer_frame,
+	.axis_source = wl_pointer_axis_source,
+	.axis_stop = wl_pointer_axis_stop,
+	.axis_discrete = wl_pointer_axis_discrete
+};
+
 static void wl_seat_capabilities(
 		void *data,
 		struct wl_seat *wl_seat,
@@ -282,6 +378,7 @@ static void wl_seat_capabilities(
 	struct client_state *state = data;
 
 	bool have_keyboard = capabilities & WL_SEAT_CAPABILITY_KEYBOARD;
+	bool have_pointer = capabilities & WL_SEAT_CAPABILITY_POINTER;
 
 	if (have_keyboard && state->wl_keyboard == NULL) {
 		state->wl_keyboard = wl_seat_get_keyboard(state->wl_seat);
@@ -294,6 +391,25 @@ static void wl_seat_capabilities(
 		wl_keyboard_release(state->wl_keyboard);
 		state->wl_keyboard = NULL;
 		log_debug("Released keyboard.\n");
+	}
+
+	if (have_pointer && state->wl_pointer == NULL) {
+		/*
+		 * We only need to listen to the cursor if we're going to hide
+		 * it.
+		 */
+		if (state->hide_cursor) {
+			state->wl_pointer = wl_seat_get_pointer(state->wl_seat);
+			wl_pointer_add_listener(
+					state->wl_pointer,
+					&wl_pointer_listener,
+					state);
+			log_debug("Got pointer from seat.\n");
+		}
+	} else if (!have_pointer && state->wl_pointer != NULL) {
+		wl_pointer_release(state->wl_pointer);
+		state->wl_pointer = NULL;
+		log_debug("Released pointer.\n");
 	}
 }
 
@@ -443,8 +559,7 @@ static void surface_enter(
 		struct wl_surface *wl_surface,
 		struct wl_output *wl_output)
 {
-	/* TODO */
-	fprintf(stderr, "TODO: enter\n");
+	log_debug("TODO: surface entered output.\n");
 }
 
 static void surface_leave(
@@ -452,8 +567,7 @@ static void surface_leave(
 		struct wl_surface *wl_surface,
 		struct wl_output *wl_output)
 {
-	/* TODO */
-	fprintf(stderr, "TODO: leave\n");
+	log_debug("TODO: surface left output.\n");
 }
 
 static const struct wl_surface_listener wl_surface_listener = {
@@ -480,6 +594,8 @@ static void usage()
 "  -C, --password-character=CHAR  Character to use to hide the password.\n"
 "  -n, --width-characters=VALUE   Width of the password entry box in characters.\n"
 "  -w, --wide-layout              Make the password entry box full height.\n"
+"  -H, --hide-cursor              Hide the cursor.\n"
+"  -h, --help                     Print this message and exit.\n"
 	);
 }
 
@@ -537,9 +653,11 @@ int main(int argc, char *argv[])
 		{"user", required_argument, NULL, 'u'},
 		{"width-characters", required_argument, NULL, 'n'},
 		{"wide-layout", no_argument, NULL, 'w'},
+		{"hide-cursor", no_argument, NULL, 'H'},
+		{"help", no_argument, NULL, 'h'},
 		{NULL, 0, NULL, 0}
 	};
-	const char *short_options = ":b:B:c:C:e:E:f:F:r:R:n:o:O:T:u:w";
+	const char *short_options = ":b:B:c:C:e:E:f:F:hHr:R:n:o:O:T:u:w";
 
 	int opt = getopt_long(argc, argv, short_options, long_options, NULL);
 	while (opt != -1) {
@@ -607,6 +725,13 @@ int main(int argc, char *argv[])
 				break;
 			case 'w':
 				state.window.entry.tight_layout = false;
+				break;
+			case 'H':
+				state.hide_cursor = true;
+				break;
+			case 'h':
+				usage();
+				exit(EXIT_SUCCESS);
 				break;
 			case ':':
 				log_error(
@@ -851,6 +976,7 @@ int main(int argc, char *argv[])
 	xdg_surface_destroy(state.window.xdg_surface);
 	wl_surface_destroy(state.window.surface.wl_surface);
 	wl_keyboard_release(state.wl_keyboard);
+	wl_pointer_release(state.wl_pointer);
 	wl_compositor_destroy(state.wl_compositor);
 	wl_subcompositor_destroy(state.wl_subcompositor);
 	wl_seat_release(state.wl_seat);
@@ -867,7 +993,7 @@ int main(int argc, char *argv[])
 	wl_display_disconnect(state.wl_display);
 
 	log_debug("Finished, exiting.\n");
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void handle_response(

@@ -65,6 +65,12 @@ All options which take a color expect a 3- or 6-digit hex code, e.g. F9A733.
 	the specified password character. Use this option if you'd rather that it got
 	laid out like normal text, i.e. the box remains one full character tall.
 
+*-H, --hide-cursor*
+	Hide the cursor.
+
+*-h, --help*
+	Print help and exit.
+
 # EXAMPLES
 
 When using sway as the compositor for greetd-mini-greeter, something like the

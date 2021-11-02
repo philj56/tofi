@@ -28,6 +28,7 @@ struct client_state {
 
 	/* Objects */
 	struct wl_keyboard *wl_keyboard;
+	struct wl_pointer *wl_pointer;
 
 	/* State */
 	bool closed;
@@ -53,6 +54,9 @@ struct client_state {
 	const char *username;
 	const char *command;
 	bool submit;
+
+	/* Options */
+	bool hide_cursor;
 };
 
 #endif /* CLIENT_H */
