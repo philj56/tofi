@@ -591,6 +591,7 @@ static void usage()
 "  -E, --entry-color=COLOR        Color of the password entry box.\n"
 "  -f, --font-name=NAME           Font to use for the password entry.\n"
 "  -F, --font-size=VALUE          Point size of the password text.\n"
+"  -T, --text-color=COLOR         Color of the password text.\n"
 "  -C, --password-character=CHAR  Character to use to hide the password.\n"
 "  -n, --width-characters=VALUE   Width of the password entry box in characters.\n"
 "  -w, --wide-layout              Make the password entry box full height.\n"
