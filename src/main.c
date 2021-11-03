@@ -975,8 +975,12 @@ int main(int argc, char *argv[])
 	xdg_toplevel_destroy(state.window.xdg_toplevel);
 	xdg_surface_destroy(state.window.xdg_surface);
 	wl_surface_destroy(state.window.surface.wl_surface);
-	wl_keyboard_release(state.wl_keyboard);
-	wl_pointer_release(state.wl_pointer);
+	if (state.wl_keyboard != NULL) {
+		wl_keyboard_release(state.wl_keyboard);
+	}
+	if (state.wl_pointer != NULL) {
+		wl_pointer_release(state.wl_pointer);
+	}
 	wl_compositor_destroy(state.wl_compositor);
 	wl_subcompositor_destroy(state.wl_subcompositor);
 	wl_seat_release(state.wl_seat);
