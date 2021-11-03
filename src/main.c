@@ -701,6 +701,7 @@ int main(int argc, char *argv[])
 				break;
 			case 'f':
 				state.window.entry.font_name = optarg;
+				state.window.entry.use_pango = true;
 				break;
 			case 'F':
 				state.window.entry.font_size =
@@ -712,6 +713,7 @@ int main(int argc, char *argv[])
 					optarg,
 					4,
 					NULL);
+				state.window.entry.use_pango = true;
 				break;
 			case 'c':
 				state.command = optarg;
@@ -725,6 +727,7 @@ int main(int argc, char *argv[])
 				break;
 			case 'w':
 				state.window.entry.tight_layout = false;
+				state.window.entry.use_pango = true;
 				break;
 			case 'H':
 				state.hide_cursor = true;

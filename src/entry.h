@@ -15,9 +15,11 @@ struct entry {
 	struct {
 		PangoContext *context;
 		PangoLayout *layout;
+	} pango;
+	struct {
 		cairo_surface_t *surface;
 		cairo_t *cr;
-	} pangocairo;
+	} cairo;
 	PangoRectangle text_bounds;
 
 	wchar_t password[MAX_PASSWORD_LENGTH];
@@ -28,6 +30,8 @@ struct entry {
 	bool password_visible;
 
 	/* Options */
+	bool use_pango;
+	uint32_t dot_radius;
 	uint32_t font_size;
 	const char *font_name;
 	uint32_t padding;

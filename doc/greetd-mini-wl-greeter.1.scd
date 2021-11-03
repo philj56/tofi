@@ -6,7 +6,7 @@ greetd-mini-wl-greeter - An extremely simple raw Wayland greeter for greetd
 
 # SYNOPSIS
 
-*greetd-mini-wl-greeter* -u user -c command [options]
+*greetd-mini-wl-greeter* -u user -c command [-bBCeEfFhHnoOrRw]
 
 # DESCRIPTION
 
@@ -72,6 +72,11 @@ All options which take a color expect a 3- or 6-digit hex code, e.g. F9A733.
 	Print help and exit.
 
 # EXAMPLES
+
+greetd-mini-wl-greeter aims to be as fast and simple as possible by default. If
+none of the *-f*, *-C* or *-w* options are given, a simple circle will be used
+for the password character, avoiding the need to use Pango, thus lowering
+startup time. This is only likely noticeable on very slow machines however.
 
 When using sway as the compositor for greetd-mini-greeter, something like the
 following sway config lines produce a nice look:
