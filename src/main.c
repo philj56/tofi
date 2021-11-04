@@ -13,6 +13,7 @@
 #include <wctype.h>
 #include <wchar.h>
 #include <xkbcommon/xkbcommon.h>
+#include <xdg-shell.h>
 #include <locale.h>
 #include "client.h"
 #include "egl.h"
@@ -22,7 +23,6 @@
 #include "greetd.h"
 #include "log.h"
 #include "nelem.h"
-#include "xdg-shell-client-protocol.h"
 
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))

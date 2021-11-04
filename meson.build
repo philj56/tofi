@@ -71,23 +71,53 @@ sources = files(
   'src/ipc.c',
   'src/log.c',
   'src/surface.c',
-  'src/xdg-shell-protocol.c',
 )
 
 cc = meson.get_compiler('c')
 epoxy = dependency('epoxy')
-json = dependency('json-c')
 glib = dependency('glib-2.0')
+json = dependency('json-c')
 pangocairo = dependency('pangocairo')
 png = dependency('libpng')
 wayland_client = dependency('wayland-client')
 wayland_egl = dependency('wayland-egl')
+wayland_protocols = dependency('wayland-protocols', native: true)
+wayland_scanner_dep = dependency('wayland-scanner', native: true)
 xkbcommon = dependency('xkbcommon')
+
+
+# Generate the necessary Wayland headers / sources with wayland-scanner
+wayland_scanner = find_program(
+  wayland_scanner_dep.get_pkgconfig_variable('wayland_scanner'),
+  native: true
+)
+
+wayland_protocols_dir = wayland_protocols.get_variable(pkgconfig: 'pkgdatadir')
+
+wl_proto_headers = []
+wl_proto_src = []
+wl_proto_xml = [
+  wayland_protocols_dir + '/stable/xdg-shell/xdg-shell.xml',
+]
+
+foreach proto : wl_proto_xml
+  wl_proto_headers += custom_target(
+    proto.underscorify() + '_client_header',
+    output: '@BASENAME@.h',
+    input: proto,
+    command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'])
+
+  wl_proto_src += custom_target(
+    proto.underscorify() + '_private_code',
+    output: '@BASENAME@.c',
+    input: proto,
+    command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'])
+endforeach
 
 executable(
   'greetd-mini-wl-greeter',
-  sources,
-  dependencies: [epoxy, json, glib, pangocairo, png, wayland_client, wayland_egl, xkbcommon],
+  sources, wl_proto_src, wl_proto_headers,
+  dependencies: [epoxy, json, glib, pangocairo, png, wayland_egl, xkbcommon],
   install: true
 )
 

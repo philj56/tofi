@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <xdg-shell.h>
 #include "color.h"
 #include "entry.h"
 #include "image.h"
