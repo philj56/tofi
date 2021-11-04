@@ -6,6 +6,11 @@ An extremely simple raw Wayland greeter for
 
 ![Screenshot](screenshot.png)
 
+The aim is to do just what I want it to as quick as possible. On a 2015 Macbook
+Pro, with no background image or font options, startup takes ~35ms. On a
+Raspberry Pi Zero 2, it takes ~500ms, mostly waiting for EGL / OpenGL to
+initialise.
+
 ## Usage
 
 Follow the same steps as for e.g. gtkgreet in the [greetd
