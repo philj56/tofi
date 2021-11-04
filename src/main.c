@@ -615,6 +615,8 @@ int main(int argc, char *argv[])
 		.window = {
 			.background_color = {0.89, 0.8, 0.824, 1.0},
 			.scale = 1,
+			.width = 640,
+			.height = 480,
 			.surface = { .width = 640, .height = 480 },
 			.entry = {
 				.border = {

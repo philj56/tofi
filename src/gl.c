@@ -168,12 +168,11 @@ void gl_draw_texture(
 				texture->swizzle ? GL_BGRA : GL_RGBA,
 				GL_UNSIGNED_BYTE,
 				(GLvoid *)texture->buffer);
-		glGetError();
 		texture->redraw = false;
 	}
 
 	glViewport(x, y, width, height);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, NULL);
 }
 
 void load_shader(GLuint shader, const char *filename)
