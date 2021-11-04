@@ -31,7 +31,7 @@ void gl_initialise(struct gl *gl, struct image *texture)
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	glDebugMessageCallback(MessageCallback, 0);
 #endif
-	if (texture == NULL) {
+	if (texture == NULL || texture->buffer == NULL) {
 		return;
 	}
 
@@ -92,7 +92,7 @@ void gl_initialise(struct gl *gl, struct image *texture)
 	 * Create the element buffer object that will actually be drawn via
 	 * glDrawElements().
 	 */
-	GLuint elements[] = {
+	GLubyte elements[] = {
 		0, 1, 2,
 		2, 3, 0
 	};
@@ -173,7 +173,7 @@ void gl_draw_texture(
 	}
 
 	glViewport(x, y, width, height);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 }
 
 void load_shader(GLuint shader, const char *filename)
