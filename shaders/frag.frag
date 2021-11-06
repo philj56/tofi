@@ -11,7 +11,7 @@
  * I don't think you can really copyright this shader though :)
  */
 
-precision mediump float;
+precision lowp float;
 
 varying vec2 Texcoord;
 

@@ -1,5 +1,5 @@
 project(
-  'greetd-mini-wl-greeter',
+  'tofi',
   'c',
   license: 'MIT',
   default_options: [
@@ -22,7 +22,7 @@ endif
 data_location = join_paths(
   get_option('prefix'),
   get_option('datadir'),
-  'greetd-mini-wl-greeter'
+  'tofi'
 )
 
 shader_location = join_paths(
@@ -44,7 +44,7 @@ install_subdir(
 )
 
 install_data(
-  'completions/greetd-mini-wl-greeter',
+  'completions/tofi',
   install_dir: completion_location
 )
 
@@ -63,6 +63,7 @@ add_project_arguments(
 sources = files(
   'src/main.c',
   'src/color.c',
+  'src/compgen.c',
   'src/egl.c',
   'src/entry.c',
   'src/gl.c',
@@ -70,6 +71,7 @@ sources = files(
   'src/image.c',
   'src/ipc.c',
   'src/log.c',
+  'src/string_vec.c',
   'src/surface.c',
 )
 
@@ -115,7 +117,7 @@ foreach proto : wl_proto_xml
 endforeach
 
 executable(
-  'greetd-mini-wl-greeter',
+  'tofi',
   sources, wl_proto_src, wl_proto_headers,
   dependencies: [epoxy, json, glib, pangocairo, png, wayland_egl, xkbcommon],
   install: true
@@ -126,8 +128,8 @@ if scdoc.found()
   sed = find_program('sed')
   sh = find_program('sh')
   mandir = get_option('mandir')
-  manpage = 'doc/greetd-mini-wl-greeter.1.scd'
-  output = 'greetd-mini-wl-greeter.1'
+  manpage = 'doc/tofi.1.scd'
+  output = 'tofi.1'
   custom_target(
     output,
     input: manpage,

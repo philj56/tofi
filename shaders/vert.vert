@@ -10,6 +10,8 @@
  *
  */
 
+precision lowp float;
+
 attribute vec2 position;
 attribute vec2 texcoord;
 

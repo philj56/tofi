@@ -16,6 +16,7 @@
 #include <xdg-shell.h>
 #include <locale.h>
 #include "client.h"
+#include "compgen.h"
 #include "egl.h"
 #include "entry.h"
 #include "image.h"
@@ -23,6 +24,7 @@
 #include "greetd.h"
 #include "log.h"
 #include "nelem.h"
+#include "string_vec.h"
 
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
