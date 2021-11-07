@@ -3,25 +3,25 @@
 #include <epoxy/gl.h>
 #include <errno.h>
 #include <getopt.h>
+#include <locale.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <threads.h>
 #include <unistd.h>
 #include <wayland-client.h>
-#include <wctype.h>
 #include <wchar.h>
-#include <xkbcommon/xkbcommon.h>
+#include <wctype.h>
 #include <xdg-shell.h>
-#include <locale.h>
+#include <xkbcommon/xkbcommon.h>
 #include "client.h"
 #include "compgen.h"
 #include "egl.h"
 #include "entry.h"
 #include "image.h"
 #include "gl.h"
-#include "greetd.h"
 #include "log.h"
 #include "nelem.h"
 #include "string_vec.h"
@@ -29,16 +29,6 @@
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-
-static void handle_response(
-		struct client_state *state,
-		struct json_object *response,
-		enum greetd_request_type request);
-static void create_session(struct client_state *state);
-static void start_session(struct client_state *state);
-static void post_auth_message_response(struct client_state *state);
-static void cancel_session(struct client_state *state);
-static void restart_session(struct client_state *state);
 
 static void resize(struct client_state *state)
 {
@@ -66,7 +56,7 @@ static void resize(struct client_state *state)
 	state->window.surface.redraw = true;
 
 	/*
-	 * Center the password entry.
+	 * Center the entry.
 	 * Wayland wants "surface-local" width / height, so we have to divide
 	 * the entry's pixel size by the scale factor.
 	 */
@@ -185,57 +175,66 @@ static void wl_keyboard_key(
 		uint32_t state)
 {
 	struct client_state *client_state = data;
-	char buf[128];
 	uint32_t keycode = key + 8;
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(
 			client_state->xkb_state,
 			keycode);
-	xkb_keysym_get_name(sym, buf, sizeof(buf));
-	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-		struct entry *entry = &client_state->window.entry;
-		int len = xkb_state_key_get_utf8(
-				client_state->xkb_state,
-				keycode,
-				buf,
-				sizeof(buf));
-		wchar_t ch;
-		mbtowc(&ch, buf, sizeof(buf));
-		if (len > 0 && iswprint(ch)) {
-			if (entry->password_length < N_ELEM(entry->password) - 1) {
-				entry->password[entry->password_length] = ch;
-				entry->password_length++;
-				entry->password[entry->password_length] = L'\0';
-			}
-		} else if (entry->password_length > 0 && sym == XKB_KEY_BackSpace) {
-			entry->password[entry->password_length - 1] = '\0';
-			entry->password_length--;
-		} else if (sym == XKB_KEY_Escape
-				|| (sym == XKB_KEY_c
-					&& xkb_state_mod_name_is_active(
-						client_state->xkb_state,
-						XKB_MOD_NAME_CTRL,
-						XKB_STATE_MODS_EFFECTIVE)
-				   )
-			  )
-		{
-			entry->password[0] = '\0';
-			entry->password_length = 0;
-		} else if (entry->password_length > 0
-				&& (sym == XKB_KEY_Return
-					|| sym == XKB_KEY_KP_Enter)) {
-			const wchar_t *src = entry->password;
-			wcsrtombs(
-					entry->password_mb,
-					&src,
-					N_ELEM(entry->password_mb),
-					NULL);
-			entry->password[0] = '\0';
-			entry->password_length = 0;
-			client_state->submit = true;
-		}
-		entry_update(&client_state->window.entry);
-		client_state->window.entry.surface.redraw = true;
+	if (state != WL_KEYBOARD_KEY_STATE_PRESSED) {
+		return;
 	}
+
+	struct entry *entry = &client_state->window.entry;
+	char buf[5]; /* 4 UTF-8 bytes plus null terminator. */
+	int len = xkb_state_key_get_utf8(
+			client_state->xkb_state,
+			keycode,
+			buf,
+			sizeof(buf));
+	wchar_t ch;
+	mbtowc(&ch, buf, sizeof(buf));
+	if (len > 0 && iswprint(ch)) {
+		if (entry->input_length < N_ELEM(entry->input) - 1) {
+			entry->input[entry->input_length] = ch;
+			entry->input_length++;
+			entry->input[entry->input_length] = L'\0';
+			memcpy(&entry->input_mb[entry->input_mb_length],
+					buf,
+					N_ELEM(buf));
+			entry->input_mb_length += len;
+			struct string_vec tmp = entry->results;
+			entry->results = string_vec_filter(&entry->results, entry->input_mb);
+			string_vec_destroy(&tmp);
+		}
+	} else if (entry->input_length > 0 && sym == XKB_KEY_BackSpace) {
+		entry->input_length--;
+		entry->input[entry->input_length] = L'\0';
+		const wchar_t *src = entry->input;
+		size_t siz = wcsrtombs(
+				entry->input_mb,
+				&src,
+				N_ELEM(entry->input_mb),
+				NULL);
+		entry->input_mb_length = siz;
+		string_vec_destroy(&entry->results);
+		entry->results = string_vec_filter(&entry->commands, entry->input_mb);
+	} else if (sym == XKB_KEY_Escape
+			|| (sym == XKB_KEY_c
+				&& xkb_state_mod_name_is_active(
+					client_state->xkb_state,
+					XKB_MOD_NAME_CTRL,
+					XKB_STATE_MODS_EFFECTIVE)
+			   )
+		  )
+	{
+		client_state->closed = true;
+	} else if (entry->input_length > 0
+			&& (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter)) {
+		client_state->submit = true;
+		return;
+	}
+	entry_update(&client_state->window.entry);
+	client_state->window.entry.surface.redraw = true;
+	
 }
 
 static void wl_keyboard_modifiers(
@@ -577,10 +576,16 @@ static const struct wl_surface_listener wl_surface_listener = {
 	.leave = surface_leave
 };
 
+static int initialise_entry(void *data)
+{
+	entry_preload();
+	return 0;
+}
+
 static void usage()
 {
 	fprintf(stderr,
-"Usage: greetd-mini-wl-greeter -u username -c command [options]\n"
+"Usage: tofi [options]\n"
 "  -u, --user=NAME                The user to login as.\n"
 "  -c, --command=COMMAND          The command to run on login.\n"
 "  -b, --background-image=PATH    An image to use as the background.\n"
@@ -589,14 +594,12 @@ static void usage()
 "  -O, --outline-color=COLOR      Color of the border outlines.\n"
 "  -r, --border-width=VALUE       Width of the border in pixels.\n"
 "  -R, --border-color=COLOR       Color of the border.\n"
-"  -e, --entry-padding=VALUE      Padding around the password text in pixels.\n"
-"  -E, --entry-color=COLOR        Color of the password entry box.\n"
-"  -f, --font-name=NAME           Font to use for the password entry.\n"
-"  -F, --font-size=VALUE          Point size of the password text.\n"
-"  -T, --text-color=COLOR         Color of the password text.\n"
-"  -C, --password-character=CHAR  Character to use to hide the password.\n"
-"  -n, --width-characters=VALUE   Width of the password entry box in characters.\n"
-"  -w, --wide-layout              Make the password entry box full height.\n"
+"  -e, --entry-padding=VALUE      Padding around the entry box in pixels.\n"
+"  -E, --entry-color=COLOR        Color of the entry box.\n"
+"  -f, --font-name=NAME           Font to use.\n"
+"  -F, --font-size=VALUE          Point size of text.\n"
+"  -T, --text-color=COLOR         Color of text.\n"
+"  -n, --width-characters=VALUE   Width of the entry box in characters.\n"
 "  -H, --hide-cursor              Hide the cursor.\n"
 "  -h, --help                     Print this message and exit.\n"
 	);
@@ -604,6 +607,9 @@ static void usage()
 
 int main(int argc, char *argv[])
 {
+	thrd_t entry_thread;
+	thrd_create(&entry_thread, initialise_entry, NULL);
+
 	/*
 	 * Set the locale to the user's default, so we can deal with non-ASCII
 	 * characters.
@@ -630,14 +636,15 @@ int main(int argc, char *argv[])
 				.font_name = "Sans Bold",
 				.font_size = 24,
 				.padding = 8,
-				.tight_layout = true,
-				.password_character = '.',
 				.num_characters = 12,
 				.background_color = {0.106, 0.114, 0.118, 1.0},
 				.foreground_color = {1.0, 1.0, 1.0, 1.0}
 			}
 		}
 	};
+
+	state.window.entry.commands = compgen();
+	state.window.entry.results = string_vec_copy(&state.window.entry.commands);
 
 
 	/* Option parsing with getopt. */
@@ -653,16 +660,14 @@ int main(int argc, char *argv[])
 		{"text-color", required_argument, NULL, 'T'},
 		{"font-name", required_argument, NULL, 'f'},
 		{"font-size", required_argument, NULL, 'F'},
-		{"password-character", required_argument, NULL, 'C'},
 		{"command", required_argument, NULL, 'c'},
 		{"user", required_argument, NULL, 'u'},
 		{"width-characters", required_argument, NULL, 'n'},
-		{"wide-layout", no_argument, NULL, 'w'},
 		{"hide-cursor", no_argument, NULL, 'H'},
 		{"help", no_argument, NULL, 'h'},
 		{NULL, 0, NULL, 0}
 	};
-	const char *short_options = ":b:B:c:C:e:E:f:F:hHr:R:n:o:O:T:u:w";
+	const char *short_options = ":b:B:c:e:E:f:F:hHr:R:n:o:O:T:u:";
 
 	int opt = getopt_long(argc, argv, short_options, long_options, NULL);
 	while (opt != -1) {
@@ -706,19 +711,10 @@ int main(int argc, char *argv[])
 				break;
 			case 'f':
 				state.window.entry.font_name = optarg;
-				state.window.entry.use_pango = true;
 				break;
 			case 'F':
 				state.window.entry.font_size =
 					strtol(optarg, NULL, 0);
-				break;
-			case 'C':
-				mbrtowc(
-					&state.window.entry.password_character,
-					optarg,
-					4,
-					NULL);
-				state.window.entry.use_pango = true;
 				break;
 			case 'c':
 				state.command = optarg;
@@ -729,10 +725,6 @@ int main(int argc, char *argv[])
 			case 'n':
 				state.window.entry.num_characters =
 					strtol(optarg, NULL, 0);
-				break;
-			case 'w':
-				state.window.entry.tight_layout = false;
-				state.window.entry.use_pango = true;
 				break;
 			case 'H':
 				state.hide_cursor = true;
@@ -809,7 +801,7 @@ int main(int argc, char *argv[])
 
 	/*
 	 * Next, we create the Wayland surfaces that we need - one for
-	 * the whole window, and another for the password entry box.
+	 * the whole window, and another for the entry box.
 	 */
 	/*
 	 * The main window surface takes on the xdg_surface and xdg_toplevel
@@ -847,11 +839,11 @@ int main(int argc, char *argv[])
 	wl_surface_commit(state.window.surface.wl_surface);
 
 	/*
-	 * The password entry surface takes on a subsurface role and is set to
-	 * be desynchronised, so that we can update it independently from the
-	 * main window.
+	 * The entry surface takes on a subsurface role and is set to be
+	 * desynchronised, so that we can update it independently from the main
+	 * window.
 	 */
-	log_debug("Creating password entry surface.\n");
+	log_debug("Creating entry surface.\n");
 	state.window.entry.surface.wl_surface =
 		wl_compositor_create_surface(state.wl_compositor);
 	wl_surface_set_buffer_scale(
@@ -867,22 +859,19 @@ int main(int argc, char *argv[])
 	wl_surface_commit(state.window.entry.surface.wl_surface);
 
 	/*
-	 * Initialise the Pango & Cairo structures for rendering the password
-	 * entry. Cairo needs to know the size of the surface it's creating,
-	 * and there's no way to resize it aside from tearing everything down
-	 * and starting again, so we make sure to do this after we've
-	 * determined our output's scale factor. This stops us being able to
-	 * change the scale factor after startup, but this is just a greeter,
-	 * which shouldn't be moving between outputs while running.
+	 * Initialise the Pango & Cairo structures for rendering the entry.
+	 * Cairo needs to know the size of the surface it's creating, and
+	 * there's no way to resize it aside from tearing everything down and
+	 * starting again, so we make sure to do this after we've determined
+	 * our output's scale factor. This stops us being able to change the
+	 * scale factor after startup, but this is just a launcher, which
+	 * shouldn't be moving between outputs while running.
 	 */
 	log_debug("Initialising Pango / Cairo.\n");
 	entry_init(&state.window.entry, state.window.scale);
 	log_debug("Pango / Cairo initialised.\n");
 
-	/*
-	 * Tell the compositor not to make our window smaller than the password
-	 * entry.
-	 */
+	/* Tell the compositor not to make our window smaller than the entry. */
 	xdg_toplevel_set_min_size(
 			state.window.xdg_toplevel,
 			state.window.entry.surface.width / state.window.scale,
@@ -916,12 +905,17 @@ int main(int argc, char *argv[])
 			&state.window.entry.surface,
 			state.wl_display,
 			&state.window.entry.image);
+
+	log_debug("Rejoining thread\n");
+	thrd_join(entry_thread, NULL);
+	log_debug("Initial draw\n");
+	entry_update(&state.window.entry);
 	surface_draw(
 			&state.window.entry.surface,
 			&state.window.background_color,
 			&state.window.entry.image);
 
-	/* Call resize() just to center the password entry properly. */
+	/* Call resize() just to center the entry properly. */
 	resize(&state);
 
 	/*
@@ -931,9 +925,6 @@ int main(int argc, char *argv[])
 	state.window.resize = false;
 	state.window.surface.redraw = false;
 	state.window.entry.surface.redraw = false;
-
-	/* Create the greetd session. */
-	create_session(&state);
 
 	while (wl_display_dispatch(state.wl_display) != -1) {
 		if (state.closed) {
@@ -958,8 +949,10 @@ int main(int argc, char *argv[])
 			state.window.entry.surface.redraw = false;
 		}
 		if (state.submit) {
-			post_auth_message_response(&state);
-			state.submit = false;
+			if (state.window.entry.results.count > 0) {
+				printf("%s\n", state.window.entry.results.buf[0]);
+			}
+			break;
 		}
 	}
 
@@ -1006,114 +999,4 @@ int main(int argc, char *argv[])
 
 	log_debug("Finished, exiting.\n");
 	return EXIT_SUCCESS;
-}
-
-void handle_response(
-		struct client_state *state,
-		struct json_object *response,
-		enum greetd_request_type request)
-{
-	if (response == NULL) {
-		return;
-	}
-	enum greetd_response_type type = greetd_parse_response_type(response);
-
-	switch (type) {
-		case GREETD_RESPONSE_SUCCESS:
-			switch (request) {
-				case GREETD_REQUEST_CREATE_SESSION:
-				case GREETD_REQUEST_POST_AUTH_MESSAGE_RESPONSE:
-					start_session(state);
-					break;
-				case GREETD_REQUEST_START_SESSION:
-					state->closed = true;
-					break;
-				case GREETD_REQUEST_CANCEL_SESSION:
-					break;
-			}
-			break;
-		case GREETD_RESPONSE_ERROR:
-			switch (request) {
-				case GREETD_REQUEST_POST_AUTH_MESSAGE_RESPONSE:
-				case GREETD_REQUEST_START_SESSION:
-					log_error(
-						"Failed to create greetd session: %s\n",
-						json_object_get_string(
-							json_object_object_get(
-								response,
-								"description")
-							)
-						);
-					restart_session(state);
-					break;
-				case GREETD_REQUEST_CREATE_SESSION:
-					log_error("Failed to connect to greetd session.\n");
-					break;
-				case GREETD_REQUEST_CANCEL_SESSION:
-					break;
-			}
-			break;
-		case GREETD_RESPONSE_AUTH_MESSAGE:
-			switch (greetd_parse_auth_message_type(response)) {
-				case GREETD_AUTH_MESSAGE_VISIBLE:
-					state->window.entry.password_visible = true;
-					break;
-				case GREETD_AUTH_MESSAGE_SECRET:
-					state->window.entry.password_visible = false;
-					break;
-				case GREETD_AUTH_MESSAGE_INFO:
-				case GREETD_AUTH_MESSAGE_ERROR:
-					/* TODO */
-					restart_session(state);
-					break;
-				case GREETD_AUTH_MESSAGE_INVALID:
-					break;
-			}
-			break;
-		case GREETD_RESPONSE_INVALID:
-			break;
-	}
-	json_object_put(response);
-}
-
-void create_session(struct client_state *state)
-{
-	log_debug("Creating greetd session for user '%s'.\n", state->username);
-	handle_response(
-			state,
-			greetd_create_session(state->username),
-			GREETD_REQUEST_CREATE_SESSION);
-}
-
-void start_session(struct client_state *state)
-{
-	log_debug("Starting session with command '%s'.\n", state->command);
-	handle_response(
-			state,
-			greetd_start_session(state->command),
-			GREETD_REQUEST_START_SESSION);
-}
-
-void post_auth_message_response(struct client_state *state)
-{
-	log_debug("Posting auth message response.\n");
-	handle_response(
-			state,
-			greetd_post_auth_message_response(state->window.entry.password_mb),
-			GREETD_REQUEST_POST_AUTH_MESSAGE_RESPONSE);
-}
-
-void cancel_session(struct client_state *state)
-{
-	log_debug("Cancelling session.\n");
-	handle_response(
-			state,
-			greetd_cancel_session(),
-			GREETD_REQUEST_CANCEL_SESSION);
-}
-
-void restart_session(struct client_state *state)
-{
-	cancel_session(state);
-	create_session(state);
 }

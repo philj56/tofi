@@ -59,8 +59,8 @@ void log_info(const char *const fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	printf("[INFO]: ");
-	vprintf(fmt, args);
+	fprintf(stderr, "[INFO]: ");
+	vfprintf(stderr, fmt, args);
 	va_end(args);
 }
 

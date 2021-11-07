@@ -1,15 +1,16 @@
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
 #include "string_vec.h"
 
-static int cmpstringp(const void *a, const void *b)
+static int cmpstringp(const void *restrict a, const void *restrict b)
 {
 	/*
 	 * We receive pointers to the array elements (which are pointers to
 	 * char), so convert and dereference them for comparison.
 	 */
-	const char *str1 = *(const char **)a;
-	const char *str2 = *(const char **)b;
+	const char *restrict str1 = *(const char **)a;
+	const char *restrict str2 = *(const char **)b;
 
 	/*
 	 * Ensure any NULL strings are shoved to the end.
@@ -20,10 +21,10 @@ static int cmpstringp(const void *a, const void *b)
 	if (str2 == NULL) {
 		return -1;
 	}
-	return strcmp(str1, str2);
+	return strcasecmp(str1, str2);
 }
 
-struct string_vec string_vec_create()
+struct string_vec string_vec_create(void)
 {
 	struct string_vec vec = {
 		.count = 0,
@@ -39,6 +40,21 @@ void string_vec_destroy(struct string_vec *restrict vec)
 		free(vec->buf[i]);
 	}
 	free(vec->buf);
+}
+
+struct string_vec string_vec_copy(struct string_vec *restrict vec)
+{
+	struct string_vec copy = {
+		.count = vec->count,
+		.size = vec->size,
+		.buf = calloc(vec->size, sizeof(char *))
+	};
+
+	for (size_t i = 0; i < vec->count; i++) {
+		copy.buf[i] = strdup(vec->buf[i]);
+	}
+
+	return copy;
 }
 
 void string_vec_add(struct string_vec *restrict vec, const char *restrict str)
@@ -71,12 +87,12 @@ void string_vec_uniq(struct string_vec *restrict vec)
 }
 
 struct string_vec string_vec_filter(
-		struct string_vec *restrict vec,
+		const struct string_vec *restrict vec,
 		const char *restrict substr)
 {
 	struct string_vec filt = string_vec_create();
 	for (size_t i = 0; i < vec->count; i++) {
-		if (strstr(vec->buf[i], substr) != NULL) {
+		if (strcasestr(vec->buf[i], substr) != NULL) {
 			string_vec_add(&filt, vec->buf[i]);
 		}
 	}

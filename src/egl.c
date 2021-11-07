@@ -41,6 +41,7 @@ void egl_create_context(struct egl *egl, struct wl_display *wl_display)
 		EGL_RED_SIZE, 8,
 		EGL_GREEN_SIZE, 8,
 		EGL_BLUE_SIZE, 8,
+		EGL_ALPHA_SIZE, 8,
 		EGL_NONE
 	};
 

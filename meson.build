@@ -67,7 +67,6 @@ sources = files(
   'src/egl.c',
   'src/entry.c',
   'src/gl.c',
-  'src/greetd.c',
   'src/image.c',
   'src/ipc.c',
   'src/log.c',
@@ -81,6 +80,7 @@ glib = dependency('glib-2.0')
 json = dependency('json-c')
 pangocairo = dependency('pangocairo')
 png = dependency('libpng')
+threads = dependency('threads')
 wayland_client = dependency('wayland-client')
 wayland_egl = dependency('wayland-egl')
 wayland_protocols = dependency('wayland-protocols', native: true)
@@ -119,7 +119,7 @@ endforeach
 executable(
   'tofi',
   sources, wl_proto_src, wl_proto_headers,
-  dependencies: [epoxy, json, glib, pangocairo, png, wayland_egl, xkbcommon],
+  dependencies: [epoxy, json, glib, pangocairo, png, threads, wayland_egl, xkbcommon],
   install: true
 )
 
