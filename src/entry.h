@@ -49,7 +49,6 @@ struct entry {
 	} border;
 };
 
-void entry_preload(void);
 void entry_init(struct entry *entry, uint32_t scale);
 void entry_destroy(struct entry *entry);
 void entry_update(struct entry *entry);

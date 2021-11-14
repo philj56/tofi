@@ -1,4 +1,3 @@
-#include "client.h"
 #include "gl.h"
 #include "surface.h"
 

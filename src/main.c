@@ -16,7 +16,7 @@
 #include <wctype.h>
 #include <xdg-shell.h>
 #include <xkbcommon/xkbcommon.h>
-#include "client.h"
+#include "tofi.h"
 #include "compgen.h"
 #include "egl.h"
 #include "entry.h"
@@ -30,18 +30,18 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 
-static void resize(struct client_state *state)
+static void resize(struct tofi *tofi)
 {
-	struct surface *surface = &state->window.surface;
-	struct surface *entry_surface = &state->window.entry.surface;
+	struct surface *surface = &tofi->window.surface;
+	struct surface *entry_surface = &tofi->window.entry.surface;
 
 	/*
 	 * Resize the main window.
 	 * EGL wants actual pixel width / height, so we have to scale the
 	 * values provided by Wayland.
 	 */
-	surface->width = state->window.width * state->window.scale;
-	surface->height = state->window.height * state->window.scale;
+	surface->width = tofi->window.width * tofi->window.scale;
+	surface->height = tofi->window.height * tofi->window.scale;
 	wl_egl_window_resize(
 			surface->egl.window,
 			surface->width,
@@ -53,7 +53,7 @@ static void resize(struct client_state *state)
 	 * Need to redraw the background at the new size. This entails a
 	 * wl_surface_commit, so no need to do so explicitly here.
 	 */
-	state->window.surface.redraw = true;
+	tofi->window.surface.redraw = true;
 
 	/*
 	 * Center the entry.
@@ -61,15 +61,15 @@ static void resize(struct client_state *state)
 	 * the entry's pixel size by the scale factor.
 	 */
 	int32_t x = (
-			state->window.width
-			- entry_surface->width / state->window.scale
+			tofi->window.width
+			- entry_surface->width / tofi->window.scale
 		    ) / 2;
 	int32_t y = (
-			state->window.height
-			- entry_surface->height / state->window.scale
+			tofi->window.height
+			- entry_surface->height / tofi->window.scale
 		    ) / 2;
-	wl_subsurface_set_position( state->window.entry.wl_subsurface, x, y);
-	wl_surface_commit(state->window.entry.surface.wl_surface);
+	wl_subsurface_set_position(tofi->window.entry.wl_subsurface, x, y);
+	wl_surface_commit(tofi->window.entry.surface.wl_surface);
 }
 
 static void xdg_toplevel_configure(
@@ -79,24 +79,24 @@ static void xdg_toplevel_configure(
 		int32_t height,
 		struct wl_array *states)
 {
-	struct client_state *state = data;
+	struct tofi *tofi = data;
 	if (width == 0 || height == 0) {
 		/* Compositor is deferring to us, so don't do anything. */
 		log_debug("XDG toplevel configure with no width or height.\n");
 		return;
 	}
 	log_debug("XDG toplevel configure, %d x %d.\n", width, height);
-	if (width != state->window.width || height != state->window.height) {
-		state->window.width = width;
-		state->window.height = height;
-		state->window.resize = true;
+	if (width != tofi->window.width || height != tofi->window.height) {
+		tofi->window.width = width;
+		tofi->window.height = height;
+		tofi->window.resize = true;
 	}
 }
 
 static void xdg_toplevel_close(void *data, struct xdg_toplevel *toplevel)
 {
-	struct client_state *state = data;
-	state->closed = true;
+	struct tofi *tofi = data;
+	tofi->closed = true;
 	log_debug("XDG toplevel close.\n");
 }
 
@@ -125,14 +125,14 @@ static void wl_keyboard_keymap(
 		int32_t fd,
 		uint32_t size)
 {
-	struct client_state *client_state = data;
+	struct tofi *tofi = data;
 	assert(format == WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1);
 
 	char *map_shm = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
 	assert(map_shm != MAP_FAILED);
 
 	struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_string(
-			client_state->xkb_context,
+			tofi->xkb_context,
 			map_shm,
 			XKB_KEYMAP_FORMAT_TEXT_V1,
 			XKB_KEYMAP_COMPILE_NO_FLAGS);
@@ -140,10 +140,10 @@ static void wl_keyboard_keymap(
 	close(fd);
 
 	struct xkb_state *xkb_state = xkb_state_new(xkb_keymap);
-	xkb_keymap_unref(client_state->xkb_keymap);
-	xkb_state_unref(client_state->xkb_state);
-	client_state->xkb_keymap = xkb_keymap;
-	client_state->xkb_state = xkb_state;
+	xkb_keymap_unref(tofi->xkb_keymap);
+	xkb_state_unref(tofi->xkb_state);
+	tofi->xkb_keymap = xkb_keymap;
+	tofi->xkb_state = xkb_state;
 	log_debug("Keyboard configured.\n");
 }
 
@@ -174,19 +174,19 @@ static void wl_keyboard_key(
 		uint32_t key,
 		uint32_t state)
 {
-	struct client_state *client_state = data;
+	struct tofi *tofi = data;
 	uint32_t keycode = key + 8;
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(
-			client_state->xkb_state,
+			tofi->xkb_state,
 			keycode);
 	if (state != WL_KEYBOARD_KEY_STATE_PRESSED) {
 		return;
 	}
 
-	struct entry *entry = &client_state->window.entry;
+	struct entry *entry = &tofi->window.entry;
 	char buf[5]; /* 4 UTF-8 bytes plus null terminator. */
 	int len = xkb_state_key_get_utf8(
-			client_state->xkb_state,
+			tofi->xkb_state,
 			keycode,
 			buf,
 			sizeof(buf));
@@ -220,20 +220,20 @@ static void wl_keyboard_key(
 	} else if (sym == XKB_KEY_Escape
 			|| (sym == XKB_KEY_c
 				&& xkb_state_mod_name_is_active(
-					client_state->xkb_state,
+					tofi->xkb_state,
 					XKB_MOD_NAME_CTRL,
 					XKB_STATE_MODS_EFFECTIVE)
 			   )
 		  )
 	{
-		client_state->closed = true;
+		tofi->closed = true;
 	} else if (entry->input_length > 0
 			&& (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter)) {
-		client_state->submit = true;
+		tofi->submit = true;
 		return;
 	}
-	entry_update(&client_state->window.entry);
-	client_state->window.entry.surface.redraw = true;
+	entry_update(&tofi->window.entry);
+	tofi->window.entry.surface.redraw = true;
 	
 }
 
@@ -246,9 +246,9 @@ static void wl_keyboard_modifiers(
 		uint32_t mods_locked,
 		uint32_t group)
 {
-	struct client_state *client_state = data;
+	struct tofi *tofi = data;
 	xkb_state_update_mask(
-			client_state->xkb_state,
+			tofi->xkb_state,
 			mods_depressed,
 			mods_latched,
 			mods_locked,
@@ -283,9 +283,9 @@ static void wl_pointer_enter(
 		wl_fixed_t surface_x,
 		wl_fixed_t surface_y)
 {
-	struct client_state *state = data;
+	struct tofi *tofi = data;
 	/* Hide the cursor by setting its surface to NULL. */
-	wl_pointer_set_cursor(state->wl_pointer, serial, NULL, 0, 0);
+	wl_pointer_set_cursor(tofi->wl_pointer, serial, NULL, 0, 0);
 }
 
 static void wl_pointer_leave(
@@ -376,40 +376,40 @@ static void wl_seat_capabilities(
 		struct wl_seat *wl_seat,
 		uint32_t capabilities)
 {
-	struct client_state *state = data;
+	struct tofi *tofi = data;
 
 	bool have_keyboard = capabilities & WL_SEAT_CAPABILITY_KEYBOARD;
 	bool have_pointer = capabilities & WL_SEAT_CAPABILITY_POINTER;
 
-	if (have_keyboard && state->wl_keyboard == NULL) {
-		state->wl_keyboard = wl_seat_get_keyboard(state->wl_seat);
+	if (have_keyboard && tofi->wl_keyboard == NULL) {
+		tofi->wl_keyboard = wl_seat_get_keyboard(tofi->wl_seat);
 		wl_keyboard_add_listener(
-				state->wl_keyboard,
+				tofi->wl_keyboard,
 				&wl_keyboard_listener,
-				state);
+				tofi);
 		log_debug("Got keyboard from seat.\n");
-	} else if (!have_keyboard && state->wl_keyboard != NULL) {
-		wl_keyboard_release(state->wl_keyboard);
-		state->wl_keyboard = NULL;
+	} else if (!have_keyboard && tofi->wl_keyboard != NULL) {
+		wl_keyboard_release(tofi->wl_keyboard);
+		tofi->wl_keyboard = NULL;
 		log_debug("Released keyboard.\n");
 	}
 
-	if (have_pointer && state->wl_pointer == NULL) {
+	if (have_pointer && tofi->wl_pointer == NULL) {
 		/*
 		 * We only need to listen to the cursor if we're going to hide
 		 * it.
 		 */
-		if (state->hide_cursor) {
-			state->wl_pointer = wl_seat_get_pointer(state->wl_seat);
+		if (tofi->hide_cursor) {
+			tofi->wl_pointer = wl_seat_get_pointer(tofi->wl_seat);
 			wl_pointer_add_listener(
-					state->wl_pointer,
+					tofi->wl_pointer,
 					&wl_pointer_listener,
-					state);
+					tofi);
 			log_debug("Got pointer from seat.\n");
 		}
-	} else if (!have_pointer && state->wl_pointer != NULL) {
-		wl_pointer_release(state->wl_pointer);
-		state->wl_pointer = NULL;
+	} else if (!have_pointer && tofi->wl_pointer != NULL) {
+		wl_pointer_release(tofi->wl_pointer);
+		tofi->wl_pointer = NULL;
 		log_debug("Released pointer.\n");
 	}
 }
@@ -467,8 +467,8 @@ static void output_scale(
 		struct wl_output *wl_output,
 		int32_t factor)
 {
-	struct client_state *state = data;
-	state->window.scale = MAX(factor, (int32_t)state->window.scale);
+	struct tofi *tofi = data;
+	tofi->window.scale = MAX(factor, (int32_t)tofi->window.scale);
 	log_debug("Output scale factor is %d.\n", factor);
 }
 
@@ -491,53 +491,54 @@ static void registry_global(
 		const char *interface,
 		uint32_t version)
 {
-	struct client_state *state = data;
+	struct tofi *tofi = data;
+	log_debug("Registry %s %u.\n", interface, name);
 	if (!strcmp(interface, wl_compositor_interface.name)) {
-		state->wl_compositor = wl_registry_bind(
+		tofi->wl_compositor = wl_registry_bind(
 				wl_registry,
 				name,
 				&wl_compositor_interface,
 				4);
 		log_debug("Bound to compositor %u.\n", name);
 	} else if (!strcmp(interface, wl_subcompositor_interface.name)) {
-		state->wl_subcompositor = wl_registry_bind(
+		tofi->wl_subcompositor = wl_registry_bind(
 				wl_registry,
 				name,
 				&wl_subcompositor_interface,
 				1);
 		log_debug("Bound to subcompositor %u.\n", name);
 	} else if (!strcmp(interface, wl_seat_interface.name)) {
-		state->wl_seat = wl_registry_bind(
+		tofi->wl_seat = wl_registry_bind(
 				wl_registry,
 				name,
 				&wl_seat_interface,
 				7);
 		wl_seat_add_listener(
-				state->wl_seat,
+				tofi->wl_seat,
 				&wl_seat_listener,
-				state);
+				tofi);
 		log_debug("Bound to seat %u.\n", name);
 	} else if (!strcmp(interface, wl_output_interface.name)) {
-		state->wl_output = wl_registry_bind(
+		tofi->wl_output = wl_registry_bind(
 				wl_registry,
 				name,
 				&wl_output_interface,
 				3);
 		wl_output_add_listener(
-				state->wl_output,
+				tofi->wl_output,
 				&wl_output_listener,
-				state);
+				tofi);
 		log_debug("Bound to output %u.\n", name);
 	} else if (!strcmp(interface, xdg_wm_base_interface.name)) {
-		state->xdg_wm_base = wl_registry_bind(
+		tofi->xdg_wm_base = wl_registry_bind(
 				wl_registry,
 				name,
 				&xdg_wm_base_interface,
 				1);
 		xdg_wm_base_add_listener(
-				state->xdg_wm_base,
+				tofi->xdg_wm_base,
 				&xdg_wm_base_listener,
-				state);
+				tofi);
 		log_debug("Bound to xdg_wm_base %u.\n", name);
 	}
 }
@@ -576,12 +577,6 @@ static const struct wl_surface_listener wl_surface_listener = {
 	.leave = surface_leave
 };
 
-static int initialise_entry(void *data)
-{
-	entry_preload();
-	return 0;
-}
-
 static void usage()
 {
 	fprintf(stderr,
@@ -607,9 +602,6 @@ static void usage()
 
 int main(int argc, char *argv[])
 {
-	thrd_t entry_thread;
-	thrd_create(&entry_thread, initialise_entry, NULL);
-
 	/*
 	 * Set the locale to the user's default, so we can deal with non-ASCII
 	 * characters.
@@ -617,7 +609,7 @@ int main(int argc, char *argv[])
 	setlocale(LC_ALL, "");
 
 	/* Default options. */
-	struct client_state state = {
+	struct tofi tofi = {
 		.username = "nobody",
 		.command = "false",
 		.window = {
@@ -643,8 +635,8 @@ int main(int argc, char *argv[])
 		}
 	};
 
-	state.window.entry.commands = compgen();
-	state.window.entry.results = string_vec_copy(&state.window.entry.commands);
+	tofi.window.entry.commands = compgen();
+	tofi.window.entry.results = string_vec_copy(&tofi.window.entry.commands);
 
 
 	/* Option parsing with getopt. */
@@ -674,60 +666,60 @@ int main(int argc, char *argv[])
 		switch (opt) {
 			case 'b':
 				image_load(
-					&state.window.background_image,
+					&tofi.window.background_image,
 					optarg);
 				break;
 			case 'B':
-				state.window.background_color =
+				tofi.window.background_color =
 					hex_to_color(optarg);
 				break;
 			case 'r':
-				state.window.entry.border.width =
+				tofi.window.entry.border.width =
 					strtol(optarg, NULL, 0);
 				break;
 			case 'R':
-				state.window.entry.border.color =
+				tofi.window.entry.border.color =
 					hex_to_color(optarg);
 				break;
 			case 'o':
-				state.window.entry.border.outline_width =
+				tofi.window.entry.border.outline_width =
 					strtol(optarg, NULL, 0);
 				break;
 			case 'O':
-				state.window.entry.border.outline_color =
+				tofi.window.entry.border.outline_color =
 					hex_to_color(optarg);
 				break;
 			case 'e':
-				state.window.entry.padding =
+				tofi.window.entry.padding =
 					strtol(optarg, NULL, 0);
 				break;
 			case 'E':
-				state.window.entry.background_color =
+				tofi.window.entry.background_color =
 					hex_to_color(optarg);
 				break;
 			case 'T':
-				state.window.entry.foreground_color =
+				tofi.window.entry.foreground_color =
 					hex_to_color(optarg);
 				break;
 			case 'f':
-				state.window.entry.font_name = optarg;
+				tofi.window.entry.font_name = optarg;
 				break;
 			case 'F':
-				state.window.entry.font_size =
+				tofi.window.entry.font_size =
 					strtol(optarg, NULL, 0);
 				break;
 			case 'c':
-				state.command = optarg;
+				tofi.command = optarg;
 				break;
 			case 'u':
-				state.username = optarg;
+				tofi.username = optarg;
 				break;
 			case 'n':
-				state.window.entry.num_characters =
+				tofi.window.entry.num_characters =
 					strtol(optarg, NULL, 0);
 				break;
 			case 'H':
-				state.hide_cursor = true;
+				tofi.hide_cursor = true;
 				break;
 			case 'h':
 				usage();
@@ -765,21 +757,21 @@ int main(int argc, char *argv[])
 	 * so that we can bind to the various global objects and start talking
 	 * to Wayland.
 	 */
-	state.wl_display = wl_display_connect(NULL);
-	if (state.wl_display == NULL) {
+	tofi.wl_display = wl_display_connect(NULL);
+	if (tofi.wl_display == NULL) {
 		log_error("Couldn't connect to Wayland display.\n");
 		exit(EXIT_FAILURE);
 	}
-	state.wl_registry = wl_display_get_registry(state.wl_display);
-	state.xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	if (state.xkb_context == NULL) {
+	tofi.wl_registry = wl_display_get_registry(tofi.wl_display);
+	tofi.xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	if (tofi.xkb_context == NULL) {
 		log_error("Couldn't create an XKB context.\n");
 		exit(EXIT_FAILURE);
 	}
 	wl_registry_add_listener(
-			state.wl_registry,
+			tofi.wl_registry,
 			&wl_registry_listener,
-			&state);
+			&tofi);
 
 	/*
 	 * After this first roundtrip, the only thing that should have happened
@@ -787,7 +779,7 @@ int main(int argc, char *argv[])
 	 * various global object bindings.
 	 */
 	log_debug("First roundtrip start.\n");
-	wl_display_roundtrip(state.wl_display);
+	wl_display_roundtrip(tofi.wl_display);
 	log_debug("First roundtrip done.\n");
 
 	/*
@@ -796,7 +788,7 @@ int main(int argc, char *argv[])
 	 * configured, telling us the scale factor.
 	 */
 	log_debug("Second roundtrip start.\n");
-	wl_display_roundtrip(state.wl_display);
+	wl_display_roundtrip(tofi.wl_display);
 	log_debug("Second roundtrip done.\n");
 
 	/*
@@ -808,35 +800,35 @@ int main(int argc, char *argv[])
 	 * roles, in order to receive configure events to change its size.
 	 */
 	log_debug("Creating main window surface.\n");
-	state.window.surface.wl_surface =
-		wl_compositor_create_surface(state.wl_compositor);
+	tofi.window.surface.wl_surface =
+		wl_compositor_create_surface(tofi.wl_compositor);
 	wl_surface_add_listener(
-			state.window.surface.wl_surface,
+			tofi.window.surface.wl_surface,
 			&wl_surface_listener,
-			&state);
+			&tofi);
 	wl_surface_set_buffer_scale(
-			state.window.surface.wl_surface,
-			state.window.scale);
+			tofi.window.surface.wl_surface,
+			tofi.window.scale);
 
-	state.window.xdg_surface = xdg_wm_base_get_xdg_surface(
-			state.xdg_wm_base,
-			state.window.surface.wl_surface);
+	tofi.window.xdg_surface = xdg_wm_base_get_xdg_surface(
+			tofi.xdg_wm_base,
+			tofi.window.surface.wl_surface);
 	xdg_surface_add_listener(
-			state.window.xdg_surface,
+			tofi.window.xdg_surface,
 			&xdg_surface_listener,
-			&state);
+			&tofi);
 
-	state.window.xdg_toplevel =
-		xdg_surface_get_toplevel(state.window.xdg_surface);
+	tofi.window.xdg_toplevel =
+		xdg_surface_get_toplevel(tofi.window.xdg_surface);
 	xdg_toplevel_add_listener(
-			state.window.xdg_toplevel,
+			tofi.window.xdg_toplevel,
 			&xdg_toplevel_listener,
-			&state);
+			&tofi);
 	xdg_toplevel_set_title(
-			state.window.xdg_toplevel,
+			tofi.window.xdg_toplevel,
 			"Greetd mini wayland greeter");
 
-	wl_surface_commit(state.window.surface.wl_surface);
+	wl_surface_commit(tofi.window.surface.wl_surface);
 
 	/*
 	 * The entry surface takes on a subsurface role and is set to be
@@ -844,19 +836,19 @@ int main(int argc, char *argv[])
 	 * window.
 	 */
 	log_debug("Creating entry surface.\n");
-	state.window.entry.surface.wl_surface =
-		wl_compositor_create_surface(state.wl_compositor);
+	tofi.window.entry.surface.wl_surface =
+		wl_compositor_create_surface(tofi.wl_compositor);
 	wl_surface_set_buffer_scale(
-			state.window.entry.surface.wl_surface,
-			state.window.scale);
+			tofi.window.entry.surface.wl_surface,
+			tofi.window.scale);
 
-	state.window.entry.wl_subsurface = wl_subcompositor_get_subsurface(
-			state.wl_subcompositor,
-			state.window.entry.surface.wl_surface,
-			state.window.surface.wl_surface);
-	wl_subsurface_set_desync(state.window.entry.wl_subsurface);
+	tofi.window.entry.wl_subsurface = wl_subcompositor_get_subsurface(
+			tofi.wl_subcompositor,
+			tofi.window.entry.surface.wl_surface,
+			tofi.window.surface.wl_surface);
+	wl_subsurface_set_desync(tofi.window.entry.wl_subsurface);
 
-	wl_surface_commit(state.window.entry.surface.wl_surface);
+	wl_surface_commit(tofi.window.entry.surface.wl_surface);
 
 	/*
 	 * Initialise the Pango & Cairo structures for rendering the entry.
@@ -868,14 +860,14 @@ int main(int argc, char *argv[])
 	 * shouldn't be moving between outputs while running.
 	 */
 	log_debug("Initialising Pango / Cairo.\n");
-	entry_init(&state.window.entry, state.window.scale);
+	entry_init(&tofi.window.entry, tofi.window.scale);
 	log_debug("Pango / Cairo initialised.\n");
 
 	/* Tell the compositor not to make our window smaller than the entry. */
 	xdg_toplevel_set_min_size(
-			state.window.xdg_toplevel,
-			state.window.entry.surface.width / state.window.scale,
-			state.window.entry.surface.height / state.window.scale);
+			tofi.window.xdg_toplevel,
+			tofi.window.entry.surface.width / tofi.window.scale,
+			tofi.window.entry.surface.height / tofi.window.scale);
 
 	/*
 	 * Now that we've done all our Wayland-related setup, we do another
@@ -883,7 +875,7 @@ int main(int argc, char *argv[])
 	 * configured, after which we're ready to start drawing to the screen.
 	 */
 	log_debug("Third roundtrip start.\n");
-	wl_display_roundtrip(state.wl_display);
+	wl_display_roundtrip(tofi.wl_display);
 	log_debug("Third roundtrip done.\n");
 
 	/*
@@ -892,65 +884,63 @@ int main(int argc, char *argv[])
 	 */
 	log_debug("Initialising main window surface.\n");
 	surface_initialise(
-			&state.window.surface,
-			state.wl_display,
-			&state.window.background_image);
+			&tofi.window.surface,
+			tofi.wl_display,
+			&tofi.window.background_image);
 	surface_draw(
-			&state.window.surface,
-			&state.window.background_color,
-			&state.window.background_image);
+			&tofi.window.surface,
+			&tofi.window.background_color,
+			&tofi.window.background_image);
 
 	log_debug("Initialising entry window surface.\n");
 	surface_initialise(
-			&state.window.entry.surface,
-			state.wl_display,
-			&state.window.entry.image);
+			&tofi.window.entry.surface,
+			tofi.wl_display,
+			&tofi.window.entry.image);
 
-	log_debug("Rejoining thread\n");
-	thrd_join(entry_thread, NULL);
 	log_debug("Initial draw\n");
-	entry_update(&state.window.entry);
+	entry_update(&tofi.window.entry);
 	surface_draw(
-			&state.window.entry.surface,
-			&state.window.background_color,
-			&state.window.entry.image);
+			&tofi.window.entry.surface,
+			&tofi.window.background_color,
+			&tofi.window.entry.image);
 
 	/* Call resize() just to center the entry properly. */
-	resize(&state);
+	resize(&tofi);
 
 	/*
 	 * We've just rendered everything and resized, so we don't need to do
 	 * it again right now.
 	 */
-	state.window.resize = false;
-	state.window.surface.redraw = false;
-	state.window.entry.surface.redraw = false;
+	tofi.window.resize = false;
+	tofi.window.surface.redraw = false;
+	tofi.window.entry.surface.redraw = false;
 
-	while (wl_display_dispatch(state.wl_display) != -1) {
-		if (state.closed) {
+	while (wl_display_dispatch(tofi.wl_display) != -1) {
+		if (tofi.closed) {
 			break;
 		}
-		if (state.window.resize) {
-			resize(&state);
-			state.window.resize = false;
+		if (tofi.window.resize) {
+			resize(&tofi);
+			tofi.window.resize = false;
 		}
-		if (state.window.surface.redraw) {
+		if (tofi.window.surface.redraw) {
 			surface_draw(
-					&state.window.surface,
-					&state.window.background_color,
-					&state.window.background_image);
-			state.window.surface.redraw = false;
+					&tofi.window.surface,
+					&tofi.window.background_color,
+					&tofi.window.background_image);
+			tofi.window.surface.redraw = false;
 		}
-		if (state.window.entry.surface.redraw) {
+		if (tofi.window.entry.surface.redraw) {
 			surface_draw(
-					&state.window.entry.surface,
-					&state.window.background_color,
-					&state.window.entry.image);
-			state.window.entry.surface.redraw = false;
+					&tofi.window.entry.surface,
+					&tofi.window.background_color,
+					&tofi.window.entry.image);
+			tofi.window.entry.surface.redraw = false;
 		}
-		if (state.submit) {
-			if (state.window.entry.results.count > 0) {
-				printf("%s\n", state.window.entry.results.buf[0]);
+		if (tofi.submit) {
+			if (tofi.window.entry.results.count > 0) {
+				printf("%s\n", tofi.window.entry.results.buf[0]);
 			}
 			break;
 		}
@@ -963,39 +953,39 @@ int main(int argc, char *argv[])
 	 * e.g. Valgrind easier. There's still a few unavoidable leaks though,
 	 * mostly from OpenGL libs and Pango.
 	 */
-	entry_destroy(&state.window.entry);
-	surface_destroy(&state.window.entry.surface);
-	surface_destroy(&state.window.surface);
-	if (state.window.background_image.buffer != NULL) {
-		free(state.window.background_image.buffer);
-		state.window.background_image.buffer = NULL;
+	entry_destroy(&tofi.window.entry);
+	surface_destroy(&tofi.window.entry.surface);
+	surface_destroy(&tofi.window.surface);
+	if (tofi.window.background_image.buffer != NULL) {
+		free(tofi.window.background_image.buffer);
+		tofi.window.background_image.buffer = NULL;
 	}
-	eglTerminate(state.window.surface.egl.display);
-	wl_subsurface_destroy(state.window.entry.wl_subsurface);
-	wl_surface_destroy(state.window.entry.surface.wl_surface);
-	xdg_toplevel_destroy(state.window.xdg_toplevel);
-	xdg_surface_destroy(state.window.xdg_surface);
-	wl_surface_destroy(state.window.surface.wl_surface);
-	if (state.wl_keyboard != NULL) {
-		wl_keyboard_release(state.wl_keyboard);
+	eglTerminate(tofi.window.surface.egl.display);
+	wl_subsurface_destroy(tofi.window.entry.wl_subsurface);
+	wl_surface_destroy(tofi.window.entry.surface.wl_surface);
+	xdg_toplevel_destroy(tofi.window.xdg_toplevel);
+	xdg_surface_destroy(tofi.window.xdg_surface);
+	wl_surface_destroy(tofi.window.surface.wl_surface);
+	if (tofi.wl_keyboard != NULL) {
+		wl_keyboard_release(tofi.wl_keyboard);
 	}
-	if (state.wl_pointer != NULL) {
-		wl_pointer_release(state.wl_pointer);
+	if (tofi.wl_pointer != NULL) {
+		wl_pointer_release(tofi.wl_pointer);
 	}
-	wl_compositor_destroy(state.wl_compositor);
-	wl_subcompositor_destroy(state.wl_subcompositor);
-	wl_seat_release(state.wl_seat);
-	wl_output_release(state.wl_output);
-	xdg_wm_base_destroy(state.xdg_wm_base);
-	xkb_state_unref(state.xkb_state);
-	xkb_keymap_unref(state.xkb_keymap);
-	xkb_context_unref(state.xkb_context);
-	wl_registry_destroy(state.wl_registry);
+	wl_compositor_destroy(tofi.wl_compositor);
+	wl_subcompositor_destroy(tofi.wl_subcompositor);
+	wl_seat_release(tofi.wl_seat);
+	wl_output_release(tofi.wl_output);
+	xdg_wm_base_destroy(tofi.xdg_wm_base);
+	xkb_state_unref(tofi.xkb_state);
+	xkb_keymap_unref(tofi.xkb_keymap);
+	xkb_context_unref(tofi.xkb_context);
+	wl_registry_destroy(tofi.wl_registry);
 #endif
 	/*
 	 * For release builds, skip straight to display disconnection and quit.
 	 */
-	wl_display_disconnect(state.wl_display);
+	wl_display_disconnect(tofi.wl_display);
 
 	log_debug("Finished, exiting.\n");
 	return EXIT_SUCCESS;

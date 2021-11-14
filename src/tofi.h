@@ -9,7 +9,7 @@
 #include "image.h"
 #include "surface.h"
 
-struct client_state {
+struct tofi {
 	/* Globals */
 	struct wl_display *wl_display;
 	struct wl_registry *wl_registry;

@@ -4,7 +4,6 @@
 #include <pango/pangocairo.h>
 #include <pango/pango.h>
 #include <wchar.h>
-#include "client.h"
 #include "entry.h"
 #include "log.h"
 #include "nelem.h"
@@ -12,26 +11,6 @@
 #ifndef TWO_PI
 #define TWO_PI 6.283185307179586f
 #endif
-
-void entry_preload(void)
-{
-	cairo_surface_t *surface = cairo_image_surface_create(
-			CAIRO_FORMAT_ARGB32,
-			10,
-			10
-			);
-	cairo_t *cr = cairo_create(surface);
-
-	PangoContext *context = pango_cairo_create_context(cr);
-	PangoLayout *layout = pango_layout_new(context);
-	pango_layout_set_text(layout, "test", -1);
-	pango_cairo_update_layout(cr, layout);
-	pango_cairo_show_layout(cr, layout);
-	g_object_unref(layout);
-	g_object_unref(context);
-	cairo_destroy(cr);
-	cairo_surface_destroy(surface);
-}
 
 void entry_init(struct entry *entry, uint32_t scale)
 {
@@ -200,7 +179,6 @@ void entry_update(struct entry *entry)
 	pango_cairo_update_layout(cr, entry->pango.entry_layout);
 	pango_cairo_show_layout(cr, entry->pango.entry_layout);
 
-	log_debug("%zu\n", entry->results.count);
 	for (size_t i = 0; i < 5; i++) {
 		cairo_translate(cr, 0, 50);
 		PangoLayout *layout = entry->pango.result_layouts[i];

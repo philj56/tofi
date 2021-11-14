@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "client.h"
 #include "gl.h"
 #include "log.h"
 
