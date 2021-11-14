@@ -42,12 +42,6 @@ static void resize(struct tofi *tofi)
 	 */
 	surface->width = tofi->window.width * tofi->window.scale;
 	surface->height = tofi->window.height * tofi->window.scale;
-	wl_egl_window_resize(
-			surface->egl.window,
-			surface->width,
-			surface->height,
-			0,
-			0);
 
 	/*
 	 * Need to redraw the background at the new size. This entails a
@@ -60,62 +54,54 @@ static void resize(struct tofi *tofi)
 	 * Wayland wants "surface-local" width / height, so we have to divide
 	 * the entry's pixel size by the scale factor.
 	 */
-	int32_t x = (
-			tofi->window.width
-			- entry_surface->width / tofi->window.scale
-		    ) / 2;
-	int32_t y = (
-			tofi->window.height
-			- entry_surface->height / tofi->window.scale
-		    ) / 2;
-	wl_subsurface_set_position(tofi->window.entry.wl_subsurface, x, y);
-	wl_surface_commit(tofi->window.entry.surface.wl_surface);
+	//int32_t x = (
+	//		tofi->window.width
+	//		- entry_surface->width / tofi->window.scale
+	//	    ) / 2;
+	//int32_t y = (
+	//		tofi->window.height
+	//		- entry_surface->height / tofi->window.scale
+	//	    ) / 2;
+	//wl_subsurface_set_position(tofi->window.entry.wl_subsurface, x, y);
+	//wl_surface_commit(tofi->window.entry.surface.wl_surface);
 }
 
-static void xdg_toplevel_configure(
+static void zwlr_layer_surface_configure(
 		void *data,
-		struct xdg_toplevel *xdg_toplevel,
-		int32_t width,
-		int32_t height,
-		struct wl_array *states)
+		struct zwlr_layer_surface_v1 *zwlr_layer_surface,
+		uint32_t serial,
+		uint32_t width,
+		uint32_t height)
 {
 	struct tofi *tofi = data;
 	if (width == 0 || height == 0) {
 		/* Compositor is deferring to us, so don't do anything. */
-		log_debug("XDG toplevel configure with no width or height.\n");
+		log_debug("Layer surface configure with no width or height.\n");
 		return;
 	}
-	log_debug("XDG toplevel configure, %d x %d.\n", width, height);
+	log_debug("Layer surface configure, %d x %d.\n", width, height);
 	if (width != tofi->window.width || height != tofi->window.height) {
 		tofi->window.width = width;
 		tofi->window.height = height;
 		tofi->window.resize = true;
 	}
+	zwlr_layer_surface_v1_ack_configure(
+			tofi->window.zwlr_layer_surface,
+			serial);
 }
 
-static void xdg_toplevel_close(void *data, struct xdg_toplevel *toplevel)
+static void zwlr_layer_surface_close(
+		void *data,
+		struct zwlr_layer_surface_v1 *zwlr_layer_surface)
 {
 	struct tofi *tofi = data;
 	tofi->closed = true;
-	log_debug("XDG toplevel close.\n");
+	log_debug("Layer surface close.\n");
 }
 
-static const struct xdg_toplevel_listener xdg_toplevel_listener = {
-	.configure = xdg_toplevel_configure,
-	.close = xdg_toplevel_close
-};
-
-static void xdg_surface_configure(
-		void *data,
-		struct xdg_surface *xdg_surface,
-		uint32_t serial)
-{
-	xdg_surface_ack_configure(xdg_surface, serial);
-	log_debug("XDG surface configured.\n");
-}
-
-static const struct xdg_surface_listener xdg_surface_listener = {
-	.configure = xdg_surface_configure,
+static const struct zwlr_layer_surface_v1_listener zwlr_layer_surface_listener = {
+	.configure = zwlr_layer_surface_configure,
+	.closed = zwlr_layer_surface_close
 };
 
 static void wl_keyboard_keymap(
@@ -234,6 +220,7 @@ static void wl_keyboard_key(
 	}
 	entry_update(&tofi->window.entry);
 	tofi->window.entry.surface.redraw = true;
+	tofi->window.surface.redraw = true;
 	
 }
 
@@ -424,18 +411,6 @@ static const struct wl_seat_listener wl_seat_listener = {
 	.name = wl_seat_name,
 };
 
-static void xdg_wm_base_ping(
-		void *data,
-		struct xdg_wm_base *xdg_wm_base,
-		uint32_t serial)
-{
-	xdg_wm_base_pong(xdg_wm_base, serial);
-}
-
-static const struct xdg_wm_base_listener xdg_wm_base_listener = {
-	.ping = xdg_wm_base_ping,
-};
-
 static void output_geometry(
 		void *data,
 		struct wl_output *wl_output,
@@ -492,7 +467,7 @@ static void registry_global(
 		uint32_t version)
 {
 	struct tofi *tofi = data;
-	log_debug("Registry %s %u.\n", interface, name);
+	//log_debug("Registry %s %u.\n", interface, name);
 	if (!strcmp(interface, wl_compositor_interface.name)) {
 		tofi->wl_compositor = wl_registry_bind(
 				wl_registry,
@@ -529,17 +504,13 @@ static void registry_global(
 				&wl_output_listener,
 				tofi);
 		log_debug("Bound to output %u.\n", name);
-	} else if (!strcmp(interface, xdg_wm_base_interface.name)) {
-		tofi->xdg_wm_base = wl_registry_bind(
+	} else if (!strcmp(interface, zwlr_layer_shell_v1_interface.name)) {
+		tofi->zwlr_layer_shell = wl_registry_bind(
 				wl_registry,
 				name,
-				&xdg_wm_base_interface,
+				&zwlr_layer_shell_v1_interface,
 				1);
-		xdg_wm_base_add_listener(
-				tofi->xdg_wm_base,
-				&xdg_wm_base_listener,
-				tofi);
-		log_debug("Bound to xdg_wm_base %u.\n", name);
+		log_debug("Bound to zwlr_layer_shell_v1 %u.\n", name);
 	}
 }
 
@@ -795,10 +766,7 @@ int main(int argc, char *argv[])
 	 * Next, we create the Wayland surfaces that we need - one for
 	 * the whole window, and another for the entry box.
 	 */
-	/*
-	 * The main window surface takes on the xdg_surface and xdg_toplevel
-	 * roles, in order to receive configure events to change its size.
-	 */
+	/* The main window surface takes on the layer_shell_surface role. */
 	log_debug("Creating main window surface.\n");
 	tofi.window.surface.wl_surface =
 		wl_compositor_create_surface(tofi.wl_compositor);
@@ -810,25 +778,20 @@ int main(int argc, char *argv[])
 			tofi.window.surface.wl_surface,
 			tofi.window.scale);
 
-	tofi.window.xdg_surface = xdg_wm_base_get_xdg_surface(
-			tofi.xdg_wm_base,
-			tofi.window.surface.wl_surface);
-	xdg_surface_add_listener(
-			tofi.window.xdg_surface,
-			&xdg_surface_listener,
+	tofi.window.zwlr_layer_surface = zwlr_layer_shell_v1_get_layer_surface(
+			tofi.zwlr_layer_shell,
+			tofi.window.surface.wl_surface,
+			tofi.wl_output,
+			ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
+			"launcher");
+	zwlr_layer_surface_v1_set_keyboard_interactivity(
+			tofi.window.zwlr_layer_surface,
+			ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE
+			);
+	zwlr_layer_surface_v1_add_listener(
+			tofi.window.zwlr_layer_surface,
+			&zwlr_layer_surface_listener,
 			&tofi);
-
-	tofi.window.xdg_toplevel =
-		xdg_surface_get_toplevel(tofi.window.xdg_surface);
-	xdg_toplevel_add_listener(
-			tofi.window.xdg_toplevel,
-			&xdg_toplevel_listener,
-			&tofi);
-	xdg_toplevel_set_title(
-			tofi.window.xdg_toplevel,
-			"Greetd mini wayland greeter");
-
-	wl_surface_commit(tofi.window.surface.wl_surface);
 
 	/*
 	 * The entry surface takes on a subsurface role and is set to be
@@ -864,19 +827,26 @@ int main(int argc, char *argv[])
 	log_debug("Pango / Cairo initialised.\n");
 
 	/* Tell the compositor not to make our window smaller than the entry. */
-	xdg_toplevel_set_min_size(
-			tofi.window.xdg_toplevel,
-			tofi.window.entry.surface.width / tofi.window.scale,
-			tofi.window.entry.surface.height / tofi.window.scale);
+	//zwlr_layer_surface_v1_set_size(
+	//		tofi.window.zwlr_layer_surface,
+	//		100,
+	//		100);
+	zwlr_layer_surface_v1_set_anchor(
+			tofi.window.zwlr_layer_surface,
+			0x0Fu);
+	wl_surface_commit(tofi.window.surface.wl_surface);
 
 	/*
 	 * Now that we've done all our Wayland-related setup, we do another
-	 * roundtrip. This should cause the XDG toplevel window to be
+	 * roundtrip. This should cause the layer surface window to be
 	 * configured, after which we're ready to start drawing to the screen.
 	 */
 	log_debug("Third roundtrip start.\n");
 	wl_display_roundtrip(tofi.wl_display);
 	log_debug("Third roundtrip done.\n");
+
+	/* Call resize() just to center the entry properly. */
+	resize(&tofi);
 
 	/*
 	 * Create the various EGL and GL structures for each surface, and
@@ -905,16 +875,13 @@ int main(int argc, char *argv[])
 			&tofi.window.background_color,
 			&tofi.window.entry.image);
 
-	/* Call resize() just to center the entry properly. */
-	resize(&tofi);
-
 	/*
 	 * We've just rendered everything and resized, so we don't need to do
 	 * it again right now.
 	 */
-	tofi.window.resize = false;
-	tofi.window.surface.redraw = false;
-	tofi.window.entry.surface.redraw = false;
+	//tofi.window.resize = false;
+	//tofi.window.surface.redraw = false;
+	//tofi.window.entry.surface.redraw = false;
 
 	while (wl_display_dispatch(tofi.wl_display) != -1) {
 		if (tofi.closed) {
@@ -925,6 +892,7 @@ int main(int argc, char *argv[])
 			tofi.window.resize = false;
 		}
 		if (tofi.window.surface.redraw) {
+			log_debug("Redraw main window.\n");
 			surface_draw(
 					&tofi.window.surface,
 					&tofi.window.background_color,
@@ -963,8 +931,6 @@ int main(int argc, char *argv[])
 	eglTerminate(tofi.window.surface.egl.display);
 	wl_subsurface_destroy(tofi.window.entry.wl_subsurface);
 	wl_surface_destroy(tofi.window.entry.surface.wl_surface);
-	xdg_toplevel_destroy(tofi.window.xdg_toplevel);
-	xdg_surface_destroy(tofi.window.xdg_surface);
 	wl_surface_destroy(tofi.window.surface.wl_surface);
 	if (tofi.wl_keyboard != NULL) {
 		wl_keyboard_release(tofi.wl_keyboard);
@@ -976,7 +942,6 @@ int main(int argc, char *argv[])
 	wl_subcompositor_destroy(tofi.wl_subcompositor);
 	wl_seat_release(tofi.wl_seat);
 	wl_output_release(tofi.wl_output);
-	xdg_wm_base_destroy(tofi.xdg_wm_base);
 	xkb_state_unref(tofi.xkb_state);
 	xkb_keymap_unref(tofi.xkb_keymap);
 	xkb_context_unref(tofi.xkb_context);

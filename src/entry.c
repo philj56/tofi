@@ -16,8 +16,8 @@ void entry_init(struct entry *entry, uint32_t scale)
 {
 	/* Calculate the size of the entry from our font and various widths. */
 	//calculate_font_extents(entry, scale);
-	entry->text_bounds.width = 500;
-	entry->text_bounds.height = 800;
+	entry->text_bounds.width = 200;
+	entry->text_bounds.height = 200;
 
 	entry->surface.width = entry->text_bounds.width;
 	entry->surface.height = entry->text_bounds.height;
@@ -59,58 +59,58 @@ void entry_init(struct entry *entry, uint32_t scale)
 	int32_t height = entry->surface.height / scale;
 
 	/* Draw the outer outline */
-	//struct color color = entry->border.outline_color;
-	//cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	//cairo_paint(cr);
+	struct color color = entry->border.outline_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	cairo_paint(cr);
 
-	///* Move and clip following draws to be within this outline */
-	//cairo_translate(
-	//		cr,
-	//		entry->border.outline_width,
-	//		entry->border.outline_width);
-	//width -= 2 * entry->border.outline_width;
-	//height -= 2 * entry->border.outline_width;
-	//cairo_rectangle(cr, 0, 0, width, height);
-	//cairo_clip(cr);
+	/* Move and clip following draws to be within this outline */
+	cairo_translate(
+			cr,
+			entry->border.outline_width,
+			entry->border.outline_width);
+	width -= 2 * entry->border.outline_width;
+	height -= 2 * entry->border.outline_width;
+	cairo_rectangle(cr, 0, 0, width, height);
+	cairo_clip(cr);
 
-	///* Draw the border */
-	//color = entry->border.color;
-	//cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	//cairo_paint(cr);
+	/* Draw the border */
+	color = entry->border.color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	cairo_paint(cr);
 
-	///* Move and clip following draws to be within the border */
-	//cairo_translate(cr, entry->border.width, entry->border.width);
-	//width -= 2 * entry->border.width;
-	//height -= 2 * entry->border.width;
-	//cairo_rectangle(cr, 0, 0, width, height);
-	//cairo_clip(cr);
+	/* Move and clip following draws to be within the border */
+	cairo_translate(cr, entry->border.width, entry->border.width);
+	width -= 2 * entry->border.width;
+	height -= 2 * entry->border.width;
+	cairo_rectangle(cr, 0, 0, width, height);
+	cairo_clip(cr);
 
-	///* Draw the inner outline */
-	//color = entry->border.outline_color;
-	//cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	//cairo_paint(cr);
+	/* Draw the inner outline */
+	color = entry->border.outline_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	cairo_paint(cr);
 
-	///* Move and clip following draws to be within this outline */
-	//cairo_translate(
-	//		cr,
-	//		entry->border.outline_width,
-	//		entry->border.outline_width);
-	//width -= 2 * entry->border.outline_width;
-	//height -= 2 * entry->border.outline_width;
-	//cairo_rectangle(cr, 0, 0, width, height);
-	//cairo_clip(cr);
+	/* Move and clip following draws to be within this outline */
+	cairo_translate(
+			cr,
+			entry->border.outline_width,
+			entry->border.outline_width);
+	width -= 2 * entry->border.outline_width;
+	height -= 2 * entry->border.outline_width;
+	cairo_rectangle(cr, 0, 0, width, height);
+	cairo_clip(cr);
 
-	///* Draw the entry background */
-	//color = entry->background_color;
-	//cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	//cairo_paint(cr);
+	/* Draw the entry background */
+	color = entry->background_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	cairo_paint(cr);
 
-	///* Move and clip following draws to be within the specified padding */
-	//cairo_translate(cr, entry->padding, entry->padding);
-	//width -= 2 * entry->padding;
-	//height -= 2 * entry->padding;
-	//cairo_rectangle(cr, 0, 0, width, height);
-	//cairo_clip(cr);
+	/* Move and clip following draws to be within the specified padding */
+	cairo_translate(cr, entry->padding, entry->padding);
+	width -= 2 * entry->padding;
+	height -= 2 * entry->padding;
+	cairo_rectangle(cr, 0, 0, width, height);
+	cairo_clip(cr);
 
 	/*
 	 * Move the cursor back up, so that Pango draws in the correct place if

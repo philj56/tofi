@@ -30,6 +30,12 @@ void surface_draw(
 		struct color *color,
 		struct image *texture)
 {
+	wl_egl_window_resize(
+			surface->egl.window,
+			surface->width,
+			surface->height,
+			0,
+			0);
 	egl_make_current(&surface->egl);
 	gl_clear(&surface->gl, color);
 
@@ -45,6 +51,8 @@ void surface_draw(
 
 		gl_draw_texture(&surface->gl, texture, x, y, width, height);
 	}
+
+	wl_surface_damage_buffer(surface->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
 
 	egl_swap_buffers(&surface->egl);
 }

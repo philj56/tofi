@@ -26,9 +26,9 @@ static const char *gl_debug_severity_string(GLenum type);
 void gl_initialise(struct gl *gl, struct image *texture)
 {
 #ifdef DEBUG
-	glEnable(GL_DEBUG_OUTPUT);
-	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-	glDebugMessageCallback(MessageCallback, 0);
+	//glEnable(GL_DEBUG_OUTPUT);
+	//glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	//glDebugMessageCallback(MessageCallback, 0);
 #endif
 	if (texture == NULL || texture->buffer == NULL) {
 		return;

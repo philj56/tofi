@@ -8,6 +8,7 @@
 #include "entry.h"
 #include "image.h"
 #include "surface.h"
+#include "wlr-layer-shell-unstable-v1.h"
 
 struct tofi {
 	/* Globals */
@@ -17,7 +18,7 @@ struct tofi {
 	struct wl_subcompositor *wl_subcompositor;
 	struct wl_seat *wl_seat;
 	struct wl_output *wl_output;
-	struct xdg_wm_base *xdg_wm_base;
+	struct zwlr_layer_shell_v1 *zwlr_layer_shell;
 
 	uint32_t wl_display_name;
 	uint32_t wl_registry_name;
@@ -25,7 +26,7 @@ struct tofi {
 	uint32_t wl_subcompositor_name;
 	uint32_t wl_seat_name;
 	uint32_t wl_output_name;
-	uint32_t xdg_wm_base_name;
+	uint32_t zwlr_layer_shell_name;
 
 	/* Objects */
 	struct wl_keyboard *wl_keyboard;
@@ -35,8 +36,7 @@ struct tofi {
 	bool closed;
 	struct {
 		struct surface surface;
-		struct xdg_surface *xdg_surface;
-		struct xdg_toplevel *xdg_toplevel;
+		struct zwlr_layer_surface_v1 *zwlr_layer_surface;
 		struct image background_image;
 		struct color background_color;
 		struct entry entry;
