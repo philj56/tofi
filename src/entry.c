@@ -8,32 +8,13 @@
 #include "log.h"
 #include "nelem.h"
 
-#ifndef TWO_PI
-#define TWO_PI 6.283185307179586f
-#endif
-
-void entry_init(struct entry *entry, uint32_t scale)
+void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t scale)
 {
-	/* Calculate the size of the entry from our font and various widths. */
-	//calculate_font_extents(entry, scale);
-	entry->text_bounds.width = 200;
-	entry->text_bounds.height = 200;
+	entry->image.width = width;
+	entry->image.height = height;
 
-	entry->surface.width = entry->text_bounds.width;
-	entry->surface.height = entry->text_bounds.height;
-	entry->surface.width += 2 * (
-			entry->border.width
-			+ 2 * entry->border.outline_width
-			+ entry->padding
-		     );
-	entry->surface.height += 2 * (
-			entry->border.width
-			+ 2 * entry->border.outline_width
-			+ entry->padding
-		     );
-	entry->surface.width *= scale;
-	entry->surface.height *= scale;
-
+	width /= scale;
+	height /= scale;
 
 	/*
 	 * Cairo uses native 32 bit integers for pixels, so if this processor
@@ -48,15 +29,11 @@ void entry_init(struct entry *entry, uint32_t scale)
 	 */
 	cairo_surface_t *surface = cairo_image_surface_create(
 			CAIRO_FORMAT_ARGB32,
-			entry->surface.width,
-			entry->surface.height
+			width * scale,
+			height * scale
 			);
 	cairo_surface_set_device_scale(surface, scale, scale);
 	cairo_t *cr = cairo_create(surface);
-
-	/* Running size of current drawing area. */
-	int32_t width = entry->surface.width / scale;
-	int32_t height = entry->surface.height / scale;
 
 	/* Draw the outer outline */
 	struct color color = entry->border.outline_color;
@@ -112,12 +89,6 @@ void entry_init(struct entry *entry, uint32_t scale)
 	cairo_rectangle(cr, 0, 0, width, height);
 	cairo_clip(cr);
 
-	/*
-	 * Move the cursor back up, so that Pango draws in the correct place if
-	 * we're doing a tight layout.
-	 */
-	//cairo_translate(cr, -entry->text_bounds.x, -entry->text_bounds.y);
-
 	/* Setup Pango. */
 	PangoContext *context = pango_cairo_create_context(cr);
 
@@ -143,8 +114,6 @@ void entry_init(struct entry *entry, uint32_t scale)
 	entry->cairo.surface = surface;
 	entry->cairo.cr = cr;
 
-	entry->image.width = entry->surface.width;
-	entry->image.height = entry->surface.height;
 	entry->image.buffer = cairo_image_surface_get_data(surface);
 }
 
@@ -167,12 +136,12 @@ void entry_update(struct entry *entry)
 	entry->image.redraw = true;
 
 	/* Clear the image. */
-	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
+	struct color color = entry->background_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_paint(cr);
-	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
 	/* Draw our text. */
-	struct color color = entry->foreground_color;
+	color = entry->foreground_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
 	pango_layout_set_text(entry->pango.entry_layout, entry->input_mb, -1);

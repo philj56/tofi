@@ -33,7 +33,6 @@
 static void resize(struct tofi *tofi)
 {
 	struct surface *surface = &tofi->window.surface;
-	struct surface *entry_surface = &tofi->window.entry.surface;
 
 	/*
 	 * Resize the main window.
@@ -219,7 +218,6 @@ static void wl_keyboard_key(
 		return;
 	}
 	entry_update(&tofi->window.entry);
-	tofi->window.entry.surface.redraw = true;
 	tofi->window.surface.redraw = true;
 	
 }
@@ -475,13 +473,6 @@ static void registry_global(
 				&wl_compositor_interface,
 				4);
 		log_debug("Bound to compositor %u.\n", name);
-	} else if (!strcmp(interface, wl_subcompositor_interface.name)) {
-		tofi->wl_subcompositor = wl_registry_bind(
-				wl_registry,
-				name,
-				&wl_subcompositor_interface,
-				1);
-		log_debug("Bound to subcompositor %u.\n", name);
 	} else if (!strcmp(interface, wl_seat_interface.name)) {
 		tofi->wl_seat = wl_registry_bind(
 				wl_registry,
@@ -763,10 +754,9 @@ int main(int argc, char *argv[])
 	log_debug("Second roundtrip done.\n");
 
 	/*
-	 * Next, we create the Wayland surfaces that we need - one for
-	 * the whole window, and another for the entry box.
+	 * Next, we create the Wayland surface, which takes on the
+	 * layer shell role.
 	 */
-	/* The main window surface takes on the layer_shell_surface role. */
 	log_debug("Creating main window surface.\n");
 	tofi.window.surface.wl_surface =
 		wl_compositor_create_surface(tofi.wl_compositor);
@@ -792,48 +782,15 @@ int main(int argc, char *argv[])
 			tofi.window.zwlr_layer_surface,
 			&zwlr_layer_surface_listener,
 			&tofi);
-
-	/*
-	 * The entry surface takes on a subsurface role and is set to be
-	 * desynchronised, so that we can update it independently from the main
-	 * window.
-	 */
-	log_debug("Creating entry surface.\n");
-	tofi.window.entry.surface.wl_surface =
-		wl_compositor_create_surface(tofi.wl_compositor);
-	wl_surface_set_buffer_scale(
-			tofi.window.entry.surface.wl_surface,
-			tofi.window.scale);
-
-	tofi.window.entry.wl_subsurface = wl_subcompositor_get_subsurface(
-			tofi.wl_subcompositor,
-			tofi.window.entry.surface.wl_surface,
-			tofi.window.surface.wl_surface);
-	wl_subsurface_set_desync(tofi.window.entry.wl_subsurface);
-
-	wl_surface_commit(tofi.window.entry.surface.wl_surface);
-
-	/*
-	 * Initialise the Pango & Cairo structures for rendering the entry.
-	 * Cairo needs to know the size of the surface it's creating, and
-	 * there's no way to resize it aside from tearing everything down and
-	 * starting again, so we make sure to do this after we've determined
-	 * our output's scale factor. This stops us being able to change the
-	 * scale factor after startup, but this is just a launcher, which
-	 * shouldn't be moving between outputs while running.
-	 */
-	log_debug("Initialising Pango / Cairo.\n");
-	entry_init(&tofi.window.entry, tofi.window.scale);
-	log_debug("Pango / Cairo initialised.\n");
-
-	/* Tell the compositor not to make our window smaller than the entry. */
-	//zwlr_layer_surface_v1_set_size(
-	//		tofi.window.zwlr_layer_surface,
-	//		100,
-	//		100);
 	zwlr_layer_surface_v1_set_anchor(
 			tofi.window.zwlr_layer_surface,
-			0x0Fu);
+			ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
+	zwlr_layer_surface_v1_set_exclusive_zone(
+			tofi.window.zwlr_layer_surface,
+			-1);
 	wl_surface_commit(tofi.window.surface.wl_surface);
 
 	/*
@@ -849,6 +806,24 @@ int main(int argc, char *argv[])
 	resize(&tofi);
 
 	/*
+	 * Initialise the Pango & Cairo structures for rendering the entry.
+	 * Cairo needs to know the size of the surface it's creating, and
+	 * there's no way to resize it aside from tearing everything down and
+	 * starting again, so we make sure to do this after we've determined
+	 * our output's scale factor. This stops us being able to change the
+	 * scale factor after startup, but this is just a launcher, which
+	 * shouldn't be moving between outputs while running.
+	 */
+	log_debug("Initialising Pango / Cairo.\n");
+	entry_init(
+			&tofi.window.entry,
+			tofi.window.surface.width,
+			tofi.window.surface.height,
+			tofi.window.scale);
+	entry_update(&tofi.window.entry);
+	log_debug("Pango / Cairo initialised.\n");
+
+	/*
 	 * Create the various EGL and GL structures for each surface, and
 	 * perform an initial render of everything.
 	 */
@@ -856,22 +831,9 @@ int main(int argc, char *argv[])
 	surface_initialise(
 			&tofi.window.surface,
 			tofi.wl_display,
-			&tofi.window.background_image);
+			&tofi.window.entry.image);
 	surface_draw(
 			&tofi.window.surface,
-			&tofi.window.background_color,
-			&tofi.window.background_image);
-
-	log_debug("Initialising entry window surface.\n");
-	surface_initialise(
-			&tofi.window.entry.surface,
-			tofi.wl_display,
-			&tofi.window.entry.image);
-
-	log_debug("Initial draw\n");
-	entry_update(&tofi.window.entry);
-	surface_draw(
-			&tofi.window.entry.surface,
 			&tofi.window.background_color,
 			&tofi.window.entry.image);
 
@@ -879,9 +841,8 @@ int main(int argc, char *argv[])
 	 * We've just rendered everything and resized, so we don't need to do
 	 * it again right now.
 	 */
-	//tofi.window.resize = false;
-	//tofi.window.surface.redraw = false;
-	//tofi.window.entry.surface.redraw = false;
+	tofi.window.resize = false;
+	tofi.window.surface.redraw = false;
 
 	while (wl_display_dispatch(tofi.wl_display) != -1) {
 		if (tofi.closed) {
@@ -892,19 +853,11 @@ int main(int argc, char *argv[])
 			tofi.window.resize = false;
 		}
 		if (tofi.window.surface.redraw) {
-			log_debug("Redraw main window.\n");
 			surface_draw(
 					&tofi.window.surface,
 					&tofi.window.background_color,
-					&tofi.window.background_image);
-			tofi.window.surface.redraw = false;
-		}
-		if (tofi.window.entry.surface.redraw) {
-			surface_draw(
-					&tofi.window.entry.surface,
-					&tofi.window.background_color,
 					&tofi.window.entry.image);
-			tofi.window.entry.surface.redraw = false;
+			tofi.window.surface.redraw = false;
 		}
 		if (tofi.submit) {
 			if (tofi.window.entry.results.count > 0) {
@@ -922,15 +875,12 @@ int main(int argc, char *argv[])
 	 * mostly from OpenGL libs and Pango.
 	 */
 	entry_destroy(&tofi.window.entry);
-	surface_destroy(&tofi.window.entry.surface);
 	surface_destroy(&tofi.window.surface);
 	if (tofi.window.background_image.buffer != NULL) {
 		free(tofi.window.background_image.buffer);
 		tofi.window.background_image.buffer = NULL;
 	}
 	eglTerminate(tofi.window.surface.egl.display);
-	wl_subsurface_destroy(tofi.window.entry.wl_subsurface);
-	wl_surface_destroy(tofi.window.entry.surface.wl_surface);
 	wl_surface_destroy(tofi.window.surface.wl_surface);
 	if (tofi.wl_keyboard != NULL) {
 		wl_keyboard_release(tofi.wl_keyboard);
@@ -939,7 +889,6 @@ int main(int argc, char *argv[])
 		wl_pointer_release(tofi.wl_pointer);
 	}
 	wl_compositor_destroy(tofi.wl_compositor);
-	wl_subcompositor_destroy(tofi.wl_subcompositor);
 	wl_seat_release(tofi.wl_seat);
 	wl_output_release(tofi.wl_output);
 	xkb_state_unref(tofi.xkb_state);

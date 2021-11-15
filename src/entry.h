@@ -7,11 +7,9 @@
 #include "surface.h"
 #include "string_vec.h"
 
-#define MAX_INPUT_LENGTH 64
+#define MAX_INPUT_LENGTH 128
 
 struct entry {
-	struct surface surface;
-	struct wl_subsurface *wl_subsurface;
 	struct image image;
 	struct {
 		PangoContext *context;
@@ -22,7 +20,6 @@ struct entry {
 		cairo_surface_t *surface;
 		cairo_t *cr;
 	} cairo;
-	PangoRectangle text_bounds;
 
 	wchar_t input[MAX_INPUT_LENGTH];
 	/* Assume maximum of 4 bytes per wchar_t (for UTF-8) */
@@ -49,7 +46,7 @@ struct entry {
 	} border;
 };
 
-void entry_init(struct entry *entry, uint32_t scale);
+void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t scale);
 void entry_destroy(struct entry *entry);
 void entry_update(struct entry *entry);
 void entry_set_scale(struct entry *entry, uint32_t scale);
