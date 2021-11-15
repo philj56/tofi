@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "string_vec.h"
+#include "xmalloc.h"
 
 static int cmpstringp(const void *restrict a, const void *restrict b)
 {
@@ -29,7 +30,7 @@ struct string_vec string_vec_create(void)
 	struct string_vec vec = {
 		.count = 0,
 		.size = 128,
-		.buf = calloc(128, sizeof(char *))
+		.buf = xcalloc(128, sizeof(char *))
 	};
 	return vec;
 }
@@ -47,7 +48,7 @@ struct string_vec string_vec_copy(struct string_vec *restrict vec)
 	struct string_vec copy = {
 		.count = vec->count,
 		.size = vec->size,
-		.buf = calloc(vec->size, sizeof(char *))
+		.buf = xcalloc(vec->size, sizeof(char *))
 	};
 
 	for (size_t i = 0; i < vec->count; i++) {
@@ -61,7 +62,7 @@ void string_vec_add(struct string_vec *restrict vec, const char *restrict str)
 {
 	if (vec->count == vec->size) {
 		vec->size *= 2;
-		vec->buf = realloc(vec->buf, vec->size * sizeof(vec->buf[0]));
+		vec->buf = xrealloc(vec->buf, vec->size * sizeof(vec->buf[0]));
 	}
 	vec->buf[vec->count] = strdup(str);
 	vec->count++;

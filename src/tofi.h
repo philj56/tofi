@@ -35,11 +35,10 @@ struct tofi {
 	struct {
 		struct surface surface;
 		struct zwlr_layer_surface_v1 *zwlr_layer_surface;
-		struct image background_image;
 		struct color background_color;
 		struct entry entry;
-		int32_t width;
-		int32_t height;
+		uint32_t width;
+		uint32_t height;
 		uint32_t scale;
 		bool resize;
 	} window;

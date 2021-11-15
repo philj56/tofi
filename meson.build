@@ -67,12 +67,12 @@ sources = files(
   'src/egl.c',
   'src/entry.c',
   'src/gl.c',
-  'src/image.c',
   'src/ipc.c',
   'src/log.c',
   'src/string_vec.c',
   'src/surface.c',
   'src/wlr-layer-shell-unstable-v1.c',
+  'src/xmalloc.c',
 )
 
 cc = meson.get_compiler('c')
@@ -80,7 +80,6 @@ epoxy = dependency('epoxy')
 glib = dependency('glib-2.0')
 json = dependency('json-c')
 pangocairo = dependency('pangocairo')
-png = dependency('libpng')
 wayland_client = dependency('wayland-client')
 wayland_egl = dependency('wayland-egl')
 wayland_protocols = dependency('wayland-protocols', native: true)
@@ -119,7 +118,7 @@ endforeach
 executable(
   'tofi',
   sources, wl_proto_src, wl_proto_headers,
-  dependencies: [epoxy, json, glib, pangocairo, png, wayland_egl, xkbcommon],
+  dependencies: [epoxy, json, glib, pangocairo, wayland_egl, xkbcommon],
   install: true
 )
 

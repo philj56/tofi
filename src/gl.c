@@ -5,6 +5,7 @@
 #include <string.h>
 #include "gl.h"
 #include "log.h"
+#include "xmalloc.h"
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
@@ -197,7 +198,7 @@ void load_shader(GLuint shader, const char *filename)
 		exit(EXIT_FAILURE);
 	}
 	unsigned long usize = (unsigned long) size;
-	GLchar *source = malloc(usize + 1);
+	GLchar *source = xmalloc(usize + 1);
 	rewind(fp);
 	if (fread(source, 1, usize, fp) != usize) {
 		log_error("Failed to load shader %s: %s.\n",
@@ -220,7 +221,7 @@ void load_shader(GLuint shader, const char *filename)
 		GLint info_length = 0;
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_length);
 		if (info_length > 1) {
-			char *log = malloc((unsigned)info_length * sizeof(*log));
+			char *log = xmalloc((unsigned)info_length * sizeof(*log));
 			glGetShaderInfoLog(shader, info_length, NULL, log);
 			log_error("\t%s\n", log);
 			free(log);

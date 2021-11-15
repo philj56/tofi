@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include "ipc.h"
 #include "log.h"
+#include "xmalloc.h"
 
 static int ipc_open(void);
 static int ipc_send(int socket, struct json_object *request);
@@ -99,7 +100,7 @@ struct json_object *ipc_receive(int sock)
 		return NULL;
 	}
 
-	char *buf = malloc(len + 1);
+	char *buf = xmalloc(len + 1);
 	if (recv(sock, buf, len, 0) != len) {
 		log_error("Error receiving response: %s\n", strerror(errno));
 		free(buf);

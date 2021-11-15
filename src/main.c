@@ -53,16 +53,6 @@ static void resize(struct tofi *tofi)
 	 * Wayland wants "surface-local" width / height, so we have to divide
 	 * the entry's pixel size by the scale factor.
 	 */
-	//int32_t x = (
-	//		tofi->window.width
-	//		- entry_surface->width / tofi->window.scale
-	//	    ) / 2;
-	//int32_t y = (
-	//		tofi->window.height
-	//		- entry_surface->height / tofi->window.scale
-	//	    ) / 2;
-	//wl_subsurface_set_position(tofi->window.entry.wl_subsurface, x, y);
-	//wl_surface_commit(tofi->window.entry.surface.wl_surface);
 }
 
 static void zwlr_layer_surface_configure(
@@ -603,7 +593,6 @@ int main(int argc, char *argv[])
 
 	/* Option parsing with getopt. */
 	struct option long_options[] = {
-		{"background-image", required_argument, NULL, 'b'},
 		{"background-color", required_argument, NULL, 'B'},
 		{"border-width", required_argument, NULL, 'r'},
 		{"border-color", required_argument, NULL, 'R'},
@@ -626,11 +615,6 @@ int main(int argc, char *argv[])
 	int opt = getopt_long(argc, argv, short_options, long_options, NULL);
 	while (opt != -1) {
 		switch (opt) {
-			case 'b':
-				image_load(
-					&tofi.window.background_image,
-					optarg);
-				break;
 			case 'B':
 				tofi.window.background_color =
 					hex_to_color(optarg);
@@ -772,11 +756,11 @@ int main(int argc, char *argv[])
 			tofi.zwlr_layer_shell,
 			tofi.window.surface.wl_surface,
 			tofi.wl_output,
-			ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
+			ZWLR_LAYER_SHELL_V1_LAYER_TOP,
 			"launcher");
 	zwlr_layer_surface_v1_set_keyboard_interactivity(
 			tofi.window.zwlr_layer_surface,
-			ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE
+			ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND
 			);
 	zwlr_layer_surface_v1_add_listener(
 			tofi.window.zwlr_layer_surface,
@@ -791,6 +775,10 @@ int main(int argc, char *argv[])
 	zwlr_layer_surface_v1_set_exclusive_zone(
 			tofi.window.zwlr_layer_surface,
 			-1);
+	zwlr_layer_surface_v1_set_size(
+			tofi.window.zwlr_layer_surface,
+			800,
+			400);
 	wl_surface_commit(tofi.window.surface.wl_surface);
 
 	/*
@@ -834,7 +822,7 @@ int main(int argc, char *argv[])
 			&tofi.window.entry.image);
 	surface_draw(
 			&tofi.window.surface,
-			&tofi.window.background_color,
+			&tofi.window.entry.background_color,
 			&tofi.window.entry.image);
 
 	/*
@@ -855,7 +843,7 @@ int main(int argc, char *argv[])
 		if (tofi.window.surface.redraw) {
 			surface_draw(
 					&tofi.window.surface,
-					&tofi.window.background_color,
+					&tofi.window.entry.background_color,
 					&tofi.window.entry.image);
 			tofi.window.surface.redraw = false;
 		}
@@ -876,10 +864,6 @@ int main(int argc, char *argv[])
 	 */
 	entry_destroy(&tofi.window.entry);
 	surface_destroy(&tofi.window.surface);
-	if (tofi.window.background_image.buffer != NULL) {
-		free(tofi.window.background_image.buffer);
-		tofi.window.background_image.buffer = NULL;
-	}
 	eglTerminate(tofi.window.surface.egl.display);
 	wl_surface_destroy(tofi.window.surface.wl_surface);
 	if (tofi.wl_keyboard != NULL) {

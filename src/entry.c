@@ -100,6 +100,24 @@ void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t s
 	pango_context_set_font_description(context, font_description);
 	pango_font_description_free(font_description);
 
+	entry->pango.prompt_layout = pango_layout_new(context);
+	pango_layout_set_text(entry->pango.prompt_layout, "run: ", -1);
+	int prompt_width;
+	int prompt_height;
+	pango_layout_get_pixel_size(entry->pango.prompt_layout, &prompt_width, &prompt_height);
+	pango_cairo_update_layout(cr, entry->pango.prompt_layout);
+
+	/* Draw the prompt now, as this only needs to be done once */
+	color = entry->foreground_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	pango_cairo_show_layout(cr, entry->pango.prompt_layout);
+
+	/* Move and clip so we don't draw over the prompt */
+	cairo_translate(cr, prompt_width, 0);
+	width -= prompt_width;
+	cairo_rectangle(cr, 0, 0, width, height);
+	cairo_clip(cr);
+
 	entry->pango.entry_layout = pango_layout_new(context);
 	pango_layout_set_text(entry->pango.entry_layout, "", -1);
 
@@ -123,6 +141,7 @@ void entry_destroy(struct entry *entry)
 		g_object_unref(entry->pango.result_layouts[i]);
 	}
 	g_object_unref(entry->pango.entry_layout);
+	g_object_unref(entry->pango.prompt_layout);
 	g_object_unref(entry->pango.context);
 	cairo_destroy(entry->cairo.cr);
 	cairo_surface_destroy(entry->cairo.surface);

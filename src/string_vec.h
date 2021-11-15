@@ -3,6 +3,11 @@
 
 #include <stddef.h>
 
+struct program {
+	char *name;
+	size_t run_count;
+};
+
 struct string_vec {
 	size_t count;
 	size_t size;

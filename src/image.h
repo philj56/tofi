@@ -18,6 +18,4 @@ struct image {
 	} damage;
 };
 
-void image_load(struct image *image, const char *filename);
-
 #endif /* IMAGE_H */

@@ -13,6 +13,7 @@ struct entry {
 	struct image image;
 	struct {
 		PangoContext *context;
+		PangoLayout *prompt_layout;
 		PangoLayout *entry_layout;
 		PangoLayout *result_layouts[5];
 	} pango;
