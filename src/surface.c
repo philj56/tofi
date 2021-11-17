@@ -44,8 +44,8 @@ void surface_draw(
 				(double)surface->width / texture->width,
 				(double)surface->height / texture->height
 				);
-		uint32_t width = (uint32_t)(scale * texture->width);
-		uint32_t height = (uint32_t)(scale * texture->height);
+		int32_t width = (int32_t)(scale * texture->width);
+		int32_t height = (int32_t)(scale * texture->height);
 		int32_t x = -((int32_t)width - (int32_t)surface->width) / 2;
 		int32_t y = -((int32_t)height - (int32_t)surface->height) / 2;
 

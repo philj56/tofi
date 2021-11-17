@@ -11,4 +11,7 @@ void *xcalloc(size_t nmemb, size_t size);
 
 void *xrealloc(void *ptr, size_t size);
 
+__attribute__((malloc))
+char *xstrdup(const char *s);
+
 #endif /* XMALLOC_H */

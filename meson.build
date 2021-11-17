@@ -67,6 +67,7 @@ sources = files(
   'src/egl.c',
   'src/entry.c',
   'src/gl.c',
+  'src/history.c',
   'src/ipc.c',
   'src/log.c',
   'src/string_vec.c',

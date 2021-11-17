@@ -29,32 +29,6 @@
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-
-static void resize(struct tofi *tofi)
-{
-	struct surface *surface = &tofi->window.surface;
-
-	/*
-	 * Resize the main window.
-	 * EGL wants actual pixel width / height, so we have to scale the
-	 * values provided by Wayland.
-	 */
-	surface->width = tofi->window.width * tofi->window.scale;
-	surface->height = tofi->window.height * tofi->window.scale;
-
-	/*
-	 * Need to redraw the background at the new size. This entails a
-	 * wl_surface_commit, so no need to do so explicitly here.
-	 */
-	tofi->window.surface.redraw = true;
-
-	/*
-	 * Center the entry.
-	 * Wayland wants "surface-local" width / height, so we have to divide
-	 * the entry's pixel size by the scale factor.
-	 */
-}
-
 static void zwlr_layer_surface_configure(
 		void *data,
 		struct zwlr_layer_surface_v1 *zwlr_layer_surface,
@@ -72,7 +46,22 @@ static void zwlr_layer_surface_configure(
 	if (width != tofi->window.width || height != tofi->window.height) {
 		tofi->window.width = width;
 		tofi->window.height = height;
-		tofi->window.resize = true;
+
+		/*
+		 * Resize the main window.
+		 * EGL wants actual pixel width / height, so we have to scale the
+		 * values provided by Wayland.
+		 */
+		tofi->window.surface.width =
+			tofi->window.width * tofi->window.scale;
+		tofi->window.surface.height =
+			tofi->window.height * tofi->window.scale;
+
+		/*
+		 * Need to redraw the background at the new size. This entails a
+		 * wl_surface_commit, so no need to do so explicitly here.
+		 */
+		tofi->window.surface.redraw = true;
 	}
 	zwlr_layer_surface_v1_ack_configure(
 			tofi->window.zwlr_layer_surface,
@@ -202,8 +191,7 @@ static void wl_keyboard_key(
 		  )
 	{
 		tofi->closed = true;
-	} else if (entry->input_length > 0
-			&& (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter)) {
+	} else if (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter) {
 		tofi->submit = true;
 		return;
 	}
@@ -535,7 +523,6 @@ static void usage()
 "Usage: tofi [options]\n"
 "  -u, --user=NAME                The user to login as.\n"
 "  -c, --command=COMMAND          The command to run on login.\n"
-"  -b, --background-image=PATH    An image to use as the background.\n"
 "  -B, --background-color=COLOR   Color of the background.\n"
 "  -o, --outline-width=VALUE      Width of the border outlines in pixels.\n"
 "  -O, --outline-color=COLOR      Color of the border outlines.\n"
@@ -565,7 +552,7 @@ int main(int argc, char *argv[])
 		.username = "nobody",
 		.command = "false",
 		.window = {
-			.background_color = {0.89, 0.8, 0.824, 1.0},
+			.background_color = {0.89f, 0.8f, 0.824f, 1.0f},
 			.scale = 1,
 			.width = 640,
 			.height = 480,
@@ -574,20 +561,21 @@ int main(int argc, char *argv[])
 				.border = {
 					.width = 6,
 					.outline_width = 2,
-					.color = {0.976, 0.149, 0.447, 1.0},
-					.outline_color = {0.031, 0.031, 0.0, 1.0},
+					.color = {0.976f, 0.149f, 0.447f, 1.0f},
+					.outline_color = {0.031f, 0.031f, 0.0f, 1.0f},
 				},
 				.font_name = "Sans Bold",
 				.font_size = 24,
 				.padding = 8,
 				.num_characters = 12,
-				.background_color = {0.106, 0.114, 0.118, 1.0},
-				.foreground_color = {1.0, 1.0, 1.0, 1.0}
+				.background_color = {0.106f, 0.114f, 0.118f, 1.0f},
+				.foreground_color = {1.0f, 1.0f, 1.0f, 1.0f}
 			}
 		}
 	};
 
-	tofi.window.entry.commands = compgen();
+	tofi.window.entry.history = history_load();
+	tofi.window.entry.commands = compgen(&tofi.window.entry.history);
 	tofi.window.entry.results = string_vec_copy(&tofi.window.entry.commands);
 
 
@@ -790,9 +778,6 @@ int main(int argc, char *argv[])
 	wl_display_roundtrip(tofi.wl_display);
 	log_debug("Third roundtrip done.\n");
 
-	/* Call resize() just to center the entry properly. */
-	resize(&tofi);
-
 	/*
 	 * Initialise the Pango & Cairo structures for rendering the entry.
 	 * Cairo needs to know the size of the surface it's creating, and
@@ -825,20 +810,12 @@ int main(int argc, char *argv[])
 			&tofi.window.entry.background_color,
 			&tofi.window.entry.image);
 
-	/*
-	 * We've just rendered everything and resized, so we don't need to do
-	 * it again right now.
-	 */
-	tofi.window.resize = false;
+	/* We've just rendered, so we don't need to do it again right now. */
 	tofi.window.surface.redraw = false;
 
 	while (wl_display_dispatch(tofi.wl_display) != -1) {
 		if (tofi.closed) {
 			break;
-		}
-		if (tofi.window.resize) {
-			resize(&tofi);
-			tofi.window.resize = false;
 		}
 		if (tofi.window.surface.redraw) {
 			surface_draw(
@@ -848,10 +825,15 @@ int main(int argc, char *argv[])
 			tofi.window.surface.redraw = false;
 		}
 		if (tofi.submit) {
+			tofi.submit = false;
 			if (tofi.window.entry.results.count > 0) {
 				printf("%s\n", tofi.window.entry.results.buf[0]);
+				history_add(
+						&tofi.window.entry.history,
+						tofi.window.entry.results.buf[0]);
+				history_save(&tofi.window.entry.history);
+				break;
 			}
-			break;
 		}
 	}
 
@@ -879,6 +861,8 @@ int main(int argc, char *argv[])
 	xkb_keymap_unref(tofi.xkb_keymap);
 	xkb_context_unref(tofi.xkb_context);
 	wl_registry_destroy(tofi.wl_registry);
+	string_vec_destroy(&tofi.window.entry.commands);
+	history_destroy(&tofi.window.entry.history);
 #endif
 	/*
 	 * For release builds, skip straight to display disconnection and quit.

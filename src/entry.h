@@ -3,6 +3,7 @@
 
 #include <pango/pangocairo.h>
 #include "color.h"
+#include "history.h"
 #include "image.h"
 #include "surface.h"
 #include "string_vec.h"
@@ -30,6 +31,7 @@ struct entry {
 
 	struct string_vec results;
 	struct string_vec commands;
+	struct history history;
 
 	/* Options */
 	uint32_t font_size;

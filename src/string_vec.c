@@ -1,4 +1,5 @@
-#define _GNU_SOURCE
+#define _GNU_SOURCE /* Required for strcasecmp */
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include "string_vec.h"
@@ -7,8 +8,8 @@
 static int cmpstringp(const void *restrict a, const void *restrict b)
 {
 	/*
-	 * We receive pointers to the array elements (which are pointers to
-	 * char), so convert and dereference them for comparison.
+	 * For qsort we receive pointers to the array elements (which are
+	 * pointers to char), so convert and dereference them for comparison.
 	 */
 	const char *restrict str1 = *(const char **)a;
 	const char *restrict str2 = *(const char **)b;
@@ -52,7 +53,7 @@ struct string_vec string_vec_copy(struct string_vec *restrict vec)
 	};
 
 	for (size_t i = 0; i < vec->count; i++) {
-		copy.buf[i] = strdup(vec->buf[i]);
+		copy.buf[i] = xstrdup(vec->buf[i]);
 	}
 
 	return copy;
@@ -64,7 +65,7 @@ void string_vec_add(struct string_vec *restrict vec, const char *restrict str)
 		vec->size *= 2;
 		vec->buf = xrealloc(vec->buf, vec->size * sizeof(vec->buf[0]));
 	}
-	vec->buf[vec->count] = strdup(str);
+	vec->buf[vec->count] = xstrdup(str);
 	vec->count++;
 }
 
@@ -85,6 +86,11 @@ void string_vec_uniq(struct string_vec *restrict vec)
 	}
 	string_vec_sort(vec);
 	vec->count = count;
+}
+
+char **string_vec_find(struct string_vec *restrict vec, const char * str)
+{
+	return bsearch(&str, vec->buf, vec->count, sizeof(vec->buf[0]), cmpstringp);
 }
 
 struct string_vec string_vec_filter(

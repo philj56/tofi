@@ -40,9 +40,9 @@ struct color hex_to_color(const char *hex)
 	}
 
 	return (struct color) {
-		.r = ((val & 0xFF000000u) >> 24) / 255.0f,
-		.g = ((val & 0x00FF0000u) >> 16) / 255.0f,
-		.b = ((val & 0x0000FF00u) >> 8)  / 255.0f,
-		.a = ((val & 0x000000FFu) >> 0)  / 255.0f,
+		.r = (float)((val & 0xFF000000u) >> 24) / 255.0f,
+		.g = (float)((val & 0x00FF0000u) >> 16) / 255.0f,
+		.b = (float)((val & 0x0000FF00u) >> 8)  / 255.0f,
+		.a = (float)((val & 0x000000FFu) >> 0)  / 255.0f,
 	};
 }

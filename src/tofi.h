@@ -40,7 +40,6 @@ struct tofi {
 		uint32_t width;
 		uint32_t height;
 		uint32_t scale;
-		bool resize;
 	} window;
 
 	/* Keyboard state */
