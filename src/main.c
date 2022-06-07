@@ -1,6 +1,4 @@
 #include <assert.h>
-#include <wayland-egl.h>
-#include <epoxy/gl.h>
 #include <errno.h>
 #include <getopt.h>
 #include <locale.h>
@@ -14,16 +12,14 @@
 #include <wayland-client.h>
 #include <wchar.h>
 #include <wctype.h>
-#include <xdg-shell.h>
 #include <xkbcommon/xkbcommon.h>
 #include "tofi.h"
 #include "compgen.h"
-#include "egl.h"
 #include "entry.h"
 #include "image.h"
-#include "gl.h"
 #include "log.h"
 #include "nelem.h"
+#include "shm.h"
 #include "string_vec.h"
 
 #undef MAX
@@ -49,7 +45,7 @@ static void zwlr_layer_surface_configure(
 
 		/*
 		 * Resize the main window.
-		 * EGL wants actual pixel width / height, so we have to scale the
+		 * We want actual pixel width / height, so we have to scale the
 		 * values provided by Wayland.
 		 */
 		tofi->window.surface.width =
@@ -57,9 +53,13 @@ static void zwlr_layer_surface_configure(
 		tofi->window.surface.height =
 			tofi->window.height * tofi->window.scale;
 
+		/* Assume 4 bytes per pixel for WL_SHM_FORMAT_XRGB8888 */
+		tofi->window.surface.stride =
+			tofi->window.surface.width * 4;
+
 		/*
-		 * Need to redraw the background at the new size. This entails a
-		 * wl_surface_commit, so no need to do so explicitly here.
+		 * Need to redraw the background at the new size. This entails
+		 * a wl_surface_commit, so no need to do so explicitly here.
 		 */
 		tofi->window.surface.redraw = true;
 	}
@@ -443,7 +443,7 @@ static void registry_global(
 		uint32_t version)
 {
 	struct tofi *tofi = data;
-	//log_debug("Registry %s %u.\n", interface, name);
+	log_debug("Registry %u: %s v%u.\n", name, interface, version);
 	if (!strcmp(interface, wl_compositor_interface.name)) {
 		tofi->wl_compositor = wl_registry_bind(
 				wl_registry,
@@ -473,12 +473,19 @@ static void registry_global(
 				&wl_output_listener,
 				tofi);
 		log_debug("Bound to output %u.\n", name);
+	} else if (!strcmp(interface, wl_shm_interface.name)) {
+		tofi->wl_shm = wl_registry_bind(
+				wl_registry,
+				name,
+				&wl_shm_interface,
+				1);
+		log_debug("Bound to shm %u.\n", name);
 	} else if (!strcmp(interface, zwlr_layer_shell_v1_interface.name)) {
 		tofi->zwlr_layer_shell = wl_registry_bind(
 				wl_registry,
 				name,
 				&zwlr_layer_shell_v1_interface,
-				1);
+				4);
 		log_debug("Bound to zwlr_layer_shell_v1 %u.\n", name);
 	}
 }
@@ -797,18 +804,20 @@ int main(int argc, char *argv[])
 	log_debug("Pango / Cairo initialised.\n");
 
 	/*
-	 * Create the various EGL and GL structures for each surface, and
+	 * Create the various structures for each surface, and
 	 * perform an initial render of everything.
 	 */
 	log_debug("Initialising main window surface.\n");
+
 	surface_initialise(
 			&tofi.window.surface,
-			tofi.wl_display,
+			tofi.wl_shm,
 			&tofi.window.entry.image);
 	surface_draw(
 			&tofi.window.surface,
 			&tofi.window.entry.background_color,
 			&tofi.window.entry.image);
+
 
 	/* We've just rendered, so we don't need to do it again right now. */
 	tofi.window.surface.redraw = false;
@@ -842,11 +851,10 @@ int main(int argc, char *argv[])
 	/*
 	 * For debug builds, try to cleanup as much as possible, to make using
 	 * e.g. Valgrind easier. There's still a few unavoidable leaks though,
-	 * mostly from OpenGL libs and Pango.
+	 * mostly from Pango.
 	 */
-	entry_destroy(&tofi.window.entry);
 	surface_destroy(&tofi.window.surface);
-	eglTerminate(tofi.window.surface.egl.display);
+	entry_destroy(&tofi.window.entry);
 	wl_surface_destroy(tofi.window.surface.wl_surface);
 	if (tofi.wl_keyboard != NULL) {
 		wl_keyboard_release(tofi.wl_keyboard);

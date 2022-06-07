@@ -1,4 +1,3 @@
-#include <arpa/inet.h>
 #include <cairo/cairo.h>
 #include <glib.h>
 #include <pango/pangocairo.h>
@@ -15,14 +14,6 @@ void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t s
 
 	width /= scale;
 	height /= scale;
-
-	/*
-	 * Cairo uses native 32 bit integers for pixels, so if this processor
-	 * is little endian we have to tell OpenGL to swizzle the texture.
-	 */
-	if (htonl(0xFFu) != 0xFFu) {
-		entry->image.swizzle = true;
-	}
 
 	/*
 	 * Create the cairo surface and context we'll be using.
@@ -90,8 +81,10 @@ void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t s
 	cairo_clip(cr);
 
 	/* Setup Pango. */
+	log_debug("Creating Pango context.\n");
 	PangoContext *context = pango_cairo_create_context(cr);
 
+	log_debug("Creating Pango font description.\n");
 	PangoFontDescription *font_description =
 		pango_font_description_from_string(entry->font_name);
 	pango_font_description_set_size(
@@ -101,10 +94,13 @@ void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t s
 	pango_font_description_free(font_description);
 
 	entry->pango.prompt_layout = pango_layout_new(context);
+	log_debug("Setting Pango text.\n");
 	pango_layout_set_text(entry->pango.prompt_layout, "run: ", -1);
 	int prompt_width;
 	int prompt_height;
+	log_debug("Get Pango pixel size.\n");
 	pango_layout_get_pixel_size(entry->pango.prompt_layout, &prompt_width, &prompt_height);
+	log_debug("First Pango draw.\n");
 	pango_cairo_update_layout(cr, entry->pango.prompt_layout);
 
 	/* Draw the prompt now, as this only needs to be done once */
@@ -118,6 +114,7 @@ void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t s
 	cairo_rectangle(cr, 0, 0, width, height);
 	cairo_clip(cr);
 
+	log_debug("Creating Pango layout.\n");
 	entry->pango.entry_layout = pango_layout_new(context);
 	pango_layout_set_text(entry->pango.entry_layout, "", -1);
 

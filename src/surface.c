@@ -1,4 +1,8 @@
-#include "gl.h"
+#include <string.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include "log.h"
+#include "shm.h"
 #include "surface.h"
 
 #undef MAX
@@ -6,23 +10,56 @@
 
 void surface_initialise(
 		struct surface *surface,
-		struct wl_display *wl_display,
+		struct wl_shm *wl_shm,
 		struct image *texture)
 {
-	egl_create_window(
-			&surface->egl,
-			surface->wl_surface,
-			surface->width,
-			surface->height);
-	egl_create_context(&surface->egl, wl_display);
-	gl_initialise(&surface->gl, texture);
+
+	const int height = surface->height;
+	const int stride = surface->stride;
+
+	/* Double-buffered pool, so allocate space for two windows */
+	surface->shm_pool_size =
+		height
+		* stride
+		* 2;
+	surface->shm_pool_fd = shm_allocate_file(surface->shm_pool_size);
+	surface->shm_pool_data = mmap(
+			NULL,
+			surface->shm_pool_size,
+			PROT_READ | PROT_WRITE,
+			MAP_SHARED,
+			surface->shm_pool_fd,
+			0);
+	surface->wl_shm_pool = wl_shm_create_pool(
+			wl_shm,
+			surface->shm_pool_fd,
+			surface->shm_pool_size);
+
+	for (int i = 0; i < 2; i++) {
+		int offset = surface->height * surface->stride * i;
+		surface->buffers[i] = wl_shm_pool_create_buffer(
+				surface->wl_shm_pool,
+				offset,
+				surface->width,
+				surface->height,
+				surface->stride,
+				WL_SHM_FORMAT_XRGB8888);
+	}
+
+	log_debug("Created shm file with size %d KiB.\n",
+			surface->shm_pool_size / 1024);
+
+	surface->index = 0;
 }
 
 void surface_destroy(struct surface *surface)
 {
-	egl_make_current(&surface->egl);
-	gl_destroy(&surface->gl);
-	egl_destroy(&surface->egl);
+	wl_shm_pool_destroy(surface->wl_shm_pool);
+	munmap(surface->shm_pool_data, surface->shm_pool_size);
+	surface->shm_pool_data = NULL;
+	close(surface->shm_pool_fd);
+	wl_buffer_destroy(surface->buffers[0]);
+	wl_buffer_destroy(surface->buffers[1]);
 }
 
 void surface_draw(
@@ -30,29 +67,12 @@ void surface_draw(
 		struct color *color,
 		struct image *texture)
 {
-	wl_egl_window_resize(
-			surface->egl.window,
-			surface->width,
-			surface->height,
-			0,
-			0);
-	egl_make_current(&surface->egl);
-	gl_clear(&surface->gl, color);
+	surface->index = !surface->index;
+	int offset = surface->height * surface->stride * surface->index;
+	uint32_t *pixels = (uint32_t *)&surface->shm_pool_data[offset];
+	memcpy(pixels, texture->buffer, surface->height * surface->stride);
 
-	if (texture != NULL && texture->buffer != NULL) {
-		double scale = MAX(
-				(double)surface->width / texture->width,
-				(double)surface->height / texture->height
-				);
-		int32_t width = (int32_t)(scale * texture->width);
-		int32_t height = (int32_t)(scale * texture->height);
-		int32_t x = -((int32_t)width - (int32_t)surface->width) / 2;
-		int32_t y = -((int32_t)height - (int32_t)surface->height) / 2;
-
-		gl_draw_texture(&surface->gl, texture, x, y, width, height);
-	}
-
+	wl_surface_attach(surface->wl_surface, surface->buffers[surface->index], 0, 0);
 	wl_surface_damage_buffer(surface->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
-
-	egl_swap_buffers(&surface->egl);
+	wl_surface_commit(surface->wl_surface);
 }

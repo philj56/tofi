@@ -25,22 +25,11 @@ data_location = join_paths(
   'tofi'
 )
 
-shader_location = join_paths(
-  debug ? '' : data_location,
-  'shaders',
-  ''
-)
-
 completion_location = join_paths(
   get_option('prefix'),
   get_option('datadir'),
   'bash-completion',
   'completions'
-)
-
-install_subdir(
-  'shaders',
-  install_dir: data_location
 )
 
 install_data(
@@ -55,7 +44,6 @@ add_project_arguments(
     '-Wshadow',
     '-Wno-unused-parameter',
     '-D_POSIX_C_SOURCE=200809L',
-    '-DSHADER_PATH="@0@"'.format(shader_location),
   ],
   language: 'c'
 )
@@ -64,12 +52,10 @@ sources = files(
   'src/main.c',
   'src/color.c',
   'src/compgen.c',
-  'src/egl.c',
   'src/entry.c',
-  'src/gl.c',
   'src/history.c',
-  'src/ipc.c',
   'src/log.c',
+  'src/shm.c',
   'src/string_vec.c',
   'src/surface.c',
   'src/wlr-layer-shell-unstable-v1.c',
@@ -77,12 +63,9 @@ sources = files(
 )
 
 cc = meson.get_compiler('c')
-epoxy = dependency('epoxy')
 glib = dependency('glib-2.0')
-json = dependency('json-c')
 pangocairo = dependency('pangocairo')
 wayland_client = dependency('wayland-client')
-wayland_egl = dependency('wayland-egl')
 wayland_protocols = dependency('wayland-protocols', native: true)
 wayland_scanner_dep = dependency('wayland-scanner', native: true)
 xkbcommon = dependency('xkbcommon')
@@ -119,7 +102,7 @@ endforeach
 executable(
   'tofi',
   sources, wl_proto_src, wl_proto_headers,
-  dependencies: [epoxy, json, glib, pangocairo, wayland_egl, xkbcommon],
+  dependencies: [glib, pangocairo, wayland_client, xkbcommon],
   install: true
 )
 

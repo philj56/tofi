@@ -23,7 +23,7 @@ static int cmpstringp(const void *restrict a, const void *restrict b)
 	if (str2 == NULL) {
 		return -1;
 	}
-	return strcasecmp(str1, str2);
+	return strcmp(str1, str2);
 }
 
 struct string_vec string_vec_create(void)

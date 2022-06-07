@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <xdg-shell.h>
 #include "color.h"
 #include "entry.h"
 #include "image.h"
@@ -17,6 +16,7 @@ struct tofi {
 	struct wl_compositor *wl_compositor;
 	struct wl_seat *wl_seat;
 	struct wl_output *wl_output;
+	struct wl_shm *wl_shm;
 	struct zwlr_layer_shell_v1 *zwlr_layer_shell;
 
 	uint32_t wl_display_name;
@@ -24,6 +24,7 @@ struct tofi {
 	uint32_t wl_compositor_name;
 	uint32_t wl_seat_name;
 	uint32_t wl_output_name;
+	uint32_t wl_shm_name;
 	uint32_t zwlr_layer_shell_name;
 
 	/* Objects */
