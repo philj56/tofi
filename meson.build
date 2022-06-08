@@ -48,7 +48,7 @@ add_project_arguments(
   language: 'c'
 )
 
-sources = files(
+common_sources = files(
   'src/main.c',
   'src/color.c',
   'src/compgen.c',
@@ -62,8 +62,14 @@ sources = files(
   'src/xmalloc.c',
 )
 
+pango_sources = files('src/entry_backend/pango.c')
+harfbuzz_sources = files('src/entry_backend/harfbuzz.c')
+
 cc = meson.get_compiler('c')
+libm = cc.find_library('m', required: false)
+freetype = dependency('freetype2')
 glib = dependency('glib-2.0')
+harfbuzz = dependency('harfbuzz')
 pangocairo = dependency('pangocairo')
 wayland_client = dependency('wayland-client')
 wayland_protocols = dependency('wayland-protocols', native: true)
@@ -101,8 +107,16 @@ endforeach
 
 executable(
   'tofi',
-  sources, wl_proto_src, wl_proto_headers,
+  common_sources, pango_sources, wl_proto_src, wl_proto_headers,
   dependencies: [glib, pangocairo, wayland_client, xkbcommon],
+  c_args: '-DUSE_PANGO',
+  install: true
+)
+
+executable(
+  'tofi-hb',
+  common_sources, harfbuzz_sources, wl_proto_src, wl_proto_headers,
+  dependencies: [libm, glib, freetype, harfbuzz, pangocairo, wayland_client, xkbcommon],
   install: true
 )
 

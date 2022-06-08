@@ -8,6 +8,7 @@ struct image {
 	uint8_t *buffer;
 	uint32_t width;
 	uint32_t height;
+	uint32_t scale;
 	bool redraw;
 	struct {
 		uint32_t x;

@@ -1,7 +1,13 @@
 #ifndef ENTRY_H
 #define ENTRY_H
 
-#include <pango/pangocairo.h>
+#ifdef USE_PANGO
+#include "entry_backend/pango.h"
+#else
+#include "entry_backend/harfbuzz.h"
+#endif
+
+#include <cairo/cairo.h>
 #include "color.h"
 #include "history.h"
 #include "image.h"
@@ -12,12 +18,7 @@
 
 struct entry {
 	struct image image;
-	struct {
-		PangoContext *context;
-		PangoLayout *prompt_layout;
-		PangoLayout *entry_layout;
-		PangoLayout *result_layouts[5];
-	} pango;
+	struct entry_backend backend;
 	struct {
 		cairo_surface_t *surface;
 		cairo_t *cr;

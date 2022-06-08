@@ -443,7 +443,7 @@ static void registry_global(
 		uint32_t version)
 {
 	struct tofi *tofi = data;
-	log_debug("Registry %u: %s v%u.\n", name, interface, version);
+	//log_debug("Registry %u: %s v%u.\n", name, interface, version);
 	if (!strcmp(interface, wl_compositor_interface.name)) {
 		tofi->wl_compositor = wl_registry_bind(
 				wl_registry,
@@ -786,7 +786,7 @@ int main(int argc, char *argv[])
 	log_debug("Third roundtrip done.\n");
 
 	/*
-	 * Initialise the Pango & Cairo structures for rendering the entry.
+	 * Initialise the structures for rendering the entry.
 	 * Cairo needs to know the size of the surface it's creating, and
 	 * there's no way to resize it aside from tearing everything down and
 	 * starting again, so we make sure to do this after we've determined
@@ -794,14 +794,14 @@ int main(int argc, char *argv[])
 	 * scale factor after startup, but this is just a launcher, which
 	 * shouldn't be moving between outputs while running.
 	 */
-	log_debug("Initialising Pango / Cairo.\n");
+	log_debug("Initialising renderer.\n");
 	entry_init(
 			&tofi.window.entry,
 			tofi.window.surface.width,
 			tofi.window.surface.height,
 			tofi.window.scale);
 	entry_update(&tofi.window.entry);
-	log_debug("Pango / Cairo initialised.\n");
+	log_debug("Renderer initialised.\n");
 
 	/*
 	 * Create the various structures for each surface, and
@@ -855,6 +855,7 @@ int main(int argc, char *argv[])
 	 */
 	surface_destroy(&tofi.window.surface);
 	entry_destroy(&tofi.window.entry);
+	zwlr_layer_surface_v1_destroy(tofi.window.zwlr_layer_surface);
 	wl_surface_destroy(tofi.window.surface.wl_surface);
 	if (tofi.wl_keyboard != NULL) {
 		wl_keyboard_release(tofi.wl_keyboard);
@@ -865,16 +866,20 @@ int main(int argc, char *argv[])
 	wl_compositor_destroy(tofi.wl_compositor);
 	wl_seat_release(tofi.wl_seat);
 	wl_output_release(tofi.wl_output);
+	wl_shm_destroy(tofi.wl_shm);
+	zwlr_layer_shell_v1_destroy(tofi.zwlr_layer_shell);
 	xkb_state_unref(tofi.xkb_state);
 	xkb_keymap_unref(tofi.xkb_keymap);
 	xkb_context_unref(tofi.xkb_context);
 	wl_registry_destroy(tofi.wl_registry);
 	string_vec_destroy(&tofi.window.entry.commands);
+	string_vec_destroy(&tofi.window.entry.results);
 	history_destroy(&tofi.window.entry.history);
 #endif
 	/*
 	 * For release builds, skip straight to display disconnection and quit.
 	 */
+	wl_display_roundtrip(tofi.wl_display);
 	wl_display_disconnect(tofi.wl_display);
 
 	log_debug("Finished, exiting.\n");
