@@ -28,7 +28,10 @@ void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t s
 	/* Draw the outer outline */
 	struct color color = entry->border.outline_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_paint(cr);
+	cairo_set_line_width(cr, 2 * entry->border.outline_width);
+	cairo_rectangle(cr, 0, 0, width, height);
+	cairo_stroke(cr);
+
 
 	/* Move and clip following draws to be within this outline */
 	cairo_translate(
@@ -43,7 +46,9 @@ void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t s
 	/* Draw the border */
 	color = entry->border.color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_paint(cr);
+	cairo_set_line_width(cr, 2 * entry->border.width);
+	cairo_rectangle(cr, 0, 0, width, height);
+	cairo_stroke(cr);
 
 	/* Move and clip following draws to be within the border */
 	cairo_translate(cr, entry->border.width, entry->border.width);
@@ -55,7 +60,9 @@ void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t s
 	/* Draw the inner outline */
 	color = entry->border.outline_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_paint(cr);
+	cairo_set_line_width(cr, 2 * entry->border.outline_width);
+	cairo_rectangle(cr, 0, 0, width, height);
+	cairo_stroke(cr);
 
 	/* Move and clip following draws to be within this outline */
 	cairo_translate(
