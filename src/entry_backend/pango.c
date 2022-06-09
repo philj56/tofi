@@ -7,9 +7,9 @@
 #include "../log.h"
 #include "../nelem.h"
 
-void entry_backend_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t scale)
+void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height, uint32_t scale)
 {
-	cairo_t *cr = entry->cairo.cr;
+	cairo_t *cr = entry->cairo[0].cr;
 
 	/* Setup Pango. */
 	log_debug("Creating Pango context.\n");
@@ -41,8 +41,8 @@ void entry_backend_init(struct entry *entry, uint32_t width, uint32_t height, ui
 
 	/* Move and clip so we don't draw over the prompt */
 	cairo_translate(cr, prompt_width, 0);
-	width -= prompt_width;
-	cairo_rectangle(cr, 0, 0, width, height);
+	*width -= prompt_width;
+	cairo_rectangle(cr, 0, 0, *width, *height);
 	cairo_clip(cr);
 
 	log_debug("Creating Pango layout.\n");
@@ -70,7 +70,7 @@ void entry_backend_destroy(struct entry *entry)
 
 void entry_backend_update(struct entry *entry)
 {
-	cairo_t *cr = entry->cairo.cr;
+	cairo_t *cr = entry->cairo[entry->index].cr;
 
 	pango_layout_set_text(entry->backend.entry_layout, entry->input_mb, -1);
 	pango_cairo_update_layout(cr, entry->backend.entry_layout);

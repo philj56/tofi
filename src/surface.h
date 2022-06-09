@@ -22,7 +22,7 @@ struct surface {
 	bool redraw;
 };
 
-void surface_initialise(
+void surface_init(
 		struct surface *surface,
 		struct wl_shm *wl_shm);
 void surface_destroy(struct surface *surface);

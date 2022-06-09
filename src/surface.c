@@ -8,7 +8,7 @@
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-void surface_initialise(
+void surface_init(
 		struct surface *surface,
 		struct wl_shm *wl_shm)
 {
@@ -47,8 +47,6 @@ void surface_initialise(
 
 	log_debug("Created shm file with size %d KiB.\n",
 			surface->shm_pool_size / 1024);
-
-	surface->index = 0;
 }
 
 void surface_destroy(struct surface *surface)
@@ -66,12 +64,9 @@ void surface_draw(
 		struct color *color,
 		struct image *texture)
 {
-	surface->index = !surface->index;
-	int offset = surface->height * surface->stride * surface->index;
-	uint32_t *pixels = (uint32_t *)&surface->shm_pool_data[offset];
-	memcpy(pixels, texture->buffer, surface->height * surface->stride);
-
 	wl_surface_attach(surface->wl_surface, surface->buffers[surface->index], 0, 0);
 	wl_surface_damage_buffer(surface->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
 	wl_surface_commit(surface->wl_surface);
+
+	surface->index = !surface->index;
 }

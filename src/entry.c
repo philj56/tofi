@@ -5,25 +5,50 @@
 #include "log.h"
 #include "nelem.h"
 
-void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t scale)
+void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t scale)
 {
 	entry->image.width = width;
 	entry->image.height = height;
 	entry->image.scale = scale;
 
-	width /= scale;
-	height /= scale;
-
 	/*
-	 * Create the cairo surface and context we'll be using.
+	 * Create the cairo surfaces and contexts we'll be using.
+	 *
+	 * In order to avoid an unnecessary copy when passing the image to the
+	 * Wayland server, we accept a pointer to the mmap-ed file that our
+	 * Wayland buffers are created from. This is assumed to be
+	 * (width * height * (sizeof(uint32_t) == 4) * 2) bytes,
+	 * to allow for double buffering.
 	 */
-	cairo_surface_t *surface = cairo_image_surface_create(
+	cairo_surface_t *surface = cairo_image_surface_create_for_data(
+			buffer,
 			CAIRO_FORMAT_ARGB32,
-			width * scale,
-			height * scale
+			width,
+			height,
+			width * sizeof(uint32_t)
 			);
 	cairo_surface_set_device_scale(surface, scale, scale);
 	cairo_t *cr = cairo_create(surface);
+
+	entry->cairo[0].surface = surface;
+	entry->cairo[0].cr = cr;
+
+	entry->cairo[1].surface = cairo_image_surface_create_for_data(
+			&buffer[width * height * sizeof(uint32_t)],
+			CAIRO_FORMAT_ARGB32,
+			width,
+			height,
+			width * sizeof(uint32_t)
+			);
+	cairo_surface_set_device_scale(entry->cairo[1].surface, scale, scale);
+	entry->cairo[1].cr = cairo_create(entry->cairo[1].surface);
+
+	/*
+	 * Cairo drawing operations take the scale into account,
+	 * so we account for that here.
+	 */
+	width /= scale;
+	height /= scale;
 
 	/* Draw the outer outline */
 	struct color color = entry->border.outline_color;
@@ -85,26 +110,43 @@ void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t s
 	height -= 2 * entry->padding;
 	cairo_rectangle(cr, 0, 0, width, height);
 	cairo_clip(cr);
-	
-	entry->cairo.surface = surface;
-	entry->cairo.cr = cr;
-	entry->image.buffer = cairo_image_surface_get_data(surface);
 
 	/* Setup the backend. */
-	entry_backend_init(entry, width, height, scale);
+	entry_backend_init(entry, &width, &height, scale);
+
+	/*
+	 * To avoid performing all this drawing twice, we take a small
+	 * shortcut. After performing all the drawing as normal on our first
+	 * Cairo context, we can copy over just the important state (the
+	 * transformation matrix and clip rectangle) and perform a memcpy()
+	 * to initialise the other context.
+	 */
+	cairo_matrix_t mat;
+	cairo_get_matrix(cr, &mat);
+	cairo_set_matrix(entry->cairo[1].cr, &mat);
+	cairo_rectangle(entry->cairo[1].cr, 0, 0, width, height);
+	cairo_clip(entry->cairo[1].cr);
+
+	memcpy(
+		cairo_image_surface_get_data(entry->cairo[1].surface),
+		cairo_image_surface_get_data(entry->cairo[0].surface),
+		entry->image.width * entry->image.height * sizeof(uint32_t)
+	);
 }
 
 void entry_destroy(struct entry *entry)
 {
 	entry_backend_destroy(entry);
-	cairo_destroy(entry->cairo.cr);
-	cairo_surface_destroy(entry->cairo.surface);
+	cairo_destroy(entry->cairo[0].cr);
+	cairo_destroy(entry->cairo[1].cr);
+	cairo_surface_destroy(entry->cairo[0].surface);
+	cairo_surface_destroy(entry->cairo[1].surface);
 }
 
 void entry_update(struct entry *entry)
 {
 	log_debug("Start rendering entry.\n");
-	cairo_t *cr = entry->cairo.cr;
+	cairo_t *cr = entry->cairo[entry->index].cr;
 	cairo_save(cr);
 
 	/* Clear the image. */
@@ -120,10 +162,13 @@ void entry_update(struct entry *entry)
 
 	cairo_restore(cr);
 	log_debug("Finish rendering entry.\n");
+
+	entry->index = !entry->index;
 }
 
 void entry_set_scale(struct entry *entry, uint32_t scale)
 {
 	entry->image.scale = scale;
-	cairo_surface_set_device_scale(entry->cairo.surface, scale, scale);
+	cairo_surface_set_device_scale(entry->cairo[0].surface, scale, scale);
+	cairo_surface_set_device_scale(entry->cairo[1].surface, scale, scale);
 }

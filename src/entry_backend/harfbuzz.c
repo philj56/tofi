@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <cairo/cairo.h>
 #include <glib.h>
 #include <harfbuzz/hb-ft.h>
@@ -11,6 +10,12 @@
 #include "../log.h"
 #include "../nelem.h"
 #include "../xmalloc.h"
+
+/*
+ * Cairo / FreeType use 72 Pts per inch, but Pango uses 96 DPI, so we have to
+ * rescale for consistency.
+ */
+#define PT_TO_DPI (96.0 / 72.0)
 
 static void setup_hb_buffer(hb_buffer_t *buffer)
 {
@@ -69,17 +74,22 @@ static uint32_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer, uint32_t scal
 	return width;
 }
 
-void entry_backend_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t scale)
+void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height, uint32_t scale)
 {
-	cairo_t *cr = entry->cairo.cr;
+	cairo_t *cr = entry->cairo[0].cr;
 
 	/* Setup FreeType. */
 	log_debug("Creating FreeType library.\n");
-	assert(!FT_Init_FreeType(&entry->backend.ft_library));
+	FT_Init_FreeType(&entry->backend.ft_library);
 
 	log_debug("Loading FreeType font.\n");
-	assert(!FT_New_Face(entry->backend.ft_library, "font.ttf", 0, &entry->backend.ft_face));
-	assert(!FT_Set_Char_Size(entry->backend.ft_face, entry->font_size * 64, entry->font_size * 64, 0, 0));
+	FT_New_Face(entry->backend.ft_library, "font.ttf", 0, &entry->backend.ft_face);
+	FT_Set_Char_Size(
+			entry->backend.ft_face,
+			entry->font_size * 64 * scale * PT_TO_DPI,
+			entry->font_size * 64 * scale * PT_TO_DPI,
+			0,
+			0);
 
 	log_debug("Creating Cairo font.\n");
 	entry->backend.cairo_face = cairo_ft_font_face_create_for_ft_face(entry->backend.ft_face, 0);
@@ -87,10 +97,11 @@ void entry_backend_init(struct entry *entry, uint32_t width, uint32_t height, ui
 	struct color color = entry->foreground_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_set_font_face(cr, entry->backend.cairo_face);
-	cairo_set_font_size(cr, entry->font_size * (96.0 / 72.0));
+	cairo_set_font_size(cr, entry->font_size * PT_TO_DPI);
 
-	cairo_font_extents_t font_extents;
-	cairo_font_extents(cr, &font_extents);
+	/* We also need to set up the font for our other Cairo context. */
+	cairo_set_font_face(entry->cairo[1].cr, entry->backend.cairo_face);
+	cairo_set_font_size(entry->cairo[1].cr, entry->font_size * PT_TO_DPI);
 
 	log_debug("Creating Harfbuzz font.\n");
 	entry->backend.hb_font = hb_ft_font_create_referenced(entry->backend.ft_face);
@@ -106,8 +117,8 @@ void entry_backend_init(struct entry *entry, uint32_t width, uint32_t height, ui
 	/* Move and clip so we don't draw over the prompt */
 	uint32_t prompt_width = render_hb_buffer(cr, entry->backend.hb_buffer, scale);
 	cairo_translate(cr, prompt_width, 0);
-	width -= prompt_width;
-	cairo_rectangle(cr, 0, 0, width, height);
+	*width -= prompt_width;
+	cairo_rectangle(cr, 0, 0, *width, *height);
 	cairo_clip(cr);
 }
 
@@ -121,7 +132,7 @@ void entry_backend_destroy(struct entry *entry)
 
 void entry_backend_update(struct entry *entry)
 {
-	cairo_t *cr = entry->cairo.cr;
+	cairo_t *cr = entry->cairo[entry->index].cr;
 
 	hb_buffer_clear_contents(entry->backend.hb_buffer);
 	setup_hb_buffer(entry->backend.hb_buffer);

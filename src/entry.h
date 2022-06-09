@@ -22,7 +22,8 @@ struct entry {
 	struct {
 		cairo_surface_t *surface;
 		cairo_t *cr;
-	} cairo;
+	} cairo[2];
+	int index;
 
 	wchar_t input[MAX_INPUT_LENGTH];
 	/* Assume maximum of 4 bytes per wchar_t (for UTF-8) */
@@ -50,7 +51,7 @@ struct entry {
 	} border;
 };
 
-void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t scale);
+void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t scale);
 void entry_destroy(struct entry *entry);
 void entry_update(struct entry *entry);
 void entry_set_scale(struct entry *entry, uint32_t scale);

@@ -785,6 +785,15 @@ int main(int argc, char *argv[])
 	wl_display_roundtrip(tofi.wl_display);
 	log_debug("Third roundtrip done.\n");
 
+
+	/*
+	 * Create the various structures for our window surface. This needs to
+	 * be done before calling entry_init as that performs some initial
+	 * drawing, and surface_init allocates the buffers we'll be drawing to.
+	 */
+	log_debug("Initialising window surface.\n");
+	surface_init(&tofi.window.surface, tofi.wl_shm);
+
 	/*
 	 * Initialise the structures for rendering the entry.
 	 * Cairo needs to know the size of the surface it's creating, and
@@ -797,19 +806,14 @@ int main(int argc, char *argv[])
 	log_debug("Initialising renderer.\n");
 	entry_init(
 			&tofi.window.entry,
+			tofi.window.surface.shm_pool_data,
 			tofi.window.surface.width,
 			tofi.window.surface.height,
 			tofi.window.scale);
 	entry_update(&tofi.window.entry);
 	log_debug("Renderer initialised.\n");
 
-	/*
-	 * Create the various structures for each surface, and
-	 * perform an initial render of everything.
-	 */
-	log_debug("Initialising main window surface.\n");
-
-	surface_initialise(&tofi.window.surface, tofi.wl_shm);
+	/* Perform an initial render. */
 	surface_draw(
 			&tofi.window.surface,
 			&tofi.window.entry.background_color,
