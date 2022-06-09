@@ -120,18 +120,19 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	 * Cairo context, we can copy over just the important state (the
 	 * transformation matrix and clip rectangle) and perform a memcpy()
 	 * to initialise the other context.
+	 *
+	 * This memcpy can pretty expensive however, and isn't needed until
+	 * we need to draw our second buffer (i.e. when the user presses a
+	 * key). In order to minimise startup time, the memcpy() isn't
+	 * performed here, but instead happens later, just after the first
+	 * frame has been displayed on screen (and while the user is unlikely
+	 * to press another key for the <10ms it takes to memcpy).
 	 */
 	cairo_matrix_t mat;
 	cairo_get_matrix(cr, &mat);
 	cairo_set_matrix(entry->cairo[1].cr, &mat);
 	cairo_rectangle(entry->cairo[1].cr, 0, 0, width, height);
 	cairo_clip(entry->cairo[1].cr);
-
-	memcpy(
-		cairo_image_surface_get_data(entry->cairo[1].surface),
-		cairo_image_surface_get_data(entry->cairo[0].surface),
-		entry->image.width * entry->image.height * sizeof(uint32_t)
-	);
 }
 
 void entry_destroy(struct entry *entry)

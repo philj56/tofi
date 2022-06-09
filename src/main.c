@@ -819,6 +819,20 @@ int main(int argc, char *argv[])
 			&tofi.window.entry.background_color,
 			&tofi.window.entry.image);
 
+	/*
+	 * entry_init() left the second of the two buffers we use for
+	 * double-buffering unpainted to lower startup time, as described
+	 * there. Here, we flush our first, finished buffer to the screen, then
+	 * copy over the image to the second buffer before we need to use it in
+	 * the main loop. This ensures we paint to the screen as quickly as
+	 * possible after startup.
+	 */
+	wl_display_roundtrip(tofi.wl_display);
+	memcpy(
+		cairo_image_surface_get_data(tofi.window.entry.cairo[1].surface),
+		cairo_image_surface_get_data(tofi.window.entry.cairo[0].surface),
+		tofi.window.entry.image.width * tofi.window.entry.image.height * sizeof(uint32_t)
+	);
 
 	/* We've just rendered, so we don't need to do it again right now. */
 	tofi.window.surface.redraw = false;
