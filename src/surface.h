@@ -24,8 +24,7 @@ struct surface {
 
 void surface_initialise(
 		struct surface *surface,
-		struct wl_shm *wl_shm,
-		struct image *texture);
+		struct wl_shm *wl_shm);
 void surface_destroy(struct surface *surface);
 void surface_draw(
 		struct surface *surface,

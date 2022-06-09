@@ -809,10 +809,7 @@ int main(int argc, char *argv[])
 	 */
 	log_debug("Initialising main window surface.\n");
 
-	surface_initialise(
-			&tofi.window.surface,
-			tofi.wl_shm,
-			&tofi.window.entry.image);
+	surface_initialise(&tofi.window.surface, tofi.wl_shm);
 	surface_draw(
 			&tofi.window.surface,
 			&tofi.window.entry.background_color,

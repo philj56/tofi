@@ -10,8 +10,7 @@
 
 void surface_initialise(
 		struct surface *surface,
-		struct wl_shm *wl_shm,
-		struct image *texture)
+		struct wl_shm *wl_shm)
 {
 
 	const int height = surface->height;

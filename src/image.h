@@ -9,7 +9,6 @@ struct image {
 	uint32_t width;
 	uint32_t height;
 	uint32_t scale;
-	bool redraw;
 	struct {
 		uint32_t x;
 		uint32_t y;

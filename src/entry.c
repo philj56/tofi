@@ -88,11 +88,10 @@ void entry_init(struct entry *entry, uint32_t width, uint32_t height, uint32_t s
 	
 	entry->cairo.surface = surface;
 	entry->cairo.cr = cr;
+	entry->image.buffer = cairo_image_surface_get_data(surface);
 
 	/* Setup the backend. */
 	entry_backend_init(entry, width, height, scale);
-
-	entry->image.buffer = cairo_image_surface_get_data(surface);
 }
 
 void entry_destroy(struct entry *entry)
@@ -104,10 +103,9 @@ void entry_destroy(struct entry *entry)
 
 void entry_update(struct entry *entry)
 {
+	log_debug("Start rendering entry.\n");
 	cairo_t *cr = entry->cairo.cr;
 	cairo_save(cr);
-
-	entry->image.redraw = true;
 
 	/* Clear the image. */
 	struct color color = entry->background_color;
@@ -121,6 +119,7 @@ void entry_update(struct entry *entry)
 	entry_backend_update(entry);
 
 	cairo_restore(cr);
+	log_debug("Finish rendering entry.\n");
 }
 
 void entry_set_scale(struct entry *entry, uint32_t scale)
