@@ -50,19 +50,19 @@ static uint32_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer, uint32_t scal
 	hb_glyph_position_t *glyph_pos = hb_buffer_get_glyph_positions(buffer, &glyph_count);
 	cairo_glyph_t *cairo_glyphs = xmalloc(sizeof(cairo_glyph_t) * glyph_count);
 
-	unsigned int width = 0;
+	double width = 0;
 	for (unsigned int i=0; i < glyph_count; ++i) {
-		width += ceil(glyph_pos[i].x_advance / 64.0 / scale);
+		width += glyph_pos[i].x_advance / 64.0 / scale;
 	}
 
-	int x = 0;
-	int y = 0;
+	double x = 0;
+	double y = 0;
 	for (unsigned int i=0; i < glyph_count; ++i) {
 		cairo_glyphs[i].index = glyph_info[i].codepoint;
-		cairo_glyphs[i].x = x + ceil(glyph_pos[i].x_offset / 64.0 / scale);
-		cairo_glyphs[i].y = y - ceil(glyph_pos[i].y_offset / 64.0 / scale);
-		x += ceil(glyph_pos[i].x_advance / 64.0 / scale);
-		y -= ceil(glyph_pos[i].y_advance / 64.0 / scale);
+		cairo_glyphs[i].x = x + glyph_pos[i].x_offset / 64.0 / scale;
+		cairo_glyphs[i].y = y - glyph_pos[i].y_offset / 64.0 / scale;
+		x += glyph_pos[i].x_advance / 64.0 / scale;
+		y -= glyph_pos[i].y_advance / 64.0 / scale;
 	}
 
 	cairo_show_glyphs(cr, cairo_glyphs, glyph_count);
@@ -71,7 +71,7 @@ static uint32_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer, uint32_t scal
 
 	cairo_restore(cr);
 
-	return width;
+	return ceil(width);
 }
 
 void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height, uint32_t scale)
