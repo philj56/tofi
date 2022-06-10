@@ -63,8 +63,12 @@ void entry_backend_update(struct entry *entry)
 	pango_cairo_update_layout(cr, layout);
 	pango_cairo_show_layout(cr, layout);
 
+	int width;
+	int height;
+	pango_layout_get_size(entry->backend.layout, &width, &height);
+
 	for (size_t i = 0; i < 5; i++) {
-		cairo_translate(cr, 0, 50);
+		cairo_translate(cr, 0, (int)(height / PANGO_SCALE));
 		const char *str;
 		if (i < entry->results.count) {
 			str = entry->results.buf[i];
