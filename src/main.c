@@ -508,7 +508,7 @@ static void surface_enter(
 		struct wl_surface *wl_surface,
 		struct wl_output *wl_output)
 {
-	log_debug("TODO: surface entered output.\n");
+	log_debug("Surface entered output.\n");
 }
 
 static void surface_leave(
@@ -516,7 +516,7 @@ static void surface_leave(
 		struct wl_surface *wl_surface,
 		struct wl_output *wl_output)
 {
-	log_debug("TODO: surface left output.\n");
+	/* Deliberately left blank */
 }
 
 static const struct wl_surface_listener wl_surface_listener = {
@@ -581,9 +581,13 @@ int main(int argc, char *argv[])
 		}
 	};
 
+	log_debug("Generating command list.\n");
+	log_indent();
 	tofi.window.entry.history = history_load();
 	tofi.window.entry.commands = compgen(&tofi.window.entry.history);
 	tofi.window.entry.results = string_vec_copy(&tofi.window.entry.commands);
+	log_unindent();
+	log_debug("Command list generated.\n");
 
 
 	/* Option parsing with getopt. */
@@ -720,7 +724,9 @@ int main(int argc, char *argv[])
 	 * various global object bindings.
 	 */
 	log_debug("First roundtrip start.\n");
+	log_indent();
 	wl_display_roundtrip(tofi.wl_display);
+	log_unindent();
 	log_debug("First roundtrip done.\n");
 
 	/*
@@ -729,7 +735,9 @@ int main(int argc, char *argv[])
 	 * configured, telling us the scale factor.
 	 */
 	log_debug("Second roundtrip start.\n");
+	log_indent();
 	wl_display_roundtrip(tofi.wl_display);
+	log_unindent();
 	log_debug("Second roundtrip done.\n");
 
 	/*
@@ -782,7 +790,9 @@ int main(int argc, char *argv[])
 	 * configured, after which we're ready to start drawing to the screen.
 	 */
 	log_debug("Third roundtrip start.\n");
+	log_indent();
 	wl_display_roundtrip(tofi.wl_display);
+	log_unindent();
 	log_debug("Third roundtrip done.\n");
 
 
@@ -792,7 +802,10 @@ int main(int argc, char *argv[])
 	 * drawing, and surface_init allocates the buffers we'll be drawing to.
 	 */
 	log_debug("Initialising window surface.\n");
+	log_indent();
 	surface_init(&tofi.window.surface, tofi.wl_shm);
+	log_unindent();
+	log_debug("Window surface initialised.\n");
 
 	/*
 	 * Initialise the structures for rendering the entry.
@@ -804,6 +817,7 @@ int main(int argc, char *argv[])
 	 * shouldn't be moving between outputs while running.
 	 */
 	log_debug("Initialising renderer.\n");
+	log_indent();
 	entry_init(
 			&tofi.window.entry,
 			tofi.window.surface.shm_pool_data,
@@ -811,6 +825,7 @@ int main(int argc, char *argv[])
 			tofi.window.surface.height,
 			tofi.window.scale);
 	entry_update(&tofi.window.entry);
+	log_unindent();
 	log_debug("Renderer initialised.\n");
 
 	/* Perform an initial render. */

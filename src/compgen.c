@@ -90,6 +90,5 @@ struct string_vec compgen(struct history *history)
 		programs.buf[i] = xstrdup(to_add.buf[i]);
 	}
 	string_vec_destroy(&to_add);
-	log_debug("Done.\n");
 	return programs;
 }

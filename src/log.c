@@ -10,11 +10,33 @@ static struct timespec time_diff(
 		struct timespec cur,
 		struct timespec old);
 
+static int indent = 0;
+
+static void print_indent(FILE *file)
+{
+	for (int i = 0; i < indent; i++) {
+		fprintf(file, "\t");
+	}
+}
+
+void log_indent(void)
+{
+	indent++;
+}
+
+void log_unindent(void)
+{
+	if (indent > 0) {
+		indent--;
+	}
+}
+
 void log_error(const char *const fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
 	fprintf(stderr, "[ERROR]: ");
+	print_indent(stderr);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 }
@@ -24,6 +46,7 @@ void log_warning(const char *const fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	fprintf(stderr, "[WARNING]: ");
+	print_indent(stderr);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 }
@@ -35,7 +58,7 @@ void log_debug(const char *const fmt, ...)
 #endif
 	static struct timespec start_time;
 	if (start_time.tv_nsec == 0) {
-		fprintf(stderr, "[ real,   cpu,  maxRSS]\n");
+		fprintf(stderr, "[ real,   cpu,   maxRSS]\n");
 		clock_gettime(CLOCK_REALTIME, &start_time);
 	}
 	struct timespec real_time;
@@ -51,13 +74,14 @@ void log_debug(const char *const fmt, ...)
 	va_start(args, fmt);
 	fprintf(
 		stderr,
-		"[%ld.%03ld, %ld.%03ld, %ld KB][DEBUG]: ",
+		"[%ld.%03ld, %ld.%03ld, %5ld KB][DEBUG]: ",
 		real_time.tv_sec,
 		real_time.tv_nsec / 1000000,
 		cpu_time.tv_sec,
 		cpu_time.tv_nsec / 1000000,
 		usage.ru_maxrss
 		);
+	print_indent(stderr);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 }
@@ -67,6 +91,7 @@ void log_info(const char *const fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	fprintf(stderr, "[INFO]: ");
+	print_indent(stderr);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 }
