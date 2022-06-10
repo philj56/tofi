@@ -7,9 +7,7 @@ struct entry;
 
 struct entry_backend {
 	PangoContext *context;
-	PangoLayout *prompt_layout;
-	PangoLayout *entry_layout;
-	PangoLayout *result_layouts[5];
+	PangoLayout *layout;
 };
 
 void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height, uint32_t scale);
