@@ -36,7 +36,6 @@ void log_error(const char *const fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	fprintf(stderr, "[ERROR]: ");
-	print_indent(stderr);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 }

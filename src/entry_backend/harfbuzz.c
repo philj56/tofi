@@ -1,10 +1,7 @@
 #include <cairo/cairo.h>
-#include <glib.h>
 #include <harfbuzz/hb-ft.h>
 #include <harfbuzz/hb-glib.h>
 #include <math.h>
-#include <pango/pangocairo.h>
-#include <pango/pango.h>
 #include <wchar.h>
 #include "harfbuzz.h"
 #include "../entry.h"
@@ -27,6 +24,17 @@ const struct {
 } ft_errors[] =
 
 #include <freetype/fterrors.h>
+
+static const char *get_ft_error_string(int err_code)
+{
+	for (size_t i = 0; i < N_ELEM(ft_errors); i++) {
+		if (ft_errors[i].err_code == err_code) {
+			return ft_errors[i].err_msg;
+		}
+	}
+
+	return "Unknown FT error";
+}
 
 /*
  * Cairo / FreeType use 72 Pts per inch, but Pango uses 96 DPI, so we have to
@@ -110,7 +118,7 @@ void entry_backend_init(
 	err = FT_Init_FreeType(&entry->backend.ft_library);
 	if (err) {
 		log_error("Error initialising FreeType: %s\n",
-				ft_errors[err].err_msg);
+				get_ft_error_string(err));
 		exit(EXIT_FAILURE);
 	}
 
@@ -119,18 +127,18 @@ void entry_backend_init(
 			entry->backend.ft_library, "font.ttf", 0,
 			&entry->backend.ft_face);
 	if (err) {
-		log_error("Error loading font: %s\n", ft_errors[err].err_msg);
+		log_error("Error loading font: %s\n", get_ft_error_string(err));
 		exit(EXIT_FAILURE);
 	}
 	err = FT_Set_Char_Size(
 			entry->backend.ft_face,
-			entry->font_size * 64 * scale,
-			entry->font_size * 64 * scale,
-			96,
-			96);
+			entry->font_size * 64,
+			entry->font_size * 64,
+			96 * scale,
+			96 * scale);
 	if (err) {
 		log_error("Error setting font size: %s\n",
-				ft_errors[err].err_msg);
+				get_ft_error_string(err));
 		exit(EXIT_FAILURE);
 	}
 
