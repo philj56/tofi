@@ -9,7 +9,7 @@
 #include "string_vec.h"
 #include "xmalloc.h"
 
-struct string_vec compgen(struct history *history)
+struct string_vec compgen()
 {
 	log_debug("Retrieving PATH.\n");
 	const char *env_path = getenv("PATH");
@@ -54,6 +54,11 @@ struct string_vec compgen(struct history *history)
 	log_debug("Making unique.\n");
 	string_vec_uniq(&programs);
 
+	return programs;
+}
+
+void compgen_history_sort(struct string_vec *programs, struct history *history)
+{
 	log_debug("Moving already known programs to the front.\n");
 	/*
 	 * Remove any programs in our history from the generated list, and
@@ -63,7 +68,7 @@ struct string_vec compgen(struct history *history)
 	 */
 	struct string_vec to_add = string_vec_create();
 	for (size_t i = 0; i < history->count; i++) {
-		char **res = string_vec_find(&programs, history->buf[i].name);
+		char **res = string_vec_find(programs, history->buf[i].name);
 		if (res == NULL) {
 			continue;
 		}
@@ -73,7 +78,7 @@ struct string_vec compgen(struct history *history)
 	}
 
 	/* Sort the vector to push the removed entries to the end. */
-	string_vec_sort(&programs);
+	string_vec_sort(programs);
 
 	/*
 	 * Move the results down by the number of items we want to add. There's
@@ -81,14 +86,13 @@ struct string_vec compgen(struct history *history)
 	 * many items.
 	 */
 	memmove(
-		&programs.buf[to_add.count],
-		programs.buf,
-		(programs.count - to_add.count) * sizeof(programs.buf[0]));
+		&programs->buf[to_add.count],
+		programs->buf,
+		(programs->count - to_add.count) * sizeof(programs->buf[0]));
 
 	/* Add our history to the front in order. */
 	for (size_t i = 0; i < to_add.count; i++) {
-		programs.buf[i] = xstrdup(to_add.buf[i]);
+		programs->buf[i] = xstrdup(to_add.buf[i]);
 	}
 	string_vec_destroy(&to_add);
-	return programs;
 }

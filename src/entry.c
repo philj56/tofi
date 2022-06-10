@@ -1,5 +1,4 @@
 #include <cairo/cairo.h>
-#include <glib.h>
 #include <wchar.h>
 #include "entry.h"
 #include "log.h"

@@ -4,6 +4,7 @@
 #include "history.h"
 #include "string_vec.h"
 
-struct string_vec compgen(struct history *history);
+struct string_vec compgen(void);
+void compgen_history_sort(struct string_vec *programs, struct history *history);
 
 #endif /* COMPGEN_H */

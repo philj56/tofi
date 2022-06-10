@@ -27,10 +27,6 @@ void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height, 
 	entry->backend.layout = pango_layout_new(context);
 	log_debug("Setting Pango text.\n");
 	pango_layout_set_text(entry->backend.layout, "run: ", -1);
-	int prompt_width;
-	int prompt_height;
-	log_debug("Get Pango pixel size.\n");
-	pango_layout_get_pixel_size(entry->backend.layout, &prompt_width, &prompt_height);
 	log_debug("First Pango draw.\n");
 	pango_cairo_update_layout(cr, entry->backend.layout);
 
@@ -40,6 +36,8 @@ void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height, 
 	pango_cairo_show_layout(cr, entry->backend.layout);
 
 	/* Move and clip so we don't draw over the prompt */
+	int prompt_width;
+	pango_layout_get_pixel_size(entry->backend.layout, &prompt_width, NULL);
 	cairo_translate(cr, prompt_width, 0);
 	*width -= prompt_width;
 	cairo_rectangle(cr, 0, 0, *width, *height);
@@ -63,9 +61,8 @@ void entry_backend_update(struct entry *entry)
 	pango_cairo_update_layout(cr, layout);
 	pango_cairo_show_layout(cr, layout);
 
-	int width;
 	int height;
-	pango_layout_get_size(entry->backend.layout, &width, &height);
+	pango_layout_get_size(layout, NULL, &height);
 
 	for (size_t i = 0; i < 5; i++) {
 		cairo_translate(cr, 0, (int)(height / PANGO_SCALE));

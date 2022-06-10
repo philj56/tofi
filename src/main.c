@@ -584,7 +584,8 @@ int main(int argc, char *argv[])
 	log_debug("Generating command list.\n");
 	log_indent();
 	tofi.window.entry.history = history_load();
-	tofi.window.entry.commands = compgen(&tofi.window.entry.history);
+	tofi.window.entry.commands = compgen();
+	compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
 	tofi.window.entry.results = string_vec_copy(&tofi.window.entry.commands);
 	log_unindent();
 	log_debug("Command list generated.\n");

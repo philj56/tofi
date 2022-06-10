@@ -1,6 +1,5 @@
 #include <cairo/cairo.h>
 #include <harfbuzz/hb-ft.h>
-#include <harfbuzz/hb-glib.h>
 #include <math.h>
 #include <wchar.h>
 #include "harfbuzz.h"
@@ -162,7 +161,6 @@ void entry_backend_init(
 	log_debug("Creating Harfbuzz buffer.\n");
 	hb_buffer_t *buffer = hb_buffer_create();
 	entry->backend.hb_buffer = buffer;
-	hb_buffer_set_unicode_funcs(buffer, hb_glib_get_unicode_funcs());
 	setup_hb_buffer(buffer);
 
 	/* Draw the prompt now, as this only needs to be done once */
