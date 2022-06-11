@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include "history.h"
 #include "log.h"
+#include "mkdirp.h"
 #include "xmalloc.h"
 
 static const char *default_state_dir = ".local/state";
@@ -15,7 +16,6 @@ static const char *histfile_basename = "tofi-history";
 
 [[nodiscard]]
 static struct history history_create(void);
-static bool mkdirp(const char *path);
 
 static char *get_histfile_path() {
 	char *histfile_name = NULL;
@@ -49,7 +49,6 @@ static char *get_histfile_path() {
 			histfile_basename);
 	}
 	return histfile_name;
-
 }
 
 struct history history_load()
@@ -192,33 +191,4 @@ void history_remove(struct history *restrict vec, const char *restrict str)
 			return;
 		}
 	}
-}
-
-bool mkdirp(const char *path)
-{
-	struct stat statbuf;
-	if (stat(path, &statbuf) == 0) {
-		/* If the history file exists, we don't need to do anything. */
-		return true;
-	}
-
-	/* 
-	 * Walk down the path, creating directories as we go. 
-	 * This works by repeatedly finding the next / in path, then calling
-	 * mkdir() on the string up to that point.
-	 */
-	char *tmp = xstrdup(path);
-	char *cursor = tmp;
-	while ((cursor = strchr(cursor + 1, '/')) != NULL) {
-		*cursor = '\0';
-		log_debug("Creating directory %s\n", tmp);
-		if (mkdir(tmp, 0700) != 0 && errno != EEXIST) {
-			log_error("Error creating history file path: %s.\n", strerror(errno));
-			free(tmp);
-			return false;
-		}
-		*cursor = '/';
-	}
-	free(tmp);
-	return true;
 }

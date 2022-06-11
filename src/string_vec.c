@@ -1,7 +1,8 @@
-#define _GNU_SOURCE /* Required for strcasecmp */
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include "string_vec.h"
 #include "xmalloc.h"
 
@@ -99,9 +100,38 @@ struct string_vec string_vec_filter(
 {
 	struct string_vec filt = string_vec_create();
 	for (size_t i = 0; i < vec->count; i++) {
-		if (strcasestr(vec->buf[i], substr) != NULL) {
+		if (strstr(vec->buf[i], substr) != NULL) {
 			string_vec_add(&filt, vec->buf[i]);
 		}
 	}
 	return filt;
+}
+
+struct string_vec string_vec_load(FILE *file)
+{
+	struct string_vec vec = string_vec_create();
+	if (file == NULL) {
+		return vec;
+	}
+
+	ssize_t bytes_read;
+	char *line = NULL;
+	size_t len;
+	while ((bytes_read = getline(&line, &len, file)) != -1) {
+		if (line[bytes_read - 1] == '\n') {
+			line[bytes_read - 1] = '\0';
+		}
+		string_vec_add(&vec, line);
+	}
+	free(line);
+
+	return vec;
+}
+
+void string_vec_save(struct string_vec *restrict vec, FILE *restrict file)
+{
+	for (size_t i = 0; i < vec->count; i++) {
+		fputs(vec->buf[i], file);
+		fputc('\n', file);
+	}
 }

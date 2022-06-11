@@ -55,6 +55,7 @@ common_sources = files(
   'src/entry.c',
   'src/history.c',
   'src/log.c',
+  'src/mkdirp.c',
   'src/shm.c',
   'src/string_vec.c',
   'src/surface.c',
@@ -68,6 +69,7 @@ compgen_sources = files(
   'src/main_compgen.c',
   'src/compgen.c',
   'src/log.c',
+  'src/mkdirp.c',
   'src/string_vec.c',
   'src/xmalloc.c'
 )

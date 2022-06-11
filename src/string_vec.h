@@ -2,6 +2,7 @@
 #define STRING_VEC_H
 
 #include <stddef.h>
+#include <stdio.h>
 
 struct string_vec {
 	size_t count;
@@ -28,5 +29,8 @@ char **string_vec_find(struct string_vec *restrict vec, const char *str);
 struct string_vec string_vec_filter(
 		const struct string_vec *restrict vec,
 		const char *restrict substr);
+
+struct string_vec string_vec_load(FILE *file);
+void string_vec_save(struct string_vec *restrict vec, FILE *restrict file);
 
 #endif /* STRING_VEC_H */

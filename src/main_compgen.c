@@ -4,9 +4,7 @@
 
 int main()
 {
-	struct string_vec commands = compgen();
-	for (size_t i = 0; i < commands.count; i++) {
-		printf("%s\n", commands.buf[i]);
-	}
+	struct string_vec commands = compgen_cached();
+	string_vec_save(&commands, stdout);
 	string_vec_destroy(&commands);
 }
