@@ -25,6 +25,33 @@
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+static int get_anchor(int anchor)
+{
+	switch (anchor) {
+		case 1:
+			return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+				| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
+		case 2:
+			return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP;
+		case 3:
+			return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+				| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		case 4:
+			return ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		case 5:
+			return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+				| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		case 6:
+			return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
+		case 7:
+			return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+				| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
+		case 8:
+			return ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
+	}
+	return 0;
+}
+
 static void zwlr_layer_surface_configure(
 		void *data,
 		struct zwlr_layer_surface_v1 *zwlr_layer_surface,
@@ -39,30 +66,26 @@ static void zwlr_layer_surface_configure(
 		return;
 	}
 	log_debug("Layer surface configure, %d x %d.\n", width, height);
-	if (width != tofi->window.width || height != tofi->window.height) {
-		tofi->window.width = width;
-		tofi->window.height = height;
 
-		/*
-		 * Resize the main window.
-		 * We want actual pixel width / height, so we have to scale the
-		 * values provided by Wayland.
-		 */
-		tofi->window.surface.width =
-			tofi->window.width * tofi->window.scale;
-		tofi->window.surface.height =
-			tofi->window.height * tofi->window.scale;
+	/*
+	 * Resize the main window.
+	 * We want actual pixel width / height, so we have to scale the
+	 * values provided by Wayland.
+	 */
+	tofi->window.width = width * tofi->window.scale;
+	tofi->window.height = height * tofi->window.scale;
 
-		/* Assume 4 bytes per pixel for WL_SHM_FORMAT_XRGB8888 */
-		tofi->window.surface.stride =
-			tofi->window.surface.width * 4;
+	tofi->window.surface.width = tofi->window.width;
+	tofi->window.surface.height = tofi->window.height;
 
-		/*
-		 * Need to redraw the background at the new size. This entails
-		 * a wl_surface_commit, so no need to do so explicitly here.
-		 */
-		tofi->window.surface.redraw = true;
-	}
+	/* Assume 4 bytes per pixel for WL_SHM_FORMAT_ARGB8888 */
+	tofi->window.surface.stride = tofi->window.surface.width * 4;
+
+	/*
+	 * Need to redraw the background at the new size. This entails
+	 * a wl_surface_commit, so no need to do so explicitly here.
+	 */
+	tofi->window.surface.redraw = true;
 	zwlr_layer_surface_v1_ack_configure(
 			tofi->window.zwlr_layer_surface,
 			serial);
@@ -92,7 +115,7 @@ static void wl_keyboard_keymap(
 	struct tofi *tofi = data;
 	assert(format == WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1);
 
-	char *map_shm = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+	char *map_shm = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
 	assert(map_shm != MAP_FAILED);
 
 	struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_string(
@@ -156,7 +179,7 @@ static void wl_keyboard_key(
 			sizeof(buf));
 	wchar_t ch;
 	mbtowc(&ch, buf, sizeof(buf));
-	if (len > 0 && iswprint(ch)) {
+	if (len > 0 && iswprint(ch) && !iswblank(ch)) {
 		if (entry->input_length < N_ELEM(entry->input) - 1) {
 			entry->input[entry->input_length] = ch;
 			entry->input_length++;
@@ -423,6 +446,22 @@ static void output_scale(
 	log_debug("Output scale factor is %d.\n", factor);
 }
 
+static void output_name(
+		void *data,
+		struct wl_output *wl_output,
+		const char *name)
+{
+	/* Deliberately left blank */
+}
+
+static void output_description(
+		void *data,
+		struct wl_output *wl_output,
+		const char *description)
+{
+	/* Deliberately left blank */
+}
+
 static void output_done(void *data, struct wl_output *wl_output)
 {
 	log_debug("Output configuration done.\n");
@@ -433,6 +472,8 @@ static const struct wl_output_listener wl_output_listener = {
 	.mode = output_mode,
 	.done = output_done,
 	.scale = output_scale,
+	.name = output_name,
+	.description = output_description,
 };
 
 static void registry_global(
@@ -467,7 +508,7 @@ static void registry_global(
 				wl_registry,
 				name,
 				&wl_output_interface,
-				3);
+				4);
 		wl_output_add_listener(
 				tofi->wl_output,
 				&wl_output_listener,
@@ -528,8 +569,6 @@ static void usage()
 {
 	fprintf(stderr,
 "Usage: tofi [options]\n"
-"  -u, --user=NAME                The user to login as.\n"
-"  -c, --command=COMMAND          The command to run on login.\n"
 "  -B, --background-color=COLOR   Color of the background.\n"
 "  -o, --outline-width=VALUE      Width of the border outlines in pixels.\n"
 "  -O, --outline-color=COLOR      Color of the border outlines.\n"
@@ -540,7 +579,6 @@ static void usage()
 "  -f, --font-name=NAME           Font to use.\n"
 "  -F, --font-size=VALUE          Point size of text.\n"
 "  -T, --text-color=COLOR         Color of text.\n"
-"  -n, --width-characters=VALUE   Width of the entry box in characters.\n"
 "  -H, --hide-cursor              Hide the cursor.\n"
 "  -h, --help                     Print this message and exit.\n"
 	);
@@ -556,14 +594,11 @@ int main(int argc, char *argv[])
 
 	/* Default options. */
 	struct tofi tofi = {
-		.username = "nobody",
-		.command = "false",
 		.window = {
 			.background_color = {0.89f, 0.8f, 0.824f, 1.0f},
 			.scale = 1,
 			.width = 640,
-			.height = 480,
-			.surface = { .width = 640, .height = 480 },
+			.height = 320,
 			.entry = {
 				.border = {
 					.width = 6,
@@ -573,8 +608,9 @@ int main(int argc, char *argv[])
 				},
 				.font_name = "Sans Bold",
 				.font_size = 24,
+				.prompt_text = "run: ",
+				.num_results = 5,
 				.padding = 8,
-				.num_characters = 12,
 				.background_color = {0.106f, 0.114f, 0.118f, 1.0f},
 				.foreground_color = {1.0f, 1.0f, 1.0f, 1.0f}
 			}
@@ -593,35 +629,50 @@ int main(int argc, char *argv[])
 
 	/* Option parsing with getopt. */
 	struct option long_options[] = {
+		{"anchor", required_argument, NULL, 'a'},
 		{"background-color", required_argument, NULL, 'B'},
-		{"border-width", required_argument, NULL, 'r'},
-		{"border-color", required_argument, NULL, 'R'},
-		{"outline-width", required_argument, NULL, 'o'},
-		{"outline-color", required_argument, NULL, 'O'},
+		{"corner-radius", required_argument, NULL, 'c'},
 		{"entry-padding", required_argument, NULL, 'e'},
 		{"entry-color", required_argument, NULL, 'E'},
-		{"text-color", required_argument, NULL, 'T'},
 		{"font-name", required_argument, NULL, 'f'},
 		{"font-size", required_argument, NULL, 'F'},
-		{"command", required_argument, NULL, 'c'},
-		{"user", required_argument, NULL, 'u'},
-		{"width-characters", required_argument, NULL, 'n'},
+		{"num-results", required_argument, NULL, 'n'},
+		{"outline-width", required_argument, NULL, 'o'},
+		{"outline-color", required_argument, NULL, 'O'},
+		{"prompt-text", required_argument, NULL, 'p'},
+		{"result-padding", required_argument, NULL, 'P'},
+		{"border-width", required_argument, NULL, 'r'},
+		{"border-color", required_argument, NULL, 'R'},
+		{"text-color", required_argument, NULL, 'T'},
+		{"width", required_argument, NULL, 'X'},
+		{"height", required_argument, NULL, 'Y'},
+		{"x-offset", required_argument, NULL, 'x'},
+		{"y-offset", required_argument, NULL, 'y'},
+		{"layout-horizontal", no_argument, NULL, 'l'},
 		{"hide-cursor", no_argument, NULL, 'H'},
 		{"help", no_argument, NULL, 'h'},
 		{NULL, 0, NULL, 0}
 	};
-	const char *short_options = ":b:B:c:e:E:f:F:hHr:R:n:o:O:T:u:";
+	const char *short_options = ":a:B:c:e:E:f:F:hHln:o:O:p:P:r:R:T:x:X:y:Y:";
 
 	int opt = getopt_long(argc, argv, short_options, long_options, NULL);
 	while (opt != -1) {
 		switch (opt) {
+			case 'a':
+				tofi.anchor =
+					get_anchor(strtol(optarg, NULL, 0));
+				break;
 			case 'B':
 				tofi.window.background_color =
 					hex_to_color(optarg);
 				break;
+			case 'c':
+				tofi.window.entry.corner_radius =
+					strtoul(optarg, NULL, 0);
+				break;
 			case 'r':
 				tofi.window.entry.border.width =
-					strtol(optarg, NULL, 0);
+					strtoul(optarg, NULL, 0);
 				break;
 			case 'R':
 				tofi.window.entry.border.color =
@@ -629,7 +680,7 @@ int main(int argc, char *argv[])
 				break;
 			case 'o':
 				tofi.window.entry.border.outline_width =
-					strtol(optarg, NULL, 0);
+					strtoul(optarg, NULL, 0);
 				break;
 			case 'O':
 				tofi.window.entry.border.outline_color =
@@ -637,7 +688,7 @@ int main(int argc, char *argv[])
 				break;
 			case 'e':
 				tofi.window.entry.padding =
-					strtol(optarg, NULL, 0);
+					strtoul(optarg, NULL, 0);
 				break;
 			case 'E':
 				tofi.window.entry.background_color =
@@ -652,20 +703,40 @@ int main(int argc, char *argv[])
 				break;
 			case 'F':
 				tofi.window.entry.font_size =
-					strtol(optarg, NULL, 0);
-				break;
-			case 'c':
-				tofi.command = optarg;
-				break;
-			case 'u':
-				tofi.username = optarg;
-				break;
-			case 'n':
-				tofi.window.entry.num_characters =
-					strtol(optarg, NULL, 0);
+					strtoul(optarg, NULL, 0);
 				break;
 			case 'H':
 				tofi.hide_cursor = true;
+				break;
+			case 'p':
+				tofi.window.entry.prompt_text = optarg;
+				break;
+			case 'P':
+				tofi.window.entry.result_padding =
+					strtol(optarg, NULL, 0);
+				break;
+			case 'n':
+				tofi.window.entry.num_results =
+					strtoul(optarg, NULL, 0);
+				break;
+			case 'X':
+				tofi.window.width =
+					strtoul(optarg, NULL, 0);
+				break;
+			case 'x':
+				tofi.window.x =
+					strtol(optarg, NULL, 0);
+				break;
+			case 'Y':
+				tofi.window.height =
+					strtoul(optarg, NULL, 0);
+				break;
+			case 'y':
+				tofi.window.y =
+					strtol(optarg, NULL, 0);
+				break;
+			case 'l':
+				tofi.window.entry.horizontal = true;
 				break;
 			case 'h':
 				usage();
@@ -760,7 +831,7 @@ int main(int argc, char *argv[])
 			tofi.zwlr_layer_shell,
 			tofi.window.surface.wl_surface,
 			tofi.wl_output,
-			ZWLR_LAYER_SHELL_V1_LAYER_TOP,
+			ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
 			"launcher");
 	zwlr_layer_surface_v1_set_keyboard_interactivity(
 			tofi.window.zwlr_layer_surface,
@@ -772,17 +843,20 @@ int main(int argc, char *argv[])
 			&tofi);
 	zwlr_layer_surface_v1_set_anchor(
 			tofi.window.zwlr_layer_surface,
-			ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
+			tofi.anchor);
 	zwlr_layer_surface_v1_set_exclusive_zone(
 			tofi.window.zwlr_layer_surface,
 			-1);
 	zwlr_layer_surface_v1_set_size(
 			tofi.window.zwlr_layer_surface,
-			800,
-			400);
+			tofi.window.width,
+			tofi.window.height);
+	zwlr_layer_surface_v1_set_margin(
+			tofi.window.zwlr_layer_surface,
+			tofi.window.x,
+			tofi.window.y,
+			tofi.window.x,
+			tofi.window.y);
 	wl_surface_commit(tofi.window.surface.wl_surface);
 
 	/*

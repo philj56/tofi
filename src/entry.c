@@ -1,8 +1,28 @@
 #include <cairo/cairo.h>
+#include <math.h>
 #include <wchar.h>
 #include "entry.h"
 #include "log.h"
 #include "nelem.h"
+
+static void rounded_rectangle(cairo_t *cr, uint32_t width, uint32_t height, uint32_t r)
+{
+	cairo_new_path(cr);
+
+	/* Top-left */
+	cairo_arc(cr, r, r, r, -M_PI, -M_PI_2);
+
+	/* Top-right */
+	cairo_arc(cr, width - r, r, r, -M_PI_2, 0);
+
+	/* Bottom-right */
+	cairo_arc(cr, width - r, height - r, r, 0, M_PI_2);
+
+	/* Bottom-left */
+	cairo_arc(cr, r, height - r, r, M_PI_2, M_PI);
+
+	cairo_close_path(cr);
+}
 
 void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t scale)
 {
@@ -49,59 +69,52 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	width /= scale;
 	height /= scale;
 
-	/* Draw the outer outline */
-	struct color color = entry->border.outline_color;
+
+	/* Draw the background */
+	struct color color = entry->background_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_set_line_width(cr, 2 * entry->border.outline_width);
-	cairo_rectangle(cr, 0, 0, width, height);
-	cairo_stroke(cr);
+	cairo_save(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	cairo_paint(cr);
+	cairo_restore(cr);
 
+	/* Draw the border with outlines */
+	cairo_set_line_width(cr, 4 * entry->border.outline_width + 2 * entry->border.width);
+	rounded_rectangle(cr, width, height, entry->corner_radius);
 
-	/* Move and clip following draws to be within this outline */
-	cairo_translate(
-			cr,
-			entry->border.outline_width,
-			entry->border.outline_width);
-	width -= 2 * entry->border.outline_width;
-	height -= 2 * entry->border.outline_width;
-	cairo_rectangle(cr, 0, 0, width, height);
-	cairo_clip(cr);
+	color = entry->border.outline_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	cairo_stroke_preserve(cr);
 
-	/* Draw the border */
 	color = entry->border.color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_set_line_width(cr, 2 * entry->border.width);
-	cairo_rectangle(cr, 0, 0, width, height);
-	cairo_stroke(cr);
+	cairo_set_line_width(cr, 2 * entry->border.outline_width + 2 * entry->border.width);
+	cairo_stroke_preserve(cr);
 
-	/* Move and clip following draws to be within the border */
-	cairo_translate(cr, entry->border.width, entry->border.width);
-	width -= 2 * entry->border.width;
-	height -= 2 * entry->border.width;
-	cairo_rectangle(cr, 0, 0, width, height);
-	cairo_clip(cr);
-
-	/* Draw the inner outline */
 	color = entry->border.outline_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_set_line_width(cr, 2 * entry->border.outline_width);
+	cairo_stroke_preserve(cr);
+
+	/* Clear the overdrawn bits outside of the rounded corners */
 	cairo_rectangle(cr, 0, 0, width, height);
-	cairo_stroke(cr);
+	cairo_set_source_rgba(cr, 0, 0, 0, 0.5);
+	cairo_save(cr);
+	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
+	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
+	cairo_fill(cr);
+	cairo_restore(cr);
+
 
 	/* Move and clip following draws to be within this outline */
 	cairo_translate(
 			cr,
-			entry->border.outline_width,
-			entry->border.outline_width);
-	width -= 2 * entry->border.outline_width;
-	height -= 2 * entry->border.outline_width;
+			2 * entry->border.outline_width + entry->border.width,
+			2 * entry->border.outline_width + entry->border.width);
+	width -= 4 * entry->border.outline_width + 2 * entry->border.width;
+	height -= 4 * entry->border.outline_width + 2 * entry->border.width;
 	cairo_rectangle(cr, 0, 0, width, height);
 	cairo_clip(cr);
-
-	/* Draw the entry background */
-	color = entry->background_color;
-	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_paint(cr);
 
 	/* Move and clip following draws to be within the specified padding */
 	cairo_translate(cr, entry->padding, entry->padding);
@@ -152,7 +165,10 @@ void entry_update(struct entry *entry)
 	/* Clear the image. */
 	struct color color = entry->background_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	cairo_save(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 	cairo_paint(cr);
+	cairo_restore(cr);
 
 	/* Draw our text. */
 	color = entry->foreground_color;

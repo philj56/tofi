@@ -138,7 +138,6 @@ void entry_backend_init(
 	if (err) {
 		log_error("Error setting font size: %s\n",
 				get_ft_error_string(err));
-		exit(EXIT_FAILURE);
 	}
 
 	log_debug("Creating Cairo font.\n");
@@ -149,10 +148,17 @@ void entry_backend_init(
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_set_font_face(cr, entry->backend.cairo_face);
 	cairo_set_font_size(cr, entry->font_size * PT_TO_DPI);
+	cairo_font_options_t *opts = cairo_font_options_create();
+	cairo_font_options_set_hint_style(opts, CAIRO_HINT_STYLE_NONE);
+	cairo_set_font_options(cr, opts);
+
 
 	/* We also need to set up the font for our other Cairo context. */
 	cairo_set_font_face(entry->cairo[1].cr, entry->backend.cairo_face);
 	cairo_set_font_size(entry->cairo[1].cr, entry->font_size * PT_TO_DPI);
+	cairo_set_font_options(entry->cairo[1].cr, opts);
+
+	cairo_font_options_destroy(opts);
 
 	log_debug("Creating Harfbuzz font.\n");
 	entry->backend.hb_font =
@@ -165,7 +171,7 @@ void entry_backend_init(
 
 	/* Draw the prompt now, as this only needs to be done once */
 	log_debug("Drawing prompt.\n");
-	hb_buffer_add_utf8(entry->backend.hb_buffer, "run: ", -1, 0, -1);
+	hb_buffer_add_utf8(entry->backend.hb_buffer, entry->prompt_text, -1, 0, -1);
 	hb_shape(entry->backend.hb_font, entry->backend.hb_buffer, NULL, 0);
 	uint32_t prompt_width = render_hb_buffer(cr, buffer, scale);
 
@@ -188,25 +194,30 @@ void entry_backend_update(struct entry *entry)
 {
 	cairo_t *cr = entry->cairo[entry->index].cr;
 	hb_buffer_t *buffer = entry->backend.hb_buffer;
+	uint32_t width;
 
 	/* Render the entry text */
 	hb_buffer_clear_contents(buffer);
 	setup_hb_buffer(buffer);
 	hb_buffer_add_utf8(buffer, entry->input_mb, -1, 0, -1);
 	hb_shape(entry->backend.hb_font, buffer, NULL, 0);
-	render_hb_buffer(cr, buffer, entry->image.scale);
+	width = render_hb_buffer(cr, buffer, entry->image.scale);
 
 	cairo_font_extents_t font_extents;
 	cairo_font_extents(cr, &font_extents);
 
 	/* Render our results entry text */
-	for (size_t i = 0; i < 5 && i < entry->results.count; i++) {
-		cairo_translate(cr, 0, font_extents.height);
+	for (size_t i = 0; i < entry->num_results && i < entry->results.count; i++) {
+		if (entry->horizontal) {
+			cairo_translate(cr, width + entry->result_padding, 0);
+		} else {
+			cairo_translate(cr, 0, font_extents.height + entry->result_padding);
+		}
 
 		hb_buffer_clear_contents(buffer);
 		setup_hb_buffer(buffer);
 		hb_buffer_add_utf8(buffer, entry->results.buf[i], -1, 0, -1);
 		hb_shape(entry->backend.hb_font, buffer, NULL, 0);
-		render_hb_buffer(cr, buffer, entry->image.scale);
+		width = render_hb_buffer(cr, buffer, entry->image.scale);
 	}
 }

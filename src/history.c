@@ -79,7 +79,11 @@ struct history history_load()
 	}
 
 	char *buf = xmalloc(len);
-	fread(buf, 1, len, histfile);
+	if (fread(buf, 1, len, histfile) != 0) {
+		log_error("Error reading history file: %s.\n", strerror(errno));
+		fclose(histfile);
+		return vec;
+	}
 	fclose(histfile);
 
 	char *saveptr = NULL;

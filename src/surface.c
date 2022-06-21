@@ -12,7 +12,6 @@ void surface_init(
 		struct surface *surface,
 		struct wl_shm *wl_shm)
 {
-
 	const int height = surface->height;
 	const int stride = surface->stride;
 
@@ -42,7 +41,7 @@ void surface_init(
 				surface->width,
 				surface->height,
 				surface->stride,
-				WL_SHM_FORMAT_XRGB8888);
+				WL_SHM_FORMAT_ARGB8888);
 	}
 
 	log_debug("Created shm file with size %d KiB.\n",

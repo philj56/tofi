@@ -26,7 +26,7 @@ void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height, 
 
 	entry->backend.layout = pango_layout_new(context);
 	log_debug("Setting Pango text.\n");
-	pango_layout_set_text(entry->backend.layout, "run: ", -1);
+	pango_layout_set_text(entry->backend.layout, entry->prompt_text, -1);
 	log_debug("First Pango draw.\n");
 	pango_cairo_update_layout(cr, entry->backend.layout);
 
@@ -64,7 +64,7 @@ void entry_backend_update(struct entry *entry)
 	int height;
 	pango_layout_get_size(layout, NULL, &height);
 
-	for (size_t i = 0; i < 5; i++) {
+	for (size_t i = 0; i < entry->num_results && i < entry->results.count; i++) {
 		cairo_translate(cr, 0, (int)(height / PANGO_SCALE));
 		const char *str;
 		if (i < entry->results.count) {

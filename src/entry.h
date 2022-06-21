@@ -36,18 +36,21 @@ struct entry {
 	struct history history;
 
 	/* Options */
+	bool horizontal;
+	uint32_t num_results;
 	uint32_t font_size;
 	const char *font_name;
+	const char *prompt_text;
+	uint32_t corner_radius;
 	uint32_t padding;
-	uint32_t num_characters;
-	uint32_t num_lines;
+	int32_t result_padding;
 	struct color foreground_color;
 	struct color background_color;
 	struct {
 		struct color color;
 		struct color outline_color;
-		int32_t width;
-		int32_t outline_width;
+		uint32_t width;
+		uint32_t outline_width;
 	} border;
 };
 

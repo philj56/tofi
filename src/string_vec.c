@@ -1,3 +1,4 @@
+#define _GNU_SOURCE /* Required for strcasestr */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,7 +101,7 @@ struct string_vec string_vec_filter(
 {
 	struct string_vec filt = string_vec_create();
 	for (size_t i = 0; i < vec->count; i++) {
-		if (strstr(vec->buf[i], substr) != NULL) {
+		if (strcasestr(vec->buf[i], substr) != NULL) {
 			string_vec_add(&filt, vec->buf[i]);
 		}
 	}

@@ -19,19 +19,12 @@ struct tofi {
 	struct wl_shm *wl_shm;
 	struct zwlr_layer_shell_v1 *zwlr_layer_shell;
 
-	uint32_t wl_display_name;
-	uint32_t wl_registry_name;
-	uint32_t wl_compositor_name;
-	uint32_t wl_seat_name;
-	uint32_t wl_output_name;
-	uint32_t wl_shm_name;
-	uint32_t zwlr_layer_shell_name;
-
 	/* Objects */
 	struct wl_keyboard *wl_keyboard;
 	struct wl_pointer *wl_pointer;
 
 	/* State */
+	bool submit;
 	bool closed;
 	struct {
 		struct surface surface;
@@ -41,6 +34,8 @@ struct tofi {
 		uint32_t width;
 		uint32_t height;
 		uint32_t scale;
+		int32_t x;
+		int32_t y;
 	} window;
 
 	/* Keyboard state */
@@ -48,12 +43,8 @@ struct tofi {
 	struct xkb_context *xkb_context;
 	struct xkb_keymap *xkb_keymap;
 
-	/* greetd state */
-	const char *username;
-	const char *command;
-	bool submit;
-
 	/* Options */
+	int anchor;
 	bool hide_cursor;
 };
 
