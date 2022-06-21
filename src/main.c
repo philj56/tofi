@@ -600,10 +600,11 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 		{"hide-cursor", required_argument, NULL, 0},
 		{NULL, 0, NULL, 0}
 	};
-	const char *short_options = "hc:";
+	const char *short_options = ":hc:";
 
 	bool load_default_config = true;
 	int option_index = 0;
+	opterr = 0;
 
 	/* First pass, just check for config file, help, and errors. */
 	int opt = getopt_long(argc, argv, short_options, long_options, &option_index);
@@ -680,6 +681,8 @@ int main(int argc, char *argv[])
 		}
 	};
 
+	parse_args(&tofi, argc, argv);
+
 	log_debug("Generating command list.\n");
 	log_indent();
 	tofi.window.entry.history = history_load();
@@ -689,7 +692,6 @@ int main(int argc, char *argv[])
 	log_unindent();
 	log_debug("Command list generated.\n");
 
-	parse_args(&tofi, argc, argv);
 
 	/*
 	 * Initial Wayland & XKB setup.

@@ -242,7 +242,7 @@ bool parse_option(struct tofi *tofi, size_t lineno, const char *option, const ch
 		}
 		tofi->window.entry.font_name = strdup(value);
 	} else if (strcasecmp(option, "font-size") == 0) {
-		tofi->window.entry.padding = parse_uint32(lineno, value, &err);
+		tofi->window.entry.font_size = parse_uint32(lineno, value, &err);
 	} else if (strcasecmp(option, "num-results") == 0) {
 		tofi->window.entry.num_results = parse_uint32(lineno, value, &err);
 	} else if (strcasecmp(option, "outline-width") == 0) {
@@ -287,7 +287,9 @@ bool parse_option(struct tofi *tofi, size_t lineno, const char *option, const ch
 
 void apply_option(struct tofi *tofi, const char *option, const char *value)
 {
-	parse_option(tofi, 0, option, value);
+	if (!parse_option(tofi, 0, option, value)) {
+		exit(EXIT_FAILURE);
+	};
 }
 
 char *get_config_path()
@@ -354,9 +356,13 @@ int parse_anchor(size_t lineno, const char *str, bool *err)
 		return ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
 	}
 	if (strcasecmp(str, "center") == 0) {
-		return 0;
+		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	}
 	PARSE_ERROR(lineno, "Invalid anchor \"%s\".\n", str);
+	*err = true;
 	return 0;
 }
 
@@ -369,11 +375,17 @@ uint32_t parse_uint32(size_t lineno, const char *str, bool *err)
 {
 	errno = 0;
 	char *endptr;
-	uint32_t ret = strtoul(str, &endptr, 0);
+	int32_t ret = strtoul(str, &endptr, 0);
 	if (endptr == str) {
 		PARSE_ERROR(lineno, "Failed to parse \"%s\" as unsigned int.\n", str);
-	} else if (errno) {
+		if (err) {
+			*err = true;
+		}
+	} else if (errno || ret < 0) {
 		PARSE_ERROR(lineno, "Unsigned int value \"%s\" out of range.\n", str);
+		if (err) {
+			*err = true;
+		}
 	}
 	return ret;
 }
@@ -382,11 +394,17 @@ int32_t parse_int32(size_t lineno, const char *str, bool *err)
 {
 	errno = 0;
 	char *endptr;
-	uint32_t ret = strtol(str, &endptr, 0);
+	int32_t ret = strtol(str, &endptr, 0);
 	if (endptr == str) {
 		PARSE_ERROR(lineno, "Failed to parse \"%s\" as int.\n", str);
+		if (err) {
+			*err = true;
+		}
 	} else if (errno) {
 		PARSE_ERROR(lineno, "Int value \"%s\" out of range.\n", str);
+		if (err) {
+			*err = true;
+		}
 	}
 	return ret;
 }
