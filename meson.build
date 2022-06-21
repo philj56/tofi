@@ -43,7 +43,7 @@ add_project_arguments(
     #'-Wconversion',
     '-Wshadow',
     '-Wno-unused-parameter',
-    '-D_XOPEN_SOURCE=700',
+    '-D_GNU_SOURCE',
     '-D_FORTIFY_SOURCE=2',
   ],
   language: 'c'
@@ -53,6 +53,7 @@ common_sources = files(
   'src/main.c',
   'src/color.c',
   'src/compgen.c',
+  'src/config.c',
   'src/entry.c',
   'src/history.c',
   'src/log.c',

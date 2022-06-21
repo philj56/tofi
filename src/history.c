@@ -14,7 +14,7 @@
 static const char *default_state_dir = ".local/state";
 static const char *histfile_basename = "tofi-history";
 
-[[nodiscard]]
+[[nodiscard("memory leaked")]]
 static struct history history_create(void);
 
 static char *get_histfile_path() {

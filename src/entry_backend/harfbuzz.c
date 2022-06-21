@@ -1,7 +1,6 @@
 #include <cairo/cairo.h>
 #include <harfbuzz/hb-ft.h>
 #include <math.h>
-#include <wchar.h>
 #include "harfbuzz.h"
 #include "../entry.h"
 #include "../log.h"
@@ -149,7 +148,7 @@ void entry_backend_init(
 	cairo_set_font_face(cr, entry->backend.cairo_face);
 	cairo_set_font_size(cr, entry->font_size * PT_TO_DPI);
 	cairo_font_options_t *opts = cairo_font_options_create();
-	cairo_font_options_set_hint_style(opts, CAIRO_HINT_STYLE_NONE);
+	//cairo_font_options_set_hint_style(opts, CAIRO_HINT_STYLE_NONE);
 	cairo_set_font_options(cr, opts);
 
 
@@ -186,6 +185,7 @@ void entry_backend_destroy(struct entry *entry)
 {
 	hb_buffer_destroy(entry->backend.hb_buffer);
 	hb_font_destroy(entry->backend.hb_font);
+	cairo_font_face_destroy(entry->backend.cairo_face);
 	FT_Done_Face(entry->backend.ft_face);
 	FT_Done_FreeType(entry->backend.ft_library);
 }

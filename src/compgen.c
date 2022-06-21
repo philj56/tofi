@@ -15,7 +15,7 @@
 static const char *default_state_dir = ".cache";
 static const char *cache_basename = "tofi-compgen";
 
-[[nodiscard]]
+[[nodiscard("memory leaked")]]
 static char *get_cache_path() {
 	char *cache_name = NULL;
 	const char *state_path = getenv("XDG_CACHE_HOME");

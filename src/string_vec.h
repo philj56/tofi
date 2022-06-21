@@ -10,7 +10,7 @@ struct string_vec {
 	char **buf;
 };
 
-[[nodiscard]]
+[[nodiscard("memory leaked")]]
 struct string_vec string_vec_create(void);
 
 void string_vec_destroy(struct string_vec *restrict vec);
@@ -25,7 +25,7 @@ void string_vec_uniq(struct string_vec *restrict vec);
 
 char **string_vec_find(struct string_vec *restrict vec, const char *str);
 
-[[nodiscard]]
+[[nodiscard("memory leaked")]]
 struct string_vec string_vec_filter(
 		const struct string_vec *restrict vec,
 		const char *restrict substr);

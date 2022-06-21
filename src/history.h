@@ -23,7 +23,7 @@ void history_add(struct history *restrict vec, const char *restrict str);
 //[[gnu::nonnull]]
 //void history_remove(struct history *restrict vec, const char *restrict str);
 
-[[nodiscard]]
+[[nodiscard("memory leaked")]]
 struct history history_load(void);
 
 void history_save(struct history *history);

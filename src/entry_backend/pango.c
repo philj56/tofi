@@ -2,7 +2,6 @@
 #include <glib.h>
 #include <pango/pangocairo.h>
 #include <pango/pango.h>
-#include <wchar.h>
 #include "../entry.h"
 #include "../log.h"
 #include "../nelem.h"
@@ -16,6 +15,7 @@ void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height, 
 	PangoContext *context = pango_cairo_create_context(cr);
 
 	log_debug("Creating Pango font description.\n");
+	log_debug("%s\n", entry->font_name);
 	PangoFontDescription *font_description =
 		pango_font_description_from_string(entry->font_name);
 	pango_font_description_set_size(

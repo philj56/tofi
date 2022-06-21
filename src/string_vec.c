@@ -1,4 +1,3 @@
-#define _GNU_SOURCE /* Required for strcasestr */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

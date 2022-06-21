@@ -15,6 +15,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include "tofi.h"
 #include "compgen.h"
+#include "config.h"
 #include "entry.h"
 #include "image.h"
 #include "log.h"
@@ -24,33 +25,6 @@
 
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-
-static int get_anchor(int anchor)
-{
-	switch (anchor) {
-		case 1:
-			return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-				| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
-		case 2:
-			return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP;
-		case 3:
-			return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-				| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-		case 4:
-			return ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-		case 5:
-			return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-				| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-		case 6:
-			return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
-		case 7:
-			return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-				| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
-		case 8:
-			return ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
-	}
-	return 0;
-}
 
 static void zwlr_layer_surface_configure(
 		void *data,
@@ -569,19 +543,108 @@ static void usage()
 {
 	fprintf(stderr,
 "Usage: tofi [options]\n"
-"  -B, --background-color=COLOR   Color of the background.\n"
-"  -o, --outline-width=VALUE      Width of the border outlines in pixels.\n"
-"  -O, --outline-color=COLOR      Color of the border outlines.\n"
-"  -r, --border-width=VALUE       Width of the border in pixels.\n"
-"  -R, --border-color=COLOR       Color of the border.\n"
-"  -e, --entry-padding=VALUE      Padding around the entry box in pixels.\n"
-"  -E, --entry-color=COLOR        Color of the entry box.\n"
-"  -f, --font-name=NAME           Font to use.\n"
-"  -F, --font-size=VALUE          Point size of text.\n"
-"  -T, --text-color=COLOR         Color of text.\n"
-"  -H, --hide-cursor              Hide the cursor.\n"
-"  -h, --help                     Print this message and exit.\n"
+"  -h, --help                      Print this message and exit.\n"
+"  -c, --config                    Specify a config file.\n"
+"      --font-name <name|path>     Font to use.\n"
+"      --font-size <pt>            Point size of text.\n"
+"      --background-color <color>  Color of the background.\n"
+"      --outline-width <px>        Width of the border outlines.\n"
+"      --outline-color <color>     Color of the border outlines.\n"
+"      --border-width <px>         Width of the border.\n"
+"      --border-color <color>      Color of the border.\n"
+"      --entry-padding <px>        Padding around the entry box.\n"
+"      --entry-color <color>       Color of the entry box.\n"
+"      --text-color <color>        Color of text.\n"
+"      --prompt-text <string>      Prompt text.\n"
+"      --num-results <n>           Maximum number of results to display.\n"
+"      --result-padding <px>       Spacing between results. Can be negative.\n"
+"      --width <px>                Width of the window.\n"
+"      --height <px>               Height of the window.\n"
+"      --anchor <position>         Location on screen to anchor window.\n"
+"      --margin-top <px>           Offset from top of screen.\n"
+"      --margin-bottom <px>        Offset from bottom of screen.\n"
+"      --margin-left <px>          Offset from left of screen.\n"
+"      --margin-right <px>         Offset from right of screen.\n"
+"      --hide-cursor <true|false>  Hide the cursor.\n"
 	);
+}
+
+static void parse_args(struct tofi *tofi, int argc, char *argv[])
+{
+	/* Option parsing with getopt. */
+	struct option long_options[] = {
+		{"help", no_argument, NULL, 'h'},
+		{"config", required_argument, NULL, 'c'},
+		{"anchor", required_argument, NULL, 0},
+		{"background-color", required_argument, NULL, 0},
+		{"corner-radius", required_argument, NULL, 0},
+		{"entry-padding", required_argument, NULL, 0},
+		{"entry-color", required_argument, NULL, 0},
+		{"font-name", required_argument, NULL, 0},
+		{"font-size", required_argument, NULL, 0},
+		{"num-results", required_argument, NULL, 0},
+		{"outline-width", required_argument, NULL, 0},
+		{"outline-color", required_argument, NULL, 0},
+		{"prompt-text", required_argument, NULL, 0},
+		{"result-padding", required_argument, NULL, 0},
+		{"border-width", required_argument, NULL, 0},
+		{"border-color", required_argument, NULL, 0},
+		{"text-color", required_argument, NULL, 0},
+		{"width", required_argument, NULL, 0},
+		{"height", required_argument, NULL, 0},
+		{"margin-top", required_argument, NULL, 0},
+		{"margin-bottom", required_argument, NULL, 0},
+		{"margin-left", required_argument, NULL, 0},
+		{"margin-right", required_argument, NULL, 0},
+		{"layout-horizontal", required_argument, NULL, 0},
+		{"hide-cursor", required_argument, NULL, 0},
+		{NULL, 0, NULL, 0}
+	};
+	const char *short_options = "hc:";
+
+	bool load_default_config = true;
+	int option_index = 0;
+
+	/* First pass, just check for config file, help, and errors. */
+	int opt = getopt_long(argc, argv, short_options, long_options, &option_index);
+	while (opt != -1) {
+		if (opt == 'h') {
+			usage();
+			exit(EXIT_SUCCESS);
+		} else if (opt == 'c') {
+			config_load(tofi, optarg);
+			load_default_config = false;
+		} else if (opt == ':') {
+			log_error("Option %s requires an argument.\n", argv[optind - 1]);
+			usage();
+			exit(EXIT_FAILURE);
+		} else if (opt == '?') {
+			log_error("Unknown option %s.\n", argv[optind - 1]);
+			usage();
+			exit(EXIT_FAILURE);
+		}
+		opt = getopt_long(argc, argv, short_options, long_options, &option_index);
+	}
+	if (load_default_config) {
+		config_load(tofi, NULL);
+	}
+	optind = 1;
+
+	/* Second pass, parse everything else. */
+	opt = getopt_long(argc, argv, short_options, long_options, &option_index);
+	while (opt != -1) {
+		if (opt == 0) {
+			apply_option(tofi, long_options[option_index].name, optarg);
+		}
+		opt = getopt_long(argc, argv, short_options, long_options, &option_index);
+	}
+	//if (optind < argc) {
+	//	log_error(
+	//		"Unexpected non-option argument '%s'.\n",
+	//		argv[optind]);
+	//	usage();
+	//	exit(EXIT_FAILURE);
+	//}
 }
 
 int main(int argc, char *argv[])
@@ -606,9 +669,9 @@ int main(int argc, char *argv[])
 					.color = {0.976f, 0.149f, 0.447f, 1.0f},
 					.outline_color = {0.031f, 0.031f, 0.0f, 1.0f},
 				},
-				.font_name = "Sans Bold",
+				.font_name = strdup("Sans Bold"),
 				.font_size = 24,
-				.prompt_text = "run: ",
+				.prompt_text = strdup("run: "),
 				.num_results = 5,
 				.padding = 8,
 				.background_color = {0.106f, 0.114f, 0.118f, 1.0f},
@@ -626,147 +689,7 @@ int main(int argc, char *argv[])
 	log_unindent();
 	log_debug("Command list generated.\n");
 
-
-	/* Option parsing with getopt. */
-	struct option long_options[] = {
-		{"anchor", required_argument, NULL, 'a'},
-		{"background-color", required_argument, NULL, 'B'},
-		{"corner-radius", required_argument, NULL, 'c'},
-		{"entry-padding", required_argument, NULL, 'e'},
-		{"entry-color", required_argument, NULL, 'E'},
-		{"font-name", required_argument, NULL, 'f'},
-		{"font-size", required_argument, NULL, 'F'},
-		{"num-results", required_argument, NULL, 'n'},
-		{"outline-width", required_argument, NULL, 'o'},
-		{"outline-color", required_argument, NULL, 'O'},
-		{"prompt-text", required_argument, NULL, 'p'},
-		{"result-padding", required_argument, NULL, 'P'},
-		{"border-width", required_argument, NULL, 'r'},
-		{"border-color", required_argument, NULL, 'R'},
-		{"text-color", required_argument, NULL, 'T'},
-		{"width", required_argument, NULL, 'X'},
-		{"height", required_argument, NULL, 'Y'},
-		{"x-offset", required_argument, NULL, 'x'},
-		{"y-offset", required_argument, NULL, 'y'},
-		{"layout-horizontal", no_argument, NULL, 'l'},
-		{"hide-cursor", no_argument, NULL, 'H'},
-		{"help", no_argument, NULL, 'h'},
-		{NULL, 0, NULL, 0}
-	};
-	const char *short_options = ":a:B:c:e:E:f:F:hHln:o:O:p:P:r:R:T:x:X:y:Y:";
-
-	int opt = getopt_long(argc, argv, short_options, long_options, NULL);
-	while (opt != -1) {
-		switch (opt) {
-			case 'a':
-				tofi.anchor =
-					get_anchor(strtol(optarg, NULL, 0));
-				break;
-			case 'B':
-				tofi.window.background_color =
-					hex_to_color(optarg);
-				break;
-			case 'c':
-				tofi.window.entry.corner_radius =
-					strtoul(optarg, NULL, 0);
-				break;
-			case 'r':
-				tofi.window.entry.border.width =
-					strtoul(optarg, NULL, 0);
-				break;
-			case 'R':
-				tofi.window.entry.border.color =
-					hex_to_color(optarg);
-				break;
-			case 'o':
-				tofi.window.entry.border.outline_width =
-					strtoul(optarg, NULL, 0);
-				break;
-			case 'O':
-				tofi.window.entry.border.outline_color =
-					hex_to_color(optarg);
-				break;
-			case 'e':
-				tofi.window.entry.padding =
-					strtoul(optarg, NULL, 0);
-				break;
-			case 'E':
-				tofi.window.entry.background_color =
-					hex_to_color(optarg);
-				break;
-			case 'T':
-				tofi.window.entry.foreground_color =
-					hex_to_color(optarg);
-				break;
-			case 'f':
-				tofi.window.entry.font_name = optarg;
-				break;
-			case 'F':
-				tofi.window.entry.font_size =
-					strtoul(optarg, NULL, 0);
-				break;
-			case 'H':
-				tofi.hide_cursor = true;
-				break;
-			case 'p':
-				tofi.window.entry.prompt_text = optarg;
-				break;
-			case 'P':
-				tofi.window.entry.result_padding =
-					strtol(optarg, NULL, 0);
-				break;
-			case 'n':
-				tofi.window.entry.num_results =
-					strtoul(optarg, NULL, 0);
-				break;
-			case 'X':
-				tofi.window.width =
-					strtoul(optarg, NULL, 0);
-				break;
-			case 'x':
-				tofi.window.x =
-					strtol(optarg, NULL, 0);
-				break;
-			case 'Y':
-				tofi.window.height =
-					strtoul(optarg, NULL, 0);
-				break;
-			case 'y':
-				tofi.window.y =
-					strtol(optarg, NULL, 0);
-				break;
-			case 'l':
-				tofi.window.entry.horizontal = true;
-				break;
-			case 'h':
-				usage();
-				exit(EXIT_SUCCESS);
-				break;
-			case ':':
-				log_error(
-					"Option %s requires an argument.\n",
-					argv[optind - 1]);
-				usage();
-				exit(EXIT_FAILURE);
-				break;
-			case '?':
-				log_error(
-					"Unknown option %s.\n",
-					argv[optind - 1]);
-				usage();
-				exit(EXIT_FAILURE);
-				break;
-		}
-		opt = getopt_long(argc, argv, short_options, long_options, NULL);
-	}
-	if (optind < argc) {
-		log_error(
-			"Unexpected non-option argument '%s'.\n",
-			argv[optind]);
-		usage();
-		exit(EXIT_FAILURE);
-	}
-
+	parse_args(&tofi, argc, argv);
 
 	/*
 	 * Initial Wayland & XKB setup.
@@ -853,10 +776,10 @@ int main(int argc, char *argv[])
 			tofi.window.height);
 	zwlr_layer_surface_v1_set_margin(
 			tofi.window.zwlr_layer_surface,
-			tofi.window.x,
-			tofi.window.y,
-			tofi.window.x,
-			tofi.window.y);
+			tofi.window.margin_top,
+			tofi.window.margin_right,
+			tofi.window.margin_bottom,
+			tofi.window.margin_left);
 	wl_surface_commit(tofi.window.surface.wl_surface);
 
 	/*
@@ -980,6 +903,8 @@ int main(int argc, char *argv[])
 	string_vec_destroy(&tofi.window.entry.commands);
 	string_vec_destroy(&tofi.window.entry.results);
 	history_destroy(&tofi.window.entry.history);
+	free(tofi.window.entry.font_name);
+	free(tofi.window.entry.prompt_text);
 #endif
 	/*
 	 * For release builds, skip straight to display disconnection and quit.

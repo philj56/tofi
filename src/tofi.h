@@ -34,8 +34,10 @@ struct tofi {
 		uint32_t width;
 		uint32_t height;
 		uint32_t scale;
-		int32_t x;
-		int32_t y;
+		int32_t margin_top;
+		int32_t margin_bottom;
+		int32_t margin_left;
+		int32_t margin_right;
 	} window;
 
 	/* Keyboard state */

@@ -95,6 +95,41 @@ void log_info(const char *const fmt, ...)
 	va_end(args);
 }
 
+void log_append_error(const char *const fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(stderr, fmt, args);
+	va_end(args);
+}
+
+void log_append_warning(const char *const fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(stderr, fmt, args);
+	va_end(args);
+}
+
+void log_append_debug(const char *const fmt, ...)
+{
+#ifndef DEBUG
+	return;
+#endif
+	va_list args;
+	va_start(args, fmt);
+	vprintf(fmt, args);
+	va_end(args);
+}
+
+void log_append_info(const char *const fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	vprintf(fmt, args);
+	va_end(args);
+}
+
 struct timespec time_diff(struct timespec cur,
 		struct timespec old)
 {
