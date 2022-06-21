@@ -32,7 +32,7 @@ static int32_t parse_int32(size_t lineno, const char *str, bool *err);
  */
 #define PARSE_ERROR_NO_ARGS(lineno, fmt) \
 		if ((lineno) > 0) {\
-			log_error("\tLine %zu: ", (lineno));\
+			log_error("Config file: line %zu: ", (lineno));\
 			log_append_error((fmt)); \
 		} else {\
 			log_error((fmt)); \
@@ -40,7 +40,7 @@ static int32_t parse_int32(size_t lineno, const char *str, bool *err);
 
 #define PARSE_ERROR(lineno, fmt, ...) \
 		if ((lineno) > 0) {\
-			log_error("\tLine %zu: ", (lineno));\
+			log_error("Config file: line %zu: ", (lineno));\
 			log_append_error((fmt), __VA_ARGS__); \
 		} else {\
 			log_error((fmt), __VA_ARGS__); \
@@ -262,6 +262,8 @@ bool parse_option(struct tofi *tofi, size_t lineno, const char *option, const ch
 		tofi->window.entry.border.color = parse_color(lineno, value, &err);
 	} else if (strcasecmp(option, "text-color") == 0) {
 		tofi->window.entry.foreground_color = parse_color(lineno, value, &err);
+	} else if (strcasecmp(option, "selection-color") == 0) {
+		tofi->window.entry.selection_color = parse_color(lineno, value, &err);
 	} else if (strcasecmp(option, "width") == 0) {
 		tofi->window.width = parse_uint32(lineno, value, &err);
 	} else if (strcasecmp(option, "height") == 0) {
@@ -279,7 +281,7 @@ bool parse_option(struct tofi *tofi, size_t lineno, const char *option, const ch
 	} else if (strcasecmp(option, "hide-cursor") == 0) {
 		tofi->hide_cursor = parse_bool(lineno, value, &err);
 	} else {
-		PARSE_ERROR(lineno, "Bad config file option \"%s\"\n", option);
+		PARSE_ERROR(lineno, "Unrecognised option \"%s\"\n", option);
 		err = true;
 	}
 	return !err;

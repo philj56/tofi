@@ -218,6 +218,14 @@ void entry_backend_update(struct entry *entry)
 		setup_hb_buffer(buffer);
 		hb_buffer_add_utf8(buffer, entry->results.buf[i], -1, 0, -1);
 		hb_shape(entry->backend.hb_font, buffer, NULL, 0);
+		if (i == entry->selection) {
+			cairo_save(cr);
+			struct color color = entry->selection_color;
+			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+		}
 		width = render_hb_buffer(cr, buffer, entry->image.scale);
+		if (i == entry->selection) {
+			cairo_restore(cr);
+		}
 	}
 }

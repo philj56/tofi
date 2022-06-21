@@ -32,6 +32,7 @@ struct entry {
 	uint32_t input_length;
 	uint32_t input_mb_length;
 
+	uint32_t selection;
 	struct string_vec results;
 	struct string_vec commands;
 	struct history history;
@@ -47,6 +48,7 @@ struct entry {
 	int32_t result_padding;
 	struct color foreground_color;
 	struct color background_color;
+	struct color selection_color;
 	struct {
 		struct color color;
 		struct color outline_color;

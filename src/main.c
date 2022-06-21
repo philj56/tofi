@@ -24,7 +24,9 @@
 #include "string_vec.h"
 
 #undef MAX
+#undef MIN
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 static void zwlr_layer_surface_configure(
 		void *data,
@@ -191,6 +193,19 @@ static void wl_keyboard_key(
 	} else if (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter) {
 		tofi->submit = true;
 		return;
+	}
+
+	if (sym == XKB_KEY_Up) {
+		uint32_t nsel = MAX(MIN(tofi->window.entry.num_results, tofi->window.entry.results.count), 1);
+		tofi->window.entry.selection += nsel;
+		tofi->window.entry.selection--;
+		tofi->window.entry.selection %= nsel;
+	} else if (sym == XKB_KEY_Down) {
+		uint32_t nsel = MAX(MIN(tofi->window.entry.num_results, tofi->window.entry.results.count), 1);
+		tofi->window.entry.selection++;
+		tofi->window.entry.selection %= nsel;
+	} else {
+		tofi->window.entry.selection = 0;
 	}
 	entry_update(&tofi->window.entry);
 	tofi->window.surface.redraw = true;
@@ -557,6 +572,7 @@ static void usage()
 "      --text-color <color>        Color of text.\n"
 "      --prompt-text <string>      Prompt text.\n"
 "      --num-results <n>           Maximum number of results to display.\n"
+"      --selection-color <color>   Color of selected result.\n"
 "      --result-padding <px>       Spacing between results. Can be negative.\n"
 "      --width <px>                Width of the window.\n"
 "      --height <px>               Height of the window.\n"
@@ -583,6 +599,7 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 		{"font-name", required_argument, NULL, 0},
 		{"font-size", required_argument, NULL, 0},
 		{"num-results", required_argument, NULL, 0},
+		{"selection-color", required_argument, NULL, 0},
 		{"outline-width", required_argument, NULL, 0},
 		{"outline-color", required_argument, NULL, 0},
 		{"prompt-text", required_argument, NULL, 0},
@@ -676,7 +693,8 @@ int main(int argc, char *argv[])
 				.num_results = 5,
 				.padding = 8,
 				.background_color = {0.106f, 0.114f, 0.118f, 1.0f},
-				.foreground_color = {1.0f, 1.0f, 1.0f, 1.0f}
+				.foreground_color = {1.0f, 1.0f, 1.0f, 1.0f},
+				.selection_color = {0.976f, 0.149f, 0.447f, 1.0f}
 			}
 		}
 	};
@@ -866,10 +884,11 @@ int main(int argc, char *argv[])
 		if (tofi.submit) {
 			tofi.submit = false;
 			if (tofi.window.entry.results.count > 0) {
-				printf("%s\n", tofi.window.entry.results.buf[0]);
+				uint32_t selection = tofi.window.entry.selection;
+				printf("%s\n", tofi.window.entry.results.buf[selection]);
 				history_add(
 						&tofi.window.entry.history,
-						tofi.window.entry.results.buf[0]);
+						tofi.window.entry.results.buf[selection]);
 				history_save(&tofi.window.entry.history);
 				break;
 			}

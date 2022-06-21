@@ -74,6 +74,14 @@ void entry_backend_update(struct entry *entry)
 		}
 		pango_layout_set_text(layout, str, -1);
 		pango_cairo_update_layout(cr, layout);
+		if (i == entry->selection) {
+			cairo_save(cr);
+			struct color color = entry->selection_color;
+			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+		}
 		pango_cairo_show_layout(cr, layout);
+		if (i == entry->selection) {
+			cairo_restore(cr);
+		}
 	}
 }
