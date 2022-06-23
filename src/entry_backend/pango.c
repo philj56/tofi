@@ -5,7 +5,7 @@
 #include "../log.h"
 #include "../nelem.h"
 
-void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height)
+void entry_backend_pango_init(struct entry *entry, uint32_t *width, uint32_t *height)
 {
 	cairo_t *cr = entry->cairo[0].cr;
 
@@ -23,38 +23,38 @@ void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height)
 	pango_context_set_font_description(context, font_description);
 	pango_font_description_free(font_description);
 
-	entry->backend.layout = pango_layout_new(context);
+	entry->pango.layout = pango_layout_new(context);
 	log_debug("Setting Pango text.\n");
-	pango_layout_set_text(entry->backend.layout, entry->prompt_text, -1);
+	pango_layout_set_text(entry->pango.layout, entry->prompt_text, -1);
 	log_debug("First Pango draw.\n");
-	pango_cairo_update_layout(cr, entry->backend.layout);
+	pango_cairo_update_layout(cr, entry->pango.layout);
 
 	/* Draw the prompt now, as this only needs to be done once */
 	struct color color = entry->foreground_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	pango_cairo_show_layout(cr, entry->backend.layout);
+	pango_cairo_show_layout(cr, entry->pango.layout);
 
 	/* Move and clip so we don't draw over the prompt */
 	int prompt_width;
-	pango_layout_get_pixel_size(entry->backend.layout, &prompt_width, NULL);
+	pango_layout_get_pixel_size(entry->pango.layout, &prompt_width, NULL);
 	cairo_translate(cr, prompt_width, 0);
 	*width -= prompt_width;
 	cairo_rectangle(cr, 0, 0, *width, *height);
 	cairo_clip(cr);
 
-	entry->backend.context = context;
+	entry->pango.context = context;
 }
 
-void entry_backend_destroy(struct entry *entry)
+void entry_backend_pango_destroy(struct entry *entry)
 {
-	g_object_unref(entry->backend.layout);
-	g_object_unref(entry->backend.context);
+	g_object_unref(entry->pango.layout);
+	g_object_unref(entry->pango.context);
 }
 
-void entry_backend_update(struct entry *entry)
+void entry_backend_pango_update(struct entry *entry)
 {
 	cairo_t *cr = entry->cairo[entry->index].cr;
-	PangoLayout *layout = entry->backend.layout;
+	PangoLayout *layout = entry->pango.layout;
 
 	pango_layout_set_text(layout, entry->input_mb, -1);
 	pango_cairo_update_layout(cr, layout);

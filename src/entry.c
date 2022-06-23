@@ -1,6 +1,7 @@
 #include <cairo/cairo.h>
 #include <math.h>
 #include <wchar.h>
+#include <unistd.h>
 #include "entry.h"
 #include "log.h"
 #include "nelem.h"
@@ -114,7 +115,18 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	cairo_clip(cr);
 
 	/* Setup the backend. */
-	entry_backend_init(entry, &width, &height);
+	if (access(entry->font_name, R_OK) != 0) {
+		/*
+		 * We've been given a font name rather than path,
+		 * so fallback to Pango
+		 */
+		entry->use_pango = true;
+	}
+	if (entry->use_pango) {
+		entry_backend_pango_init(entry, &width, &height);
+	} else {
+		entry_backend_harfbuzz_init(entry, &width, &height);
+	}
 
 	/*
 	 * To avoid performing all this drawing twice, we take a small
@@ -139,7 +151,11 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 
 void entry_destroy(struct entry *entry)
 {
-	entry_backend_destroy(entry);
+	if (entry->use_pango) {
+		entry_backend_pango_destroy(entry);
+	} else {
+		entry_backend_harfbuzz_destroy(entry);
+	}
 	cairo_destroy(entry->cairo[0].cr);
 	cairo_destroy(entry->cairo[1].cr);
 	cairo_surface_destroy(entry->cairo[0].surface);
@@ -164,7 +180,11 @@ void entry_update(struct entry *entry)
 	color = entry->foreground_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
-	entry_backend_update(entry);
+	if (entry->use_pango) {
+		entry_backend_pango_update(entry);
+	} else {
+		entry_backend_harfbuzz_update(entry);
+	}
 
 	cairo_restore(cr);
 	log_debug("Finish rendering entry.\n");

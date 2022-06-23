@@ -55,12 +55,14 @@ add_project_arguments(
   language: 'c'
 )
 
-common_sources = files(
+tofi_sources = files(
   'src/main.c',
   'src/color.c',
   'src/compgen.c',
   'src/config.c',
   'src/entry.c',
+  'src/entry_backend/pango.c',
+  'src/entry_backend/harfbuzz.c',
   'src/history.c',
   'src/log.c',
   'src/mkdirp.c',
@@ -71,8 +73,6 @@ common_sources = files(
   'src/xmalloc.c',
 )
 
-pango_sources = files('src/entry_backend/pango.c')
-harfbuzz_sources = files('src/entry_backend/harfbuzz.c')
 compgen_sources = files(
   'src/main_compgen.c',
   'src/compgen.c',
@@ -124,16 +124,8 @@ endforeach
 
 executable(
   'tofi',
-  common_sources, harfbuzz_sources, wl_proto_src, wl_proto_headers,
-  dependencies: [libm, freetype, harfbuzz, cairo, wayland_client, xkbcommon],
-  install: true
-)
-
-executable(
-  'tofi-pango',
-  common_sources, pango_sources, wl_proto_src, wl_proto_headers,
-  dependencies: [pangocairo, wayland_client, xkbcommon],
-  c_args: '-DUSE_PANGO',
+  tofi_sources, wl_proto_src, wl_proto_headers,
+  dependencies: [libm, freetype, harfbuzz, cairo, pangocairo, wayland_client, xkbcommon],
   install: true
 )
 

@@ -100,7 +100,7 @@ static uint32_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
 	return ceil(width);
 }
 
-void entry_backend_init(
+void entry_backend_harfbuzz_init(
 		struct entry *entry,
 		uint32_t *width,
 		uint32_t *height)
@@ -110,7 +110,7 @@ void entry_backend_init(
 	/* Setup FreeType. */
 	log_debug("Creating FreeType library.\n");
 	int err;
-	err = FT_Init_FreeType(&entry->backend.ft_library);
+	err = FT_Init_FreeType(&entry->harfbuzz.ft_library);
 	if (err) {
 		log_error("Error initialising FreeType: %s\n",
 				get_ft_error_string(err));
@@ -119,14 +119,14 @@ void entry_backend_init(
 
 	log_debug("Loading FreeType font.\n");
 	err = FT_New_Face(
-			entry->backend.ft_library, "font.ttf", 0,
-			&entry->backend.ft_face);
+			entry->harfbuzz.ft_library, entry->font_name, 0,
+			&entry->harfbuzz.ft_face);
 	if (err) {
 		log_error("Error loading font: %s\n", get_ft_error_string(err));
 		exit(EXIT_FAILURE);
 	}
 	err = FT_Set_Char_Size(
-			entry->backend.ft_face,
+			entry->harfbuzz.ft_face,
 			entry->font_size * 64,
 			entry->font_size * 64,
 			96,
@@ -137,12 +137,12 @@ void entry_backend_init(
 	}
 
 	log_debug("Creating Cairo font.\n");
-	entry->backend.cairo_face =
-		cairo_ft_font_face_create_for_ft_face(entry->backend.ft_face, 0);
+	entry->harfbuzz.cairo_face =
+		cairo_ft_font_face_create_for_ft_face(entry->harfbuzz.ft_face, 0);
 
 	struct color color = entry->foreground_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_set_font_face(cr, entry->backend.cairo_face);
+	cairo_set_font_face(cr, entry->harfbuzz.cairo_face);
 	cairo_set_font_size(cr, entry->font_size * PT_TO_DPI);
 	cairo_font_options_t *opts = cairo_font_options_create();
 	//cairo_font_options_set_hint_style(opts, CAIRO_HINT_STYLE_NONE);
@@ -150,25 +150,25 @@ void entry_backend_init(
 
 
 	/* We also need to set up the font for our other Cairo context. */
-	cairo_set_font_face(entry->cairo[1].cr, entry->backend.cairo_face);
+	cairo_set_font_face(entry->cairo[1].cr, entry->harfbuzz.cairo_face);
 	cairo_set_font_size(entry->cairo[1].cr, entry->font_size * PT_TO_DPI);
 	cairo_set_font_options(entry->cairo[1].cr, opts);
 
 	cairo_font_options_destroy(opts);
 
 	log_debug("Creating Harfbuzz font.\n");
-	entry->backend.hb_font =
-		hb_ft_font_create_referenced(entry->backend.ft_face);
+	entry->harfbuzz.hb_font =
+		hb_ft_font_create_referenced(entry->harfbuzz.ft_face);
 
 	log_debug("Creating Harfbuzz buffer.\n");
 	hb_buffer_t *buffer = hb_buffer_create();
-	entry->backend.hb_buffer = buffer;
+	entry->harfbuzz.hb_buffer = buffer;
 	setup_hb_buffer(buffer);
 
 	/* Draw the prompt now, as this only needs to be done once */
 	log_debug("Drawing prompt.\n");
-	hb_buffer_add_utf8(entry->backend.hb_buffer, entry->prompt_text, -1, 0, -1);
-	hb_shape(entry->backend.hb_font, entry->backend.hb_buffer, NULL, 0);
+	hb_buffer_add_utf8(entry->harfbuzz.hb_buffer, entry->prompt_text, -1, 0, -1);
+	hb_shape(entry->harfbuzz.hb_font, entry->harfbuzz.hb_buffer, NULL, 0);
 	uint32_t prompt_width = render_hb_buffer(cr, buffer);
 
 	/* Move and clip so we don't draw over the prompt later */
@@ -178,26 +178,26 @@ void entry_backend_init(
 	cairo_clip(cr);
 }
 
-void entry_backend_destroy(struct entry *entry)
+void entry_backend_harfbuzz_destroy(struct entry *entry)
 {
-	hb_buffer_destroy(entry->backend.hb_buffer);
-	hb_font_destroy(entry->backend.hb_font);
-	cairo_font_face_destroy(entry->backend.cairo_face);
-	FT_Done_Face(entry->backend.ft_face);
-	FT_Done_FreeType(entry->backend.ft_library);
+	hb_buffer_destroy(entry->harfbuzz.hb_buffer);
+	hb_font_destroy(entry->harfbuzz.hb_font);
+	cairo_font_face_destroy(entry->harfbuzz.cairo_face);
+	FT_Done_Face(entry->harfbuzz.ft_face);
+	FT_Done_FreeType(entry->harfbuzz.ft_library);
 }
 
-void entry_backend_update(struct entry *entry)
+void entry_backend_harfbuzz_update(struct entry *entry)
 {
 	cairo_t *cr = entry->cairo[entry->index].cr;
-	hb_buffer_t *buffer = entry->backend.hb_buffer;
+	hb_buffer_t *buffer = entry->harfbuzz.hb_buffer;
 	uint32_t width;
 
 	/* Render the entry text */
 	hb_buffer_clear_contents(buffer);
 	setup_hb_buffer(buffer);
 	hb_buffer_add_utf8(buffer, entry->input_mb, -1, 0, -1);
-	hb_shape(entry->backend.hb_font, buffer, NULL, 0);
+	hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
 	width = render_hb_buffer(cr, buffer);
 
 	cairo_font_extents_t font_extents;
@@ -214,7 +214,7 @@ void entry_backend_update(struct entry *entry)
 		hb_buffer_clear_contents(buffer);
 		setup_hb_buffer(buffer);
 		hb_buffer_add_utf8(buffer, entry->results.buf[i], -1, 0, -1);
-		hb_shape(entry->backend.hb_font, buffer, NULL, 0);
+		hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
 		if (i == entry->selection) {
 			cairo_save(cr);
 			struct color color = entry->selection_color;

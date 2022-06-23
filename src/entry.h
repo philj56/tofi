@@ -1,11 +1,8 @@
 #ifndef ENTRY_H
 #define ENTRY_H
 
-#ifdef USE_PANGO
 #include "entry_backend/pango.h"
-#else
 #include "entry_backend/harfbuzz.h"
-#endif
 
 #include <cairo/cairo.h>
 #include <wchar.h>
@@ -21,7 +18,8 @@
 
 struct entry {
 	struct image image;
-	struct entry_backend backend;
+	struct entry_backend_harfbuzz harfbuzz;
+	struct entry_backend_pango pango;
 	struct {
 		cairo_surface_t *surface;
 		cairo_t *cr;
@@ -38,6 +36,7 @@ struct entry {
 	struct string_vec results;
 	struct string_vec commands;
 	struct history history;
+	bool use_pango;
 
 	/* Options */
 	bool horizontal;

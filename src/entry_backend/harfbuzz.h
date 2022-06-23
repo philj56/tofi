@@ -8,7 +8,7 @@
 
 struct entry;
 
-struct entry_backend {
+struct entry_backend_harfbuzz {
 	FT_Library ft_library;
 	FT_Face ft_face;
 
@@ -18,8 +18,8 @@ struct entry_backend {
 	hb_buffer_t *hb_buffer;
 };
 
-void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height);
-void entry_backend_destroy(struct entry *entry);
-void entry_backend_update(struct entry *entry);
+void entry_backend_harfbuzz_init(struct entry *entry, uint32_t *width, uint32_t *height);
+void entry_backend_harfbuzz_destroy(struct entry *entry);
+void entry_backend_harfbuzz_update(struct entry *entry);
 
 #endif /* ENTRY_BACKEND_HARFBUZZ_H */
