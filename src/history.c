@@ -66,11 +66,14 @@ struct history history_load()
 		return vec;
 	}
 
+	errno = 0;
 	if (fseek(histfile, 0, SEEK_END) != 0) {
 		log_error("Error seeking in history file: %s.\n", strerror(errno));
 		fclose(histfile);
 		return vec;
 	}
+
+	errno = 0;
 	size_t len = ftell(histfile);
 	if (fseek(histfile, 0, SEEK_SET) != 0) {
 		log_error("Error seeking in history file: %s.\n", strerror(errno));
@@ -78,8 +81,9 @@ struct history history_load()
 		return vec;
 	}
 
+	errno = 0;
 	char *buf = xmalloc(len);
-	if (fread(buf, 1, len, histfile) != 0) {
+	if (fread(buf, 1, len, histfile) != len) {
 		log_error("Error reading history file: %s.\n", strerror(errno));
 		fclose(histfile);
 		return vec;

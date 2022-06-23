@@ -587,10 +587,11 @@ static void usage()
 "      --margin-left <px|%>        Offset from left of screen.\n"
 "      --margin-right <px|%>       Offset from right of screen.\n"
 "      --hide-cursor <true|false>  Hide the cursor.\n"
+"      --history <true|false>      Sort results by number of usages.\n"
 	);
 }
 
-static int parse_args(struct tofi *tofi, int argc, char *argv[])
+static void parse_args(struct tofi *tofi, int argc, char *argv[])
 {
 	/* Option parsing with getopt. */
 	const struct option long_options[] = {
@@ -620,6 +621,7 @@ static int parse_args(struct tofi *tofi, int argc, char *argv[])
 		{"margin-right", required_argument, NULL, 0},
 		{"layout-horizontal", required_argument, NULL, 0},
 		{"hide-cursor", required_argument, NULL, 0},
+		{"history", required_argument, NULL, 0},
 		{NULL, 0, NULL, 0}
 	};
 	const char *short_options = ":hc:";
@@ -669,7 +671,11 @@ static int parse_args(struct tofi *tofi, int argc, char *argv[])
 		opt = getopt_long(argc, argv, short_options, long_options, &option_index);
 	}
 
-	return optind;
+	if (optind < argc) {
+		log_error("Unexpected non-option argument '%s'.\n", argv[optind]);
+		usage();
+		exit(EXIT_FAILURE);
+	}
 }
 
 int main(int argc, char *argv[])
@@ -708,16 +714,8 @@ int main(int argc, char *argv[])
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
+		.use_history = true,
 	};
-
-	log_debug("Generating command list.\n");
-	log_indent();
-	tofi.window.entry.history = history_load();
-	tofi.window.entry.commands = compgen_cached();
-	compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
-	tofi.window.entry.results = string_vec_copy(&tofi.window.entry.commands);
-	log_unindent();
-	log_debug("Command list generated.\n");
 
 
 	/*
@@ -769,6 +767,35 @@ int main(int argc, char *argv[])
 	 * output size required for specifying window sizes in percent.
 	 */
 	parse_args(&tofi, argc, argv);
+
+	/*
+	 * If we were invoked as tofi-run, generate the command list.
+	 * Otherwise, just read standard input.
+	 */
+	if (strstr(argv[0], "-run")) {
+		log_debug("Generating command list.\n");
+		log_indent();
+		tofi.window.entry.commands = compgen_cached();
+		log_unindent();
+		log_debug("Command list generated.\n");
+	} else {
+		char *line = NULL;
+		size_t n = 0;
+		tofi.window.entry.commands = string_vec_create();
+		while (getline(&line, &n, stdin) != -1) {
+			char *c = strchr(line, '\n');
+			if (c) {
+				*c = '\0';
+			}
+			string_vec_add(&tofi.window.entry.commands, line);
+		}
+		free(line);
+	}
+	if (tofi.use_history) {
+		tofi.window.entry.history = history_load();
+		compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
+	}
+	tofi.window.entry.results = string_vec_copy(&tofi.window.entry.commands);
 
 	/*
 	 * Next, we create the Wayland surface, which takes on the
@@ -901,10 +928,12 @@ int main(int argc, char *argv[])
 			if (tofi.window.entry.results.count > 0) {
 				uint32_t selection = tofi.window.entry.selection;
 				printf("%s\n", tofi.window.entry.results.buf[selection]);
-				history_add(
-						&tofi.window.entry.history,
-						tofi.window.entry.results.buf[selection]);
-				history_save(&tofi.window.entry.history);
+				if (tofi.use_history) {
+					history_add(
+							&tofi.window.entry.history,
+							tofi.window.entry.results.buf[selection]);
+					history_save(&tofi.window.entry.history);
+				}
 				break;
 			}
 		}
@@ -938,7 +967,9 @@ int main(int argc, char *argv[])
 	wl_registry_destroy(tofi.wl_registry);
 	string_vec_destroy(&tofi.window.entry.commands);
 	string_vec_destroy(&tofi.window.entry.results);
-	history_destroy(&tofi.window.entry.history);
+	if (tofi.use_history) {
+		history_destroy(&tofi.window.entry.history);
+	}
 #endif
 	/*
 	 * For release builds, skip straight to display disconnection and quit.

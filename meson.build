@@ -37,6 +37,12 @@ install_data(
   install_dir: completion_location
 )
 
+install_symlink(
+  'tofi-run',
+  install_dir: get_option('bindir'),
+  pointing_to: 'tofi',
+)
+
 add_project_arguments(
   [
     '-pedantic',
@@ -79,7 +85,6 @@ compgen_sources = files(
 cc = meson.get_compiler('c')
 libm = cc.find_library('m', required: false)
 freetype = dependency('freetype2')
-glib = dependency('glib-2.0')
 harfbuzz = dependency('harfbuzz')
 cairo = dependency('cairo')
 pangocairo = dependency('pangocairo')
@@ -120,14 +125,14 @@ endforeach
 executable(
   'tofi',
   common_sources, harfbuzz_sources, wl_proto_src, wl_proto_headers,
-  dependencies: [libm, glib, freetype, harfbuzz, cairo, wayland_client, xkbcommon],
+  dependencies: [libm, freetype, harfbuzz, cairo, wayland_client, xkbcommon],
   install: true
 )
 
 executable(
   'tofi-pango',
   common_sources, pango_sources, wl_proto_src, wl_proto_headers,
-  dependencies: [glib, pangocairo, wayland_client, xkbcommon],
+  dependencies: [pangocairo, wayland_client, xkbcommon],
   c_args: '-DUSE_PANGO',
   install: true
 )

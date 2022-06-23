@@ -50,6 +50,7 @@ struct tofi {
 	/* Options */
 	int8_t anchor;
 	bool hide_cursor;
+	bool use_history;
 };
 
 #endif /* CLIENT_H */

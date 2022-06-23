@@ -275,6 +275,8 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->window.entry.horizontal = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "hide-cursor") == 0) {
 		tofi->hide_cursor = parse_bool(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "history") == 0) {
+		tofi->use_history = parse_bool(filename, lineno, value, &err);
 	} else {
 		PARSE_ERROR(filename, lineno, "Unknown option \"%s\"\n", option);
 		err = true;

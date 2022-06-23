@@ -1,5 +1,4 @@
 #include <cairo/cairo.h>
-#include <glib.h>
 #include <pango/pangocairo.h>
 #include <pango/pango.h>
 #include "../entry.h"
