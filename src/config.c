@@ -18,34 +18,34 @@
 #define MAX_CONFIG_SIZE (10*1024*1024)
 
 static char *strip(const char *str);
-static bool parse_option(struct tofi *tofi, size_t lineno, const char *option, const char *value);
+static bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const char *option, const char *value);
 static char *get_config_path(void);
 
-static int8_t parse_anchor(size_t lineno, const char *str, bool *err);
-static bool parse_bool(size_t lineno, const char *str, bool *err);
-static struct color parse_color(size_t lineno, const char *str, bool *err);
-static uint32_t parse_uint32(size_t lineno, const char *str, bool *err);
-static int32_t parse_int32(size_t lineno, const char *str, bool *err);
-static uint32_t parse_uint32_percent(size_t lineno, const char *str, bool *err, uint32_t max);
+static int8_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err);
+static bool parse_bool(const char *filename, size_t lineno, const char *str, bool *err);
+static struct color parse_color(const char *filename, size_t lineno, const char *str, bool *err);
+static uint32_t parse_uint32(const char *filename, size_t lineno, const char *str, bool *err);
+static int32_t parse_int32(const char *filename, size_t lineno, const char *str, bool *err);
+static uint32_t parse_uint32_percent(const char *filename, size_t lineno, const char *str, bool *err, uint32_t max);
 
 /*
  * Function-like macro. Yuck.
  */
-#define PARSE_ERROR_NO_ARGS(lineno, fmt) \
-		if ((lineno) > 0) {\
-			log_error("Config file: line %zu: ", (lineno));\
-			log_append_error((fmt)); \
-		} else {\
-			log_error((fmt)); \
-		}
+#define PARSE_ERROR_NO_ARGS(filename, lineno, fmt) \
+	if ((lineno) > 0) {\
+		log_error("%s: line %zu: ", (filename), (lineno));\
+		log_append_error((fmt)); \
+	} else {\
+		log_error((fmt)); \
+	}
 
-#define PARSE_ERROR(lineno, fmt, ...) \
-		if ((lineno) > 0) {\
-			log_error("Config file: line %zu: ", (lineno));\
-			log_append_error((fmt), __VA_ARGS__); \
-		} else {\
-			log_error((fmt), __VA_ARGS__); \
-		}
+#define PARSE_ERROR(filename, lineno, fmt, ...) \
+	if ((lineno) > 0) {\
+		log_error("%s: line %zu: ", (filename), (lineno));\
+		log_append_error((fmt), __VA_ARGS__); \
+	} else {\
+		log_error((fmt), __VA_ARGS__); \
+	}
 
 void config_load(struct tofi *tofi, const char *filename)
 {
@@ -105,9 +105,9 @@ void config_load(struct tofi *tofi, const char *filename)
 		log_error("Failed to malloc second buffer for config file.\n");
 		goto CLEANUP_ALL;
 	}
-	
+
 	log_debug("Loading config file %s.\n", filename);
-	
+
 	char *saveptr1 = NULL;
 	char *saveptr2 = NULL;
 
@@ -150,39 +150,39 @@ void config_load(struct tofi *tofi, const char *filename)
 			}
 		}
 		if (line[0] == '=') {
-			PARSE_ERROR_NO_ARGS(lineno, "Missing option.\n");
+			PARSE_ERROR_NO_ARGS(filename, lineno, "Missing option.\n");
 			num_errs++;
 			continue;
 		}
 		char *option = strtok_r(line, "=", &saveptr2);
 		if (!option) {
 			char *tmp = strip(line);
-			PARSE_ERROR(lineno, "Config option \"%s\" missing value.\n", tmp);
+			PARSE_ERROR(filename, lineno, "Config option \"%s\" missing value.\n", tmp);
 			num_errs++;
 			free(tmp);
 			continue;
 		}
 		char *option_stripped = strip(option);
 		if (!option_stripped) {
-			PARSE_ERROR_NO_ARGS(lineno, "Missing option.\n");
+			PARSE_ERROR_NO_ARGS(filename, lineno, "Missing option.\n");
 			num_errs++;
 			continue;
 		}
 		char *value = strtok_r(NULL, "#;\r\n", &saveptr2);
 		if (!value) {
-			PARSE_ERROR(lineno, "Config option \"%s\" missing value.\n", option_stripped);
+			PARSE_ERROR(filename, lineno, "Config option \"%s\" missing value.\n", option_stripped);
 			num_errs++;
 			free(option_stripped);
 			continue;
 		}
 		char *value_stripped = strip(value);
 		if (!value_stripped) {
-			PARSE_ERROR(lineno, "Config option \"%s\" missing value.\n", option_stripped);
+			PARSE_ERROR(filename, lineno, "Config option \"%s\" missing value.\n", option_stripped);
 			num_errs++;
 			free(option_stripped);
 			continue;
 		}
-		if (!parse_option(tofi, lineno, option_stripped, value_stripped)) {
+		if (!parse_option(tofi, filename, lineno, option_stripped, value_stripped)) {
 			num_errs++;
 		}
 
@@ -224,59 +224,59 @@ char *strip(const char *str)
 	return buf;
 }
 
-bool parse_option(struct tofi *tofi, size_t lineno, const char *option, const char *value)
+bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const char *option, const char *value)
 {
 	bool err = false;
 	if (strcasecmp(option, "anchor") == 0) {
-		tofi->anchor = parse_anchor(lineno, value, &err);
+		tofi->anchor = parse_anchor(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "background-color") == 0) {
-		tofi->window.entry.background_color = parse_color(lineno, value, &err);
+		tofi->window.entry.background_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "corner-radius") == 0) {
-		tofi->window.entry.corner_radius = parse_uint32(lineno, value, &err);
+		tofi->window.entry.corner_radius = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "entry-padding") == 0) {
-		tofi->window.entry.padding = parse_uint32(lineno, value, &err);
+		tofi->window.entry.padding = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "entry-color") == 0) {
-		tofi->window.entry.background_color = parse_color(lineno, value, &err);
+		tofi->window.entry.background_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "font-name") == 0) {
 		snprintf(tofi->window.entry.font_name, N_ELEM(tofi->window.entry.font_name), "%s", value);
 	} else if (strcasecmp(option, "font-size") == 0) {
-		tofi->window.entry.font_size = parse_uint32(lineno, value, &err);
+		tofi->window.entry.font_size = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "num-results") == 0) {
-		tofi->window.entry.num_results = parse_uint32(lineno, value, &err);
+		tofi->window.entry.num_results = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "outline-width") == 0) {
-		tofi->window.entry.border.outline_width = parse_uint32(lineno, value, &err);
+		tofi->window.entry.border.outline_width = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "outline-color") == 0) {
-		tofi->window.entry.border.outline_color = parse_color(lineno, value, &err);
+		tofi->window.entry.border.outline_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "prompt-text") == 0) {
 		snprintf(tofi->window.entry.prompt_text, N_ELEM(tofi->window.entry.prompt_text), "%s", value);
 	} else if (strcasecmp(option, "result-padding") == 0) {
-		tofi->window.entry.result_padding = parse_int32(lineno, value, &err);
+		tofi->window.entry.result_padding = parse_int32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "border-width") == 0) {
-		tofi->window.entry.border.width = parse_uint32(lineno, value, &err);
+		tofi->window.entry.border.width = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "border-color") == 0) {
-		tofi->window.entry.border.color = parse_color(lineno, value, &err);
+		tofi->window.entry.border.color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "text-color") == 0) {
-		tofi->window.entry.foreground_color = parse_color(lineno, value, &err);
+		tofi->window.entry.foreground_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "selection-color") == 0) {
-		tofi->window.entry.selection_color = parse_color(lineno, value, &err);
+		tofi->window.entry.selection_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "width") == 0) {
-		tofi->window.width = parse_uint32_percent(lineno, value, &err, tofi->output_width / tofi->window.scale);
+		tofi->window.width = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width / tofi->window.scale);
 	} else if (strcasecmp(option, "height") == 0) {
-		tofi->window.height = parse_uint32_percent(lineno, value, &err, tofi->output_height / tofi->window.scale);
+		tofi->window.height = parse_uint32_percent(filename, lineno, value, &err, tofi->output_height / tofi->window.scale);
 	} else if (strcasecmp(option, "margin-top") == 0) {
-		tofi->window.margin_top = parse_uint32_percent(lineno, value, &err, tofi->output_height / tofi->window.scale);
+		tofi->window.margin_top = parse_uint32_percent(filename, lineno, value, &err, tofi->output_height / tofi->window.scale);
 	} else if (strcasecmp(option, "margin-bottom") == 0) {
-		tofi->window.margin_bottom = parse_uint32_percent(lineno, value, &err, tofi->output_height / tofi->window.scale);
+		tofi->window.margin_bottom = parse_uint32_percent(filename, lineno, value, &err, tofi->output_height / tofi->window.scale);
 	} else if (strcasecmp(option, "margin-left") == 0) {
-		tofi->window.margin_left = parse_uint32_percent(lineno, value, &err, tofi->output_width / tofi->window.scale);
+		tofi->window.margin_left = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width / tofi->window.scale);
 	} else if (strcasecmp(option, "margin-right") == 0) {
-		tofi->window.margin_right = parse_uint32_percent(lineno, value, &err, tofi->output_width / tofi->window.scale);
+		tofi->window.margin_right = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width / tofi->window.scale);
 	} else if (strcasecmp(option, "horizontal") == 0) {
-		tofi->window.entry.horizontal = parse_bool(lineno, value, &err);
+		tofi->window.entry.horizontal = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "hide-cursor") == 0) {
-		tofi->hide_cursor = parse_bool(lineno, value, &err);
+		tofi->hide_cursor = parse_bool(filename, lineno, value, &err);
 	} else {
-		PARSE_ERROR(lineno, "Unrecognised option \"%s\"\n", option);
+		PARSE_ERROR(filename, lineno, "Unknown option \"%s\"\n", option);
 		err = true;
 	}
 	return !err;
@@ -284,7 +284,7 @@ bool parse_option(struct tofi *tofi, size_t lineno, const char *option, const ch
 
 void apply_option(struct tofi *tofi, const char *option, const char *value)
 {
-	if (!parse_option(tofi, 0, option, value)) {
+	if (!parse_option(tofi, "", 0, option, value)) {
 		exit(EXIT_FAILURE);
 	};
 }
@@ -308,49 +308,57 @@ char *get_config_path()
 	return name;
 }
 
-bool parse_bool(size_t lineno, const char *str, bool *err)
+bool parse_bool(const char *filename, size_t lineno, const char *str, bool *err)
 {
 	if (strcasecmp(str, "true") == 0) {
 		return true;
 	} else if (strcasecmp(str, "false") == 0) {
 		return false;
 	}
-	PARSE_ERROR(lineno, "Invalid boolean value \"%s\".\n", str);
+	PARSE_ERROR(filename, lineno, "Invalid boolean value \"%s\".\n", str);
 	if (err) {
 		*err = true;
 	}
 	return false;
 }
 
-int8_t parse_anchor(size_t lineno, const char *str, bool *err)
+int8_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err)
 {
 	if(strcasecmp(str, "top-left") == 0) {
 		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
 	}
 	if (strcasecmp(str, "top") == 0) {
-	   	return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP;
+		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	}
 	if (strcasecmp(str, "top-right") == 0) {
-	   	return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-	   		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	}
 	if (strcasecmp(str, "right") == 0) {
-	   	return ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		return ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
 	}
 	if (strcasecmp(str, "bottom-right") == 0) {
-	   	return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-	   		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	}
 	if (strcasecmp(str, "bottom") == 0) {
-	   	return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
+		return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	}
 	if (strcasecmp(str, "bottom-left") == 0) {
-	   	return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-	   		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
+		return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
 	}
 	if (strcasecmp(str, "left") == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
+		return ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
 	}
 	if (strcasecmp(str, "center") == 0) {
 		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
@@ -358,28 +366,28 @@ int8_t parse_anchor(size_t lineno, const char *str, bool *err)
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	}
-	PARSE_ERROR(lineno, "Invalid anchor \"%s\".\n", str);
+	PARSE_ERROR(filename, lineno, "Invalid anchor \"%s\".\n", str);
 	*err = true;
 	return 0;
 }
 
-struct color parse_color(size_t lineno, const char *str, bool *err)
+struct color parse_color(const char *filename, size_t lineno, const char *str, bool *err)
 {
 	return hex_to_color(str);
 }
 
-uint32_t parse_uint32(size_t lineno, const char *str, bool *err)
+uint32_t parse_uint32(const char *filename, size_t lineno, const char *str, bool *err)
 {
 	errno = 0;
 	char *endptr;
 	int32_t ret = strtoul(str, &endptr, 0);
 	if (endptr == str) {
-		PARSE_ERROR(lineno, "Failed to parse \"%s\" as unsigned int.\n", str);
+		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as unsigned int.\n", str);
 		if (err) {
 			*err = true;
 		}
 	} else if (errno || ret < 0) {
-		PARSE_ERROR(lineno, "Unsigned int value \"%s\" out of range.\n", str);
+		PARSE_ERROR(filename, lineno, "Unsigned int value \"%s\" out of range.\n", str);
 		if (err) {
 			*err = true;
 		}
@@ -387,18 +395,18 @@ uint32_t parse_uint32(size_t lineno, const char *str, bool *err)
 	return ret;
 }
 
-int32_t parse_int32(size_t lineno, const char *str, bool *err)
+int32_t parse_int32(const char *filename, size_t lineno, const char *str, bool *err)
 {
 	errno = 0;
 	char *endptr;
 	int32_t ret = strtol(str, &endptr, 0);
 	if (endptr == str) {
-		PARSE_ERROR(lineno, "Failed to parse \"%s\" as int.\n", str);
+		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as int.\n", str);
 		if (err) {
 			*err = true;
 		}
 	} else if (errno) {
-		PARSE_ERROR(lineno, "Int value \"%s\" out of range.\n", str);
+		PARSE_ERROR(filename, lineno, "Int value \"%s\" out of range.\n", str);
 		if (err) {
 			*err = true;
 		}
@@ -406,18 +414,18 @@ int32_t parse_int32(size_t lineno, const char *str, bool *err)
 	return ret;
 }
 
-uint32_t parse_uint32_percent(size_t lineno, const char *str, bool *err, uint32_t max)
+uint32_t parse_uint32_percent(const char *filename, size_t lineno, const char *str, bool *err, uint32_t max)
 {
 	errno = 0;
 	char *endptr;
 	int32_t ret = strtoul(str, &endptr, 0);
 	if (endptr == str) {
-		PARSE_ERROR(lineno, "Failed to parse \"%s\" as unsigned int.\n", str);
+		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as unsigned int.\n", str);
 		if (err) {
 			*err = true;
 		}
 	} else if (errno || ret < 0) {
-		PARSE_ERROR(lineno, "Unsigned int value \"%s\" out of range.\n", str);
+		PARSE_ERROR(filename, lineno, "Unsigned int value \"%s\" out of range.\n", str);
 		if (err) {
 			*err = true;
 		}

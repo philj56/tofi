@@ -590,10 +590,10 @@ static void usage()
 	);
 }
 
-static void parse_args(struct tofi *tofi, int argc, char *argv[])
+static int parse_args(struct tofi *tofi, int argc, char *argv[])
 {
 	/* Option parsing with getopt. */
-	struct option long_options[] = {
+	const struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"config", required_argument, NULL, 'c'},
 		{"anchor", required_argument, NULL, 0},
@@ -626,9 +626,12 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 
 	bool load_default_config = true;
 	int option_index = 0;
+
+	/* Handle errors ourselves. */
 	opterr = 0;
 
 	/* First pass, just check for config file, help, and errors. */
+	optind = 1;
 	int opt = getopt_long(argc, argv, short_options, long_options, &option_index);
 	while (opt != -1) {
 		if (opt == 'h') {
@@ -642,7 +645,11 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 			usage();
 			exit(EXIT_FAILURE);
 		} else if (opt == '?') {
-			log_error("Unknown option %s.\n", argv[optind - 1]);
+			if (optopt) {
+				log_error("Unknown option -%c.\n", optopt);
+			} else {
+				log_error("Unknown option %s.\n", argv[optind - 1]);
+			}
 			usage();
 			exit(EXIT_FAILURE);
 		}
@@ -651,9 +658,9 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 	if (load_default_config) {
 		config_load(tofi, NULL);
 	}
-	optind = 1;
 
 	/* Second pass, parse everything else. */
+	optind = 1;
 	opt = getopt_long(argc, argv, short_options, long_options, &option_index);
 	while (opt != -1) {
 		if (opt == 0) {
@@ -661,13 +668,8 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 		}
 		opt = getopt_long(argc, argv, short_options, long_options, &option_index);
 	}
-	//if (optind < argc) {
-	//	log_error(
-	//		"Unexpected non-option argument '%s'.\n",
-	//		argv[optind]);
-	//	usage();
-	//	exit(EXIT_FAILURE);
-	//}
+
+	return optind;
 }
 
 int main(int argc, char *argv[])
