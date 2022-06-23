@@ -24,11 +24,10 @@ static void rounded_rectangle(cairo_t *cr, uint32_t width, uint32_t height, uint
 	cairo_close_path(cr);
 }
 
-void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t scale)
+void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height)
 {
 	entry->image.width = width;
 	entry->image.height = height;
-	entry->image.scale = scale;
 
 	/*
 	 * Create the cairo surfaces and contexts we'll be using.
@@ -46,7 +45,6 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 			height,
 			width * sizeof(uint32_t)
 			);
-	cairo_surface_set_device_scale(surface, scale, scale);
 	cairo_t *cr = cairo_create(surface);
 
 	entry->cairo[0].surface = surface;
@@ -59,15 +57,7 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 			height,
 			width * sizeof(uint32_t)
 			);
-	cairo_surface_set_device_scale(entry->cairo[1].surface, scale, scale);
 	entry->cairo[1].cr = cairo_create(entry->cairo[1].surface);
-
-	/*
-	 * Cairo drawing operations take the scale into account,
-	 * so we account for that here.
-	 */
-	width /= scale;
-	height /= scale;
 
 
 	/* Draw the background */
@@ -124,7 +114,7 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	cairo_clip(cr);
 
 	/* Setup the backend. */
-	entry_backend_init(entry, &width, &height, scale);
+	entry_backend_init(entry, &width, &height);
 
 	/*
 	 * To avoid performing all this drawing twice, we take a small
@@ -180,11 +170,4 @@ void entry_update(struct entry *entry)
 	log_debug("Finish rendering entry.\n");
 
 	entry->index = !entry->index;
-}
-
-void entry_set_scale(struct entry *entry, uint32_t scale)
-{
-	entry->image.scale = scale;
-	cairo_surface_set_device_scale(entry->cairo[0].surface, scale, scale);
-	cairo_surface_set_device_scale(entry->cairo[1].surface, scale, scale);
 }

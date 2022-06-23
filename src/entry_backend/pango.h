@@ -10,7 +10,7 @@ struct entry_backend {
 	PangoLayout *layout;
 };
 
-void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height, uint32_t scale);
+void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height);
 void entry_backend_destroy(struct entry *entry);
 void entry_backend_update(struct entry *entry);
 

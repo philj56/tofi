@@ -100,7 +100,7 @@ void config_load(struct tofi *tofi, const char *filename)
 	fclose(fp);
 	config[size] = '\0';
 
-	char *config_copy = strdup(config);
+	char *config_copy = xstrdup(config);
 	if (!config_copy) {
 		log_error("Failed to malloc second buffer for config file.\n");
 		goto CLEANUP_ALL;
@@ -260,17 +260,17 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 	} else if (strcasecmp(option, "selection-color") == 0) {
 		tofi->window.entry.selection_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "width") == 0) {
-		tofi->window.width = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width / tofi->window.scale);
+		tofi->window.width = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width);
 	} else if (strcasecmp(option, "height") == 0) {
-		tofi->window.height = parse_uint32_percent(filename, lineno, value, &err, tofi->output_height / tofi->window.scale);
+		tofi->window.height = parse_uint32_percent(filename, lineno, value, &err, tofi->output_height);
 	} else if (strcasecmp(option, "margin-top") == 0) {
-		tofi->window.margin_top = parse_uint32_percent(filename, lineno, value, &err, tofi->output_height / tofi->window.scale);
+		tofi->window.margin_top = parse_uint32_percent(filename, lineno, value, &err, tofi->output_height);
 	} else if (strcasecmp(option, "margin-bottom") == 0) {
-		tofi->window.margin_bottom = parse_uint32_percent(filename, lineno, value, &err, tofi->output_height / tofi->window.scale);
+		tofi->window.margin_bottom = parse_uint32_percent(filename, lineno, value, &err, tofi->output_height);
 	} else if (strcasecmp(option, "margin-left") == 0) {
-		tofi->window.margin_left = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width / tofi->window.scale);
+		tofi->window.margin_left = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width);
 	} else if (strcasecmp(option, "margin-right") == 0) {
-		tofi->window.margin_right = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width / tofi->window.scale);
+		tofi->window.margin_right = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width);
 	} else if (strcasecmp(option, "horizontal") == 0) {
 		tofi->window.entry.horizontal = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "hide-cursor") == 0) {

@@ -59,9 +59,8 @@ struct entry {
 	} border;
 };
 
-void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t scale);
+void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height);
 void entry_destroy(struct entry *entry);
 void entry_update(struct entry *entry);
-void entry_set_scale(struct entry *entry, uint32_t scale);
 
 #endif /* ENTRY_H */

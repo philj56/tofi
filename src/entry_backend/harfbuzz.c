@@ -56,7 +56,7 @@ static void setup_hb_buffer(hb_buffer_t *buffer)
  * Render a hb_buffer with Cairo, and return the width of the rendered area in
  * Cairo units.
  */
-static uint32_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer, uint32_t scale)
+static uint32_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
 {
 	cairo_save(cr);
 
@@ -79,14 +79,12 @@ static uint32_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer, uint32_t scal
 		/*
 		 * The coordinates returned by HarfBuzz are in 26.6 fixed-point
 		 * format, so we divide by 64.0 (2^6) to get floats.
-		 * We also divide by the display's scale factor, to counter
-		 * Cairo's scaling of coordinates and sizes.
 		 */
 		cairo_glyphs[i].index = glyph_info[i].codepoint;
-		cairo_glyphs[i].x = x + glyph_pos[i].x_offset / 64.0 / scale;
-		cairo_glyphs[i].y = y - glyph_pos[i].y_offset / 64.0 / scale;
-		x += glyph_pos[i].x_advance / 64.0 / scale;
-		y -= glyph_pos[i].y_advance / 64.0 / scale;
+		cairo_glyphs[i].x = x + glyph_pos[i].x_offset / 64.0;
+		cairo_glyphs[i].y = y - glyph_pos[i].y_offset / 64.0;
+		x += glyph_pos[i].x_advance / 64.0;
+		y -= glyph_pos[i].y_advance / 64.0;
 	}
 
 	cairo_show_glyphs(cr, cairo_glyphs, glyph_count);
@@ -97,7 +95,7 @@ static uint32_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer, uint32_t scal
 
 	double width = 0;
 	for (unsigned int i=0; i < glyph_count; i++) {
-		width += glyph_pos[i].x_advance / 64.0 / scale;
+		width += glyph_pos[i].x_advance / 64.0;
 	}
 	return ceil(width);
 }
@@ -105,8 +103,7 @@ static uint32_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer, uint32_t scal
 void entry_backend_init(
 		struct entry *entry,
 		uint32_t *width,
-		uint32_t *height,
-		uint32_t scale)
+		uint32_t *height)
 {
 	cairo_t *cr = entry->cairo[0].cr;
 
@@ -132,8 +129,8 @@ void entry_backend_init(
 			entry->backend.ft_face,
 			entry->font_size * 64,
 			entry->font_size * 64,
-			96 * scale,
-			96 * scale);
+			96,
+			96);
 	if (err) {
 		log_error("Error setting font size: %s\n",
 				get_ft_error_string(err));
@@ -172,7 +169,7 @@ void entry_backend_init(
 	log_debug("Drawing prompt.\n");
 	hb_buffer_add_utf8(entry->backend.hb_buffer, entry->prompt_text, -1, 0, -1);
 	hb_shape(entry->backend.hb_font, entry->backend.hb_buffer, NULL, 0);
-	uint32_t prompt_width = render_hb_buffer(cr, buffer, scale);
+	uint32_t prompt_width = render_hb_buffer(cr, buffer);
 
 	/* Move and clip so we don't draw over the prompt later */
 	cairo_translate(cr, prompt_width, 0);
@@ -201,7 +198,7 @@ void entry_backend_update(struct entry *entry)
 	setup_hb_buffer(buffer);
 	hb_buffer_add_utf8(buffer, entry->input_mb, -1, 0, -1);
 	hb_shape(entry->backend.hb_font, buffer, NULL, 0);
-	width = render_hb_buffer(cr, buffer, entry->image.scale);
+	width = render_hb_buffer(cr, buffer);
 
 	cairo_font_extents_t font_extents;
 	cairo_font_extents(cr, &font_extents);
@@ -223,7 +220,7 @@ void entry_backend_update(struct entry *entry)
 			struct color color = entry->selection_color;
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 		}
-		width = render_hb_buffer(cr, buffer, entry->image.scale);
+		width = render_hb_buffer(cr, buffer);
 		if (i == entry->selection) {
 			cairo_restore(cr);
 		}

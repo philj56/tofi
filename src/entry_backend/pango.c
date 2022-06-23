@@ -5,7 +5,7 @@
 #include "../log.h"
 #include "../nelem.h"
 
-void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height, uint32_t scale)
+void entry_backend_init(struct entry *entry, uint32_t *width, uint32_t *height)
 {
 	cairo_t *cr = entry->cairo[0].cr;
 

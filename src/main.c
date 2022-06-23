@@ -768,6 +768,9 @@ int main(int argc, char *argv[])
 	 */
 	parse_args(&tofi, argc, argv);
 
+	/* Scale fonts to the correct size. */
+	tofi.window.entry.font_size *= tofi.window.scale;
+
 	/*
 	 * If we were invoked as tofi-run, generate the command list.
 	 * Otherwise, just read standard input.
@@ -834,8 +837,8 @@ int main(int argc, char *argv[])
 			-1);
 	zwlr_layer_surface_v1_set_size(
 			tofi.window.zwlr_layer_surface,
-			tofi.window.width,
-			tofi.window.height);
+			tofi.window.width / tofi.window.scale,
+			tofi.window.height / tofi.window.scale);
 	zwlr_layer_surface_v1_set_margin(
 			tofi.window.zwlr_layer_surface,
 			tofi.window.margin_top,
@@ -881,9 +884,8 @@ int main(int argc, char *argv[])
 	entry_init(
 			&tofi.window.entry,
 			tofi.window.surface.shm_pool_data,
-			tofi.window.surface.width,
-			tofi.window.surface.height,
-			tofi.window.scale);
+			tofi.window.width,
+			tofi.window.height);
 	entry_update(&tofi.window.entry);
 	log_unindent();
 	log_debug("Renderer initialised.\n");
