@@ -12,9 +12,9 @@
 #include "surface.h"
 #include "string_vec.h"
 
-#define MAX_INPUT_LENGTH 128
-#define MAX_PROMPT_LENGTH 128
-#define MAX_FONT_NAME_LENGTH 128
+#define MAX_INPUT_LENGTH 256
+#define MAX_PROMPT_LENGTH 256
+#define MAX_FONT_NAME_LENGTH 256
 
 struct entry {
 	struct image image;

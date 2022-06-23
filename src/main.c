@@ -259,8 +259,10 @@ static void wl_pointer_enter(
 		wl_fixed_t surface_y)
 {
 	struct tofi *tofi = data;
-	/* Hide the cursor by setting its surface to NULL. */
-	wl_pointer_set_cursor(tofi->wl_pointer, serial, NULL, 0, 0);
+	if (tofi->hide_cursor) {
+		/* Hide the cursor by setting its surface to NULL. */
+		wl_pointer_set_cursor(tofi->wl_pointer, serial, NULL, 0, 0);
+	}
 }
 
 static void wl_pointer_leave(
@@ -370,18 +372,12 @@ static void wl_seat_capabilities(
 	}
 
 	if (have_pointer && tofi->wl_pointer == NULL) {
-		/*
-		 * We only need to listen to the cursor if we're going to hide
-		 * it.
-		 */
-		if (tofi->hide_cursor) {
-			tofi->wl_pointer = wl_seat_get_pointer(tofi->wl_seat);
-			wl_pointer_add_listener(
-					tofi->wl_pointer,
-					&wl_pointer_listener,
-					tofi);
-			log_debug("Got pointer from seat.\n");
-		}
+		tofi->wl_pointer = wl_seat_get_pointer(tofi->wl_seat);
+		wl_pointer_add_listener(
+				tofi->wl_pointer,
+				&wl_pointer_listener,
+				tofi);
+		log_debug("Got pointer from seat.\n");
 	} else if (!have_pointer && tofi->wl_pointer != NULL) {
 		wl_pointer_release(tofi->wl_pointer);
 		tofi->wl_pointer = NULL;
@@ -691,16 +687,16 @@ int main(int argc, char *argv[])
 		.window = {
 			.background_color = {0.89f, 0.8f, 0.824f, 1.0f},
 			.scale = 1,
-			.width = 640,
-			.height = 320,
+			.width = 1280,
+			.height = 720,
 			.entry = {
 				.border = {
-					.width = 6,
-					.outline_width = 2,
+					.width = 12,
+					.outline_width = 4,
 					.color = {0.976f, 0.149f, 0.447f, 1.0f},
 					.outline_color = {0.031f, 0.031f, 0.0f, 1.0f},
 				},
-				.font_name = "Sans Bold",
+				.font_name = "Sans",
 				.font_size = 24,
 				.prompt_text = "run: ",
 				.num_results = 5,
@@ -793,6 +789,7 @@ int main(int argc, char *argv[])
 			string_vec_add(&tofi.window.entry.commands, line);
 		}
 		free(line);
+		tofi.use_history = false;
 	}
 	if (tofi.use_history) {
 		tofi.window.entry.history = history_load();
