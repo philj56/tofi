@@ -21,11 +21,12 @@ static char *strip(const char *str);
 static bool parse_option(struct tofi *tofi, size_t lineno, const char *option, const char *value);
 static char *get_config_path(void);
 
-static int parse_anchor(size_t lineno, const char *str, bool *err);
+static int8_t parse_anchor(size_t lineno, const char *str, bool *err);
 static bool parse_bool(size_t lineno, const char *str, bool *err);
 static struct color parse_color(size_t lineno, const char *str, bool *err);
 static uint32_t parse_uint32(size_t lineno, const char *str, bool *err);
 static int32_t parse_int32(size_t lineno, const char *str, bool *err);
+static uint32_t parse_uint32_percent(size_t lineno, const char *str, bool *err, uint32_t max);
 
 /*
  * Function-like macro. Yuck.
@@ -237,10 +238,7 @@ bool parse_option(struct tofi *tofi, size_t lineno, const char *option, const ch
 	} else if (strcasecmp(option, "entry-color") == 0) {
 		tofi->window.entry.background_color = parse_color(lineno, value, &err);
 	} else if (strcasecmp(option, "font-name") == 0) {
-		if (tofi->window.entry.font_name) {
-			free(tofi->window.entry.font_name);
-		}
-		tofi->window.entry.font_name = strdup(value);
+		snprintf(tofi->window.entry.font_name, N_ELEM(tofi->window.entry.font_name), "%s", value);
 	} else if (strcasecmp(option, "font-size") == 0) {
 		tofi->window.entry.font_size = parse_uint32(lineno, value, &err);
 	} else if (strcasecmp(option, "num-results") == 0) {
@@ -250,10 +248,7 @@ bool parse_option(struct tofi *tofi, size_t lineno, const char *option, const ch
 	} else if (strcasecmp(option, "outline-color") == 0) {
 		tofi->window.entry.border.outline_color = parse_color(lineno, value, &err);
 	} else if (strcasecmp(option, "prompt-text") == 0) {
-		if (tofi->window.entry.prompt_text) {
-			free(tofi->window.entry.prompt_text);
-		}
-		tofi->window.entry.prompt_text = strdup(value);
+		snprintf(tofi->window.entry.prompt_text, N_ELEM(tofi->window.entry.prompt_text), "%s", value);
 	} else if (strcasecmp(option, "result-padding") == 0) {
 		tofi->window.entry.result_padding = parse_int32(lineno, value, &err);
 	} else if (strcasecmp(option, "border-width") == 0) {
@@ -265,17 +260,17 @@ bool parse_option(struct tofi *tofi, size_t lineno, const char *option, const ch
 	} else if (strcasecmp(option, "selection-color") == 0) {
 		tofi->window.entry.selection_color = parse_color(lineno, value, &err);
 	} else if (strcasecmp(option, "width") == 0) {
-		tofi->window.width = parse_uint32(lineno, value, &err);
+		tofi->window.width = parse_uint32_percent(lineno, value, &err, tofi->output_width / tofi->window.scale);
 	} else if (strcasecmp(option, "height") == 0) {
-		tofi->window.height = parse_uint32(lineno, value, &err);
+		tofi->window.height = parse_uint32_percent(lineno, value, &err, tofi->output_height / tofi->window.scale);
 	} else if (strcasecmp(option, "margin-top") == 0) {
-		tofi->window.margin_top = parse_uint32(lineno, value, &err);
+		tofi->window.margin_top = parse_uint32_percent(lineno, value, &err, tofi->output_height / tofi->window.scale);
 	} else if (strcasecmp(option, "margin-bottom") == 0) {
-		tofi->window.margin_bottom = parse_uint32(lineno, value, &err);
+		tofi->window.margin_bottom = parse_uint32_percent(lineno, value, &err, tofi->output_height / tofi->window.scale);
 	} else if (strcasecmp(option, "margin-left") == 0) {
-		tofi->window.margin_left = parse_uint32(lineno, value, &err);
+		tofi->window.margin_left = parse_uint32_percent(lineno, value, &err, tofi->output_width / tofi->window.scale);
 	} else if (strcasecmp(option, "margin-right") == 0) {
-		tofi->window.margin_right = parse_uint32(lineno, value, &err);
+		tofi->window.margin_right = parse_uint32_percent(lineno, value, &err, tofi->output_width / tofi->window.scale);
 	} else if (strcasecmp(option, "horizontal") == 0) {
 		tofi->window.entry.horizontal = parse_bool(lineno, value, &err);
 	} else if (strcasecmp(option, "hide-cursor") == 0) {
@@ -327,7 +322,7 @@ bool parse_bool(size_t lineno, const char *str, bool *err)
 	return false;
 }
 
-int parse_anchor(size_t lineno, const char *str, bool *err)
+int8_t parse_anchor(size_t lineno, const char *str, bool *err)
 {
 	if(strcasecmp(str, "top-left") == 0) {
 		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
@@ -406,6 +401,30 @@ int32_t parse_int32(size_t lineno, const char *str, bool *err)
 		PARSE_ERROR(lineno, "Int value \"%s\" out of range.\n", str);
 		if (err) {
 			*err = true;
+		}
+	}
+	return ret;
+}
+
+uint32_t parse_uint32_percent(size_t lineno, const char *str, bool *err, uint32_t max)
+{
+	errno = 0;
+	char *endptr;
+	int32_t ret = strtoul(str, &endptr, 0);
+	if (endptr == str) {
+		PARSE_ERROR(lineno, "Failed to parse \"%s\" as unsigned int.\n", str);
+		if (err) {
+			*err = true;
+		}
+	} else if (errno || ret < 0) {
+		PARSE_ERROR(lineno, "Unsigned int value \"%s\" out of range.\n", str);
+		if (err) {
+			*err = true;
+		}
+	}
+	if (!err || !*err) {
+		if (*endptr == '%') {
+			ret = max * ret / 100;
 		}
 	}
 	return ret;

@@ -422,7 +422,12 @@ static void output_mode(
 		int32_t height,
 		int32_t refresh)
 {
-	/* Deliberately left blank */
+	struct tofi *tofi = data;
+	if (flags & WL_OUTPUT_MODE_CURRENT) {
+		log_debug("Output mode %dx%d\n", width, height);
+		tofi->output_width = MAX(width, tofi->output_width);
+		tofi->output_height = MAX(height, tofi->output_height);
+	}
 }
 
 static void output_scale(
@@ -574,13 +579,13 @@ static void usage()
 "      --num-results <n>           Maximum number of results to display.\n"
 "      --selection-color <color>   Color of selected result.\n"
 "      --result-padding <px>       Spacing between results. Can be negative.\n"
-"      --width <px>                Width of the window.\n"
-"      --height <px>               Height of the window.\n"
+"      --width <px|%>              Width of the window.\n"
+"      --height <px|%>             Height of the window.\n"
 "      --anchor <position>         Location on screen to anchor window.\n"
-"      --margin-top <px>           Offset from top of screen.\n"
-"      --margin-bottom <px>        Offset from bottom of screen.\n"
-"      --margin-left <px>          Offset from left of screen.\n"
-"      --margin-right <px>         Offset from right of screen.\n"
+"      --margin-top <px|%>         Offset from top of screen.\n"
+"      --margin-bottom <px|%>      Offset from bottom of screen.\n"
+"      --margin-left <px|%>        Offset from left of screen.\n"
+"      --margin-right <px|%>       Offset from right of screen.\n"
 "      --hide-cursor <true|false>  Hide the cursor.\n"
 	);
 }
@@ -687,19 +692,21 @@ int main(int argc, char *argv[])
 					.color = {0.976f, 0.149f, 0.447f, 1.0f},
 					.outline_color = {0.031f, 0.031f, 0.0f, 1.0f},
 				},
-				.font_name = strdup("Sans Bold"),
+				.font_name = "Sans Bold",
 				.font_size = 24,
-				.prompt_text = strdup("run: "),
+				.prompt_text = "run: ",
 				.num_results = 5,
 				.padding = 8,
 				.background_color = {0.106f, 0.114f, 0.118f, 1.0f},
 				.foreground_color = {1.0f, 1.0f, 1.0f, 1.0f},
 				.selection_color = {0.976f, 0.149f, 0.447f, 1.0f}
 			}
-		}
+		},
+		.anchor =  ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
 	};
-
-	parse_args(&tofi, argc, argv);
 
 	log_debug("Generating command list.\n");
 	log_indent();
@@ -747,13 +754,19 @@ int main(int argc, char *argv[])
 	/*
 	 * The next roundtrip causes the listeners we set up in
 	 * registry_global() to be called. Notably, the output should be
-	 * configured, telling us the scale factor.
+	 * configured, telling us the scale factor and size.
 	 */
 	log_debug("Second roundtrip start.\n");
 	log_indent();
 	wl_display_roundtrip(tofi.wl_display);
 	log_unindent();
 	log_debug("Second roundtrip done.\n");
+
+	/*
+	 * We can now parse our arguments and config file, as we know the
+	 * output size required for specifying window sizes in percent.
+	 */
+	parse_args(&tofi, argc, argv);
 
 	/*
 	 * Next, we create the Wayland surface, which takes on the
@@ -924,8 +937,6 @@ int main(int argc, char *argv[])
 	string_vec_destroy(&tofi.window.entry.commands);
 	string_vec_destroy(&tofi.window.entry.results);
 	history_destroy(&tofi.window.entry.history);
-	free(tofi.window.entry.font_name);
-	free(tofi.window.entry.prompt_text);
 #endif
 	/*
 	 * For release builds, skip straight to display disconnection and quit.

@@ -16,6 +16,8 @@
 #include "string_vec.h"
 
 #define MAX_INPUT_LENGTH 128
+#define MAX_PROMPT_LENGTH 128
+#define MAX_FONT_NAME_LENGTH 128
 
 struct entry {
 	struct image image;
@@ -41,8 +43,8 @@ struct entry {
 	bool horizontal;
 	uint32_t num_results;
 	uint32_t font_size;
-	char *font_name;
-	char *prompt_text;
+	char font_name[MAX_FONT_NAME_LENGTH];
+	char prompt_text[MAX_PROMPT_LENGTH];
 	uint32_t corner_radius;
 	uint32_t padding;
 	int32_t result_padding;
