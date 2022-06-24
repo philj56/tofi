@@ -6,6 +6,9 @@
 #include "log.h"
 #include "nelem.h"
 
+#undef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 static void rounded_rectangle(cairo_t *cr, uint32_t width, uint32_t height, uint32_t r)
 {
 	cairo_new_path(cr);
@@ -98,19 +101,30 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 
 
 	/* Move and clip following draws to be within this outline */
-	cairo_translate(
-			cr,
-			2 * entry->border.outline_width + entry->border.width,
-			2 * entry->border.outline_width + entry->border.width);
-	width -= 4 * entry->border.outline_width + 2 * entry->border.width;
-	height -= 4 * entry->border.outline_width + 2 * entry->border.width;
+	double dx = 2.0 * entry->border.outline_width + entry->border.width + entry->padding;
+	cairo_translate(cr, dx, dx);
+	width -= 2 * dx;
+	height -= 2 * dx;
+
+	/* Account for rounded corners */
+	double inner_radius = (double)entry->corner_radius
+		- 2.0 * entry->border.outline_width
+		- entry->border.width
+		- entry->padding;
+	inner_radius = MAX(inner_radius, 0);
+
+	dx = ceil(inner_radius * (1.0 - 1.0 / M_SQRT2));
+	cairo_translate(cr, dx, dx);
+	width -= 2 * dx;
+	height -= 2 * dx;
 	cairo_rectangle(cr, 0, 0, width, height);
 	cairo_clip(cr);
 
 	/* Move and clip following draws to be within the specified padding */
-	cairo_translate(cr, entry->padding, entry->padding);
-	width -= 2 * entry->padding;
-	height -= 2 * entry->padding;
+	dx = entry->padding;
+	cairo_translate(cr, dx, dx);
+	width -= 2 * dx;
+	height -= 2 * dx;
 	cairo_rectangle(cr, 0, 0, width, height);
 	cairo_clip(cr);
 
