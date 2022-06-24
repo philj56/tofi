@@ -5,6 +5,9 @@
 #include "../log.h"
 #include "../nelem.h"
 
+#undef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 void entry_backend_pango_init(struct entry *entry, uint32_t *width, uint32_t *height)
 {
 	cairo_t *cr = entry->cairo[0].cr;
@@ -60,11 +63,17 @@ void entry_backend_pango_update(struct entry *entry)
 	pango_cairo_update_layout(cr, layout);
 	pango_cairo_show_layout(cr, layout);
 
+	int width;
 	int height;
-	pango_layout_get_size(layout, NULL, &height);
+	pango_layout_get_size(layout, &width, &height);
+	width = MAX(width, (int)entry->input_width * PANGO_SCALE);
 
 	for (size_t i = 0; i < entry->num_results && i < entry->results.count; i++) {
-		cairo_translate(cr, 0, (int)(height / PANGO_SCALE));
+		if (entry->horizontal) {
+			cairo_translate(cr, (int)(width / PANGO_SCALE) + entry->result_padding, 0);
+		} else {
+			cairo_translate(cr, 0, (int)(height / PANGO_SCALE) + entry->result_padding);
+		}
 		const char *str;
 		if (i < entry->results.count) {
 			str = entry->results.buf[i];
@@ -82,5 +91,6 @@ void entry_backend_pango_update(struct entry *entry)
 		if (i == entry->selection) {
 			cairo_restore(cr);
 		}
+		pango_layout_get_size(layout, &width, &height);
 	}
 }

@@ -23,6 +23,9 @@ const struct {
 
 #include <freetype/fterrors.h>
 
+#undef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 static const char *get_ft_error_string(int err_code)
 {
 	for (size_t i = 0; i < N_ELEM(ft_errors); i++) {
@@ -199,6 +202,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	hb_buffer_add_utf8(buffer, entry->input_mb, -1, 0, -1);
 	hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
 	width = render_hb_buffer(cr, buffer);
+	width = MAX(width, entry->input_width);
 
 	cairo_font_extents_t font_extents;
 	cairo_font_extents(cr, &font_extents);

@@ -195,12 +195,12 @@ static void wl_keyboard_key(
 		return;
 	}
 
-	if (sym == XKB_KEY_Up) {
+	if (sym == XKB_KEY_Up || sym == XKB_KEY_Left) {
 		uint32_t nsel = MAX(MIN(tofi->window.entry.num_results, tofi->window.entry.results.count), 1);
 		tofi->window.entry.selection += nsel;
 		tofi->window.entry.selection--;
 		tofi->window.entry.selection %= nsel;
-	} else if (sym == XKB_KEY_Down) {
+	} else if (sym == XKB_KEY_Down || sym == XKB_KEY_Right) {
 		uint32_t nsel = MAX(MIN(tofi->window.entry.num_results, tofi->window.entry.results.count), 1);
 		tofi->window.entry.selection++;
 		tofi->window.entry.selection %= nsel;
@@ -575,6 +575,7 @@ static void usage()
 "      --num-results <n>           Maximum number of results to display.\n"
 "      --selection-color <color>   Color of selected result.\n"
 "      --result-padding <px>       Spacing between results. Can be negative.\n"
+"      --min-input-width <px>      Minimum width of input in horizontal mode.\n"
 "      --width <px|%>              Width of the window.\n"
 "      --height <px|%>             Height of the window.\n"
 "      --anchor <position>         Location on screen to anchor window.\n"
@@ -583,6 +584,7 @@ static void usage()
 "      --margin-left <px|%>        Offset from left of screen.\n"
 "      --margin-right <px|%>       Offset from right of screen.\n"
 "      --hide-cursor <true|false>  Hide the cursor.\n"
+"      --horizontal <true|false>   List results horizontally.\n"
 "      --history <true|false>      Sort results by number of usages.\n"
 	);
 }
@@ -606,6 +608,7 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 		{"outline-color", required_argument, NULL, 0},
 		{"prompt-text", required_argument, NULL, 0},
 		{"result-padding", required_argument, NULL, 0},
+		{"min-input-width", required_argument, NULL, 0},
 		{"border-width", required_argument, NULL, 0},
 		{"border-color", required_argument, NULL, 0},
 		{"text-color", required_argument, NULL, 0},
@@ -615,7 +618,7 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 		{"margin-bottom", required_argument, NULL, 0},
 		{"margin-left", required_argument, NULL, 0},
 		{"margin-right", required_argument, NULL, 0},
-		{"layout-horizontal", required_argument, NULL, 0},
+		{"horizontal", required_argument, NULL, 0},
 		{"hide-cursor", required_argument, NULL, 0},
 		{"history", required_argument, NULL, 0},
 		{NULL, 0, NULL, 0}

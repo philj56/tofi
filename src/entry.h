@@ -46,6 +46,7 @@ struct entry {
 	char prompt_text[MAX_PROMPT_LENGTH];
 	uint32_t corner_radius;
 	uint32_t padding;
+	uint32_t input_width;
 	int32_t result_padding;
 	struct color foreground_color;
 	struct color background_color;
