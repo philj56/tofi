@@ -217,6 +217,10 @@ char *strip(const char *str)
 	if (end < start) {
 		return NULL;
 	}
+	if (str[start] == '"' && str[end] == '"' && end > start) {
+		start++;
+		end--;
+	}
 	size_t len = end - start + 1;
 	char *buf = xcalloc(len + 1, 1);
 	strncpy(buf, str + start, len);
