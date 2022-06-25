@@ -210,9 +210,9 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	/* Render our results entry text */
 	for (size_t i = 0; i < entry->num_results && i < entry->results.count; i++) {
 		if (entry->horizontal) {
-			cairo_translate(cr, width + entry->result_padding, 0);
+			cairo_translate(cr, width + entry->result_spacing, 0);
 		} else {
-			cairo_translate(cr, 0, font_extents.height + entry->result_padding);
+			cairo_translate(cr, 0, font_extents.height + entry->result_spacing);
 		}
 
 		hb_buffer_clear_contents(buffer);

@@ -41,22 +41,23 @@ struct entry {
 	/* Options */
 	bool horizontal;
 	uint32_t num_results;
+	int32_t result_spacing;
 	uint32_t font_size;
 	char font_name[MAX_FONT_NAME_LENGTH];
 	char prompt_text[MAX_PROMPT_LENGTH];
 	uint32_t corner_radius;
-	uint32_t padding;
+	uint32_t padding_top;
+	uint32_t padding_bottom;
+	uint32_t padding_left;
+	uint32_t padding_right;
 	uint32_t input_width;
-	int32_t result_padding;
+	uint32_t border_width;
+	uint32_t outline_width;
 	struct color foreground_color;
 	struct color background_color;
 	struct color selection_color;
-	struct {
-		struct color color;
-		struct color outline_color;
-		uint32_t width;
-		uint32_t outline_width;
-	} border;
+	struct color border_color;
+	struct color outline_color;
 };
 
 void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height);

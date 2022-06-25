@@ -70,9 +70,9 @@ void entry_backend_pango_update(struct entry *entry)
 
 	for (size_t i = 0; i < entry->num_results && i < entry->results.count; i++) {
 		if (entry->horizontal) {
-			cairo_translate(cr, (int)(width / PANGO_SCALE) + entry->result_padding, 0);
+			cairo_translate(cr, (int)(width / PANGO_SCALE) + entry->result_spacing, 0);
 		} else {
-			cairo_translate(cr, 0, (int)(height / PANGO_SCALE) + entry->result_padding);
+			cairo_translate(cr, 0, (int)(height / PANGO_SCALE) + entry->result_spacing);
 		}
 		const char *str;
 		if (i < entry->results.count) {

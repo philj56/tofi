@@ -237,10 +237,6 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->window.entry.background_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "corner-radius") == 0) {
 		tofi->window.entry.corner_radius = parse_uint32(filename, lineno, value, &err);
-	} else if (strcasecmp(option, "entry-padding") == 0) {
-		tofi->window.entry.padding = parse_uint32(filename, lineno, value, &err);
-	} else if (strcasecmp(option, "entry-color") == 0) {
-		tofi->window.entry.background_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "font-name") == 0) {
 		snprintf(tofi->window.entry.font_name, N_ELEM(tofi->window.entry.font_name), "%s", value);
 	} else if (strcasecmp(option, "font-size") == 0) {
@@ -248,19 +244,19 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 	} else if (strcasecmp(option, "num-results") == 0) {
 		tofi->window.entry.num_results = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "outline-width") == 0) {
-		tofi->window.entry.border.outline_width = parse_uint32(filename, lineno, value, &err);
+		tofi->window.entry.outline_width = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "outline-color") == 0) {
-		tofi->window.entry.border.outline_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.outline_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "prompt-text") == 0) {
 		snprintf(tofi->window.entry.prompt_text, N_ELEM(tofi->window.entry.prompt_text), "%s", value);
 	} else if (strcasecmp(option, "min-input-width") == 0) {
 		tofi->window.entry.input_width = parse_uint32(filename, lineno, value, &err);
-	} else if (strcasecmp(option, "result-padding") == 0) {
-		tofi->window.entry.result_padding = parse_int32(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "result-spacing") == 0) {
+		tofi->window.entry.result_spacing = parse_int32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "border-width") == 0) {
-		tofi->window.entry.border.width = parse_uint32(filename, lineno, value, &err);
+		tofi->window.entry.border_width = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "border-color") == 0) {
-		tofi->window.entry.border.color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.border_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "text-color") == 0) {
 		tofi->window.entry.foreground_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "selection-color") == 0) {
@@ -277,6 +273,14 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->window.margin_left = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width);
 	} else if (strcasecmp(option, "margin-right") == 0) {
 		tofi->window.margin_right = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width);
+	} else if (strcasecmp(option, "padding-top") == 0) {
+		tofi->window.entry.padding_top = parse_uint32_percent(filename, lineno, value, &err, tofi->output_height);
+	} else if (strcasecmp(option, "padding-bottom") == 0) {
+		tofi->window.entry.padding_bottom = parse_uint32_percent(filename, lineno, value, &err, tofi->output_height);
+	} else if (strcasecmp(option, "padding-left") == 0) {
+		tofi->window.entry.padding_left = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width);
+	} else if (strcasecmp(option, "padding-right") == 0) {
+		tofi->window.entry.padding_right = parse_uint32_percent(filename, lineno, value, &err, tofi->output_width);
 	} else if (strcasecmp(option, "horizontal") == 0) {
 		tofi->window.entry.horizontal = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "hide-cursor") == 0) {

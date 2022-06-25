@@ -568,13 +568,11 @@ static void usage()
 "      --outline-color <color>     Color of the border outlines.\n"
 "      --border-width <px>         Width of the border.\n"
 "      --border-color <color>      Color of the border.\n"
-"      --entry-padding <px>        Padding around the entry box.\n"
-"      --entry-color <color>       Color of the entry box.\n"
 "      --text-color <color>        Color of text.\n"
 "      --prompt-text <string>      Prompt text.\n"
 "      --num-results <n>           Maximum number of results to display.\n"
 "      --selection-color <color>   Color of selected result.\n"
-"      --result-padding <px>       Spacing between results. Can be negative.\n"
+"      --result-spacing <px>       Spacing between results. Can be negative.\n"
 "      --min-input-width <px>      Minimum width of input in horizontal mode.\n"
 "      --width <px|%>              Width of the window.\n"
 "      --height <px|%>             Height of the window.\n"
@@ -583,6 +581,10 @@ static void usage()
 "      --margin-bottom <px|%>      Offset from bottom of screen.\n"
 "      --margin-left <px|%>        Offset from left of screen.\n"
 "      --margin-right <px|%>       Offset from right of screen.\n"
+"      --padding-top <px|%>        Padding between top border and text.\n"
+"      --padding-bottom <px|%>     Padding between bottom border and text.\n"
+"      --padding-left <px|%>       Padding between left border and text.\n"
+"      --padding-right <px|%>      Padding between right border and text.\n"
 "      --hide-cursor <true|false>  Hide the cursor.\n"
 "      --horizontal <true|false>   List results horizontally.\n"
 "      --history <true|false>      Sort results by number of usages.\n"
@@ -598,8 +600,6 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 		{"anchor", required_argument, NULL, 0},
 		{"background-color", required_argument, NULL, 0},
 		{"corner-radius", required_argument, NULL, 0},
-		{"entry-padding", required_argument, NULL, 0},
-		{"entry-color", required_argument, NULL, 0},
 		{"font-name", required_argument, NULL, 0},
 		{"font-size", required_argument, NULL, 0},
 		{"num-results", required_argument, NULL, 0},
@@ -607,7 +607,7 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 		{"outline-width", required_argument, NULL, 0},
 		{"outline-color", required_argument, NULL, 0},
 		{"prompt-text", required_argument, NULL, 0},
-		{"result-padding", required_argument, NULL, 0},
+		{"result-spacing", required_argument, NULL, 0},
 		{"min-input-width", required_argument, NULL, 0},
 		{"border-width", required_argument, NULL, 0},
 		{"border-color", required_argument, NULL, 0},
@@ -618,6 +618,10 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 		{"margin-bottom", required_argument, NULL, 0},
 		{"margin-left", required_argument, NULL, 0},
 		{"margin-right", required_argument, NULL, 0},
+		{"padding-top", required_argument, NULL, 0},
+		{"padding-bottom", required_argument, NULL, 0},
+		{"padding-left", required_argument, NULL, 0},
+		{"padding-right", required_argument, NULL, 0},
 		{"horizontal", required_argument, NULL, 0},
 		{"hide-cursor", required_argument, NULL, 0},
 		{"history", required_argument, NULL, 0},
@@ -693,20 +697,21 @@ int main(int argc, char *argv[])
 			.width = 1280,
 			.height = 720,
 			.entry = {
-				.border = {
-					.width = 12,
-					.outline_width = 4,
-					.color = {0.976f, 0.149f, 0.447f, 1.0f},
-					.outline_color = {0.031f, 0.031f, 0.0f, 1.0f},
-				},
 				.font_name = "Sans",
 				.font_size = 24,
 				.prompt_text = "run: ",
 				.num_results = 5,
-				.padding = 8,
+				.padding_top = 8,
+				.padding_bottom = 8,
+				.padding_left = 8,
+				.padding_right = 8,
+				.border_width = 12,
+				.outline_width = 4,
 				.background_color = {0.106f, 0.114f, 0.118f, 1.0f},
 				.foreground_color = {1.0f, 1.0f, 1.0f, 1.0f},
-				.selection_color = {0.976f, 0.149f, 0.447f, 1.0f}
+				.selection_color = {0.976f, 0.149f, 0.447f, 1.0f},
+				.border_color = {0.976f, 0.149f, 0.447f, 1.0f},
+				.outline_color = {0.031f, 0.031f, 0.0f, 1.0f},
 			}
 		},
 		.anchor =  ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP

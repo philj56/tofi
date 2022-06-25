@@ -73,21 +73,21 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	cairo_restore(cr);
 
 	/* Draw the border with outlines */
-	cairo_set_line_width(cr, 4 * entry->border.outline_width + 2 * entry->border.width);
+	cairo_set_line_width(cr, 4 * entry->outline_width + 2 * entry->border_width);
 	rounded_rectangle(cr, width, height, entry->corner_radius);
 
-	color = entry->border.outline_color;
+	color = entry->outline_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_stroke_preserve(cr);
 
-	color = entry->border.color;
+	color = entry->border_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_set_line_width(cr, 2 * entry->border.outline_width + 2 * entry->border.width);
+	cairo_set_line_width(cr, 2 * entry->outline_width + 2 * entry->border_width);
 	cairo_stroke_preserve(cr);
 
-	color = entry->border.outline_color;
+	color = entry->outline_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_set_line_width(cr, 2 * entry->border.outline_width);
+	cairo_set_line_width(cr, 2 * entry->outline_width);
 	cairo_stroke_preserve(cr);
 
 	/* Clear the overdrawn bits outside of the rounded corners */
@@ -100,28 +100,17 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	cairo_restore(cr);
 
 
-	/* Move and clip following draws to be within this outline */
-	double dx = 2.0 * entry->border.outline_width + entry->border.width + entry->padding;
-	cairo_translate(cr, dx, dx);
-	width -= 2 * dx;
-	height -= 2 * dx;
+	/* Move and clip following draws to be within this outline + padding */
+	double dx = 2.0 * entry->outline_width + entry->border_width;
+	cairo_translate(cr, dx + entry->padding_left, dx + entry->padding_top);
+	width -= 2 * dx + entry->padding_left + entry->padding_right;
+	height -= 2 * dx + entry->padding_top + entry->padding_bottom;
 
 	/* Account for rounded corners */
-	double inner_radius = (double)entry->corner_radius
-		- 2.0 * entry->border.outline_width
-		- entry->border.width
-		- entry->padding;
+	double inner_radius = (double)entry->corner_radius - dx;
 	inner_radius = MAX(inner_radius, 0);
 
 	dx = ceil(inner_radius * (1.0 - 1.0 / M_SQRT2));
-	cairo_translate(cr, dx, dx);
-	width -= 2 * dx;
-	height -= 2 * dx;
-	cairo_rectangle(cr, 0, 0, width, height);
-	cairo_clip(cr);
-
-	/* Move and clip following draws to be within the specified padding */
-	dx = entry->padding;
 	cairo_translate(cr, dx, dx);
 	width -= 2 * dx;
 	height -= 2 * dx;
