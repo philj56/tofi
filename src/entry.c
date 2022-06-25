@@ -132,6 +132,20 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	}
 
 	/*
+	 * Perform an initial render of the text.
+	 * This is done here rather than by calling entry_update to avoid the
+	 * unnecessary cairo_paint() of the background for the first frame,
+	 * which can be slow for large (e.g. fullscreen) windows.
+	 */
+	log_debug("Initial text render.\n");
+	if (entry->use_pango) {
+		entry_backend_pango_update(entry);
+	} else {
+		entry_backend_harfbuzz_update(entry);
+	}
+	entry->index = !entry->index;
+
+	/*
 	 * To avoid performing all this drawing twice, we take a small
 	 * shortcut. After performing all the drawing as normal on our first
 	 * Cairo context, we can copy over just the important state (the
@@ -169,7 +183,6 @@ void entry_update(struct entry *entry)
 {
 	log_debug("Start rendering entry.\n");
 	cairo_t *cr = entry->cairo[entry->index].cr;
-	cairo_save(cr);
 
 	/* Clear the image. */
 	struct color color = entry->background_color;
@@ -180,16 +193,12 @@ void entry_update(struct entry *entry)
 	cairo_restore(cr);
 
 	/* Draw our text. */
-	color = entry->foreground_color;
-	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-
 	if (entry->use_pango) {
 		entry_backend_pango_update(entry);
 	} else {
 		entry_backend_harfbuzz_update(entry);
 	}
 
-	cairo_restore(cr);
 	log_debug("Finish rendering entry.\n");
 
 	entry->index = !entry->index;

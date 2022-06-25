@@ -196,6 +196,10 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	hb_buffer_t *buffer = entry->harfbuzz.hb_buffer;
 	uint32_t width;
 
+	cairo_save(cr);
+	struct color color = entry->foreground_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+
 	/* Render the entry text */
 	hb_buffer_clear_contents(buffer);
 	setup_hb_buffer(buffer);
@@ -221,7 +225,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 		hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
 		if (i == entry->selection) {
 			cairo_save(cr);
-			struct color color = entry->selection_color;
+			color = entry->selection_color;
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 		}
 		width = render_hb_buffer(cr, buffer);
@@ -229,4 +233,6 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			cairo_restore(cr);
 		}
 	}
+
+	cairo_restore(cr);
 }

@@ -90,6 +90,7 @@ static void wl_keyboard_keymap(
 {
 	struct tofi *tofi = data;
 	assert(format == WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1);
+	log_debug("Configuring keyboard.\n");
 
 	char *map_shm = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
 	assert(map_shm != MAP_FAILED);
@@ -557,7 +558,7 @@ static const struct wl_surface_listener wl_surface_listener = {
 
 static void usage()
 {
-	fprintf(stderr,
+	fprintf(stderr, "%s",
 "Usage: tofi [options]\n"
 "  -h, --help                      Print this message and exit.\n"
 "  -c, --config                    Specify a config file.\n"
@@ -891,7 +892,6 @@ int main(int argc, char *argv[])
 			tofi.window.surface.shm_pool_data,
 			tofi.window.width,
 			tofi.window.height);
-	entry_update(&tofi.window.entry);
 	log_unindent();
 	log_debug("Renderer initialised.\n");
 
