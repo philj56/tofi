@@ -140,16 +140,28 @@ if scdoc.found()
   sed = find_program('sed')
   sh = find_program('sh')
   mandir = get_option('mandir')
-  manpage = 'doc/tofi.1.scd'
+
   output = 'tofi.1'
   custom_target(
     output,
-    input: manpage,
+    input: 'doc/tofi.1.scd',
     output: output,
     command: [
       sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc.path(), output)
     ],
     install: true,
     install_dir: '@0@/man1'.format(mandir)
+  )
+
+  output = 'tofi.5'
+  custom_target(
+    output,
+    input: 'doc/tofi.5.scd',
+    output: output,
+    command: [
+      sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc.path(), output)
+    ],
+    install: true,
+    install_dir: '@0@/man5'.format(mandir)
   )
 endif

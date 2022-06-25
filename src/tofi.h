@@ -36,7 +36,6 @@ struct tofi {
 	struct {
 		struct surface surface;
 		struct zwlr_layer_surface_v1 *zwlr_layer_surface;
-		struct color background_color;
 		struct entry entry;
 		uint32_t width;
 		uint32_t height;

@@ -577,6 +577,7 @@ static void usage()
 "      --min-input-width <px>      Minimum width of input in horizontal mode.\n"
 "      --width <px|%>              Width of the window.\n"
 "      --height <px|%>             Height of the window.\n"
+"      --corner-radius <px>        Radius of window corners.\n"
 "      --anchor <position>         Location on screen to anchor window.\n"
 "      --margin-top <px|%>         Offset from top of screen.\n"
 "      --margin-bottom <px|%>      Offset from bottom of screen.\n"
@@ -695,7 +696,6 @@ int main(int argc, char *argv[])
 	/* Default options. */
 	struct tofi tofi = {
 		.window = {
-			.background_color = {0.89f, 0.8f, 0.824f, 1.0f},
 			.scale = 1,
 			.width = 1280,
 			.height = 720,
