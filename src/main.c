@@ -589,6 +589,7 @@ static void usage()
 "      --hide-cursor <true|false>  Hide the cursor.\n"
 "      --horizontal <true|false>   List results horizontally.\n"
 "      --history <true|false>      Sort results by number of usages.\n"
+"      --hint-font <true|false>    Perform font hinting.\n"
 	);
 }
 
@@ -626,6 +627,7 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 		{"horizontal", required_argument, NULL, 0},
 		{"hide-cursor", required_argument, NULL, 0},
 		{"history", required_argument, NULL, 0},
+		{"hint-font", required_argument, NULL, 0},
 		{NULL, 0, NULL, 0}
 	};
 	const char *short_options = ":hc:";

@@ -21,7 +21,7 @@ static char *strip(const char *str);
 static bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const char *option, const char *value);
 static char *get_config_path(void);
 
-static int8_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err);
+static uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err);
 static bool parse_bool(const char *filename, size_t lineno, const char *str, bool *err);
 static struct color parse_color(const char *filename, size_t lineno, const char *str, bool *err);
 static uint32_t parse_uint32(const char *filename, size_t lineno, const char *str, bool *err);
@@ -287,6 +287,8 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->hide_cursor = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "history") == 0) {
 		tofi->use_history = parse_bool(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "hint-font") == 0) {
+		tofi->window.entry.harfbuzz.disable_hinting = !parse_bool(filename, lineno, value, &err);
 	} else {
 		PARSE_ERROR(filename, lineno, "Unknown option \"%s\"\n", option);
 		err = true;
@@ -334,7 +336,7 @@ bool parse_bool(const char *filename, size_t lineno, const char *str, bool *err)
 	return false;
 }
 
-int8_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err)
+uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err)
 {
 	if(strcasecmp(str, "top-left") == 0) {
 		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP

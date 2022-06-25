@@ -109,6 +109,7 @@ void entry_backend_harfbuzz_init(
 		uint32_t *height)
 {
 	cairo_t *cr = entry->cairo[0].cr;
+	uint32_t font_size = floor(entry->font_size * PT_TO_DPI);
 
 	/* Setup FreeType. */
 	log_debug("Creating FreeType library.\n");
@@ -122,7 +123,9 @@ void entry_backend_harfbuzz_init(
 
 	log_debug("Loading FreeType font.\n");
 	err = FT_New_Face(
-			entry->harfbuzz.ft_library, entry->font_name, 0,
+			entry->harfbuzz.ft_library,
+			entry->font_name,
+			0,
 			&entry->harfbuzz.ft_face);
 	if (err) {
 		log_error("Error loading font: %s\n", get_ft_error_string(err));
@@ -130,10 +133,10 @@ void entry_backend_harfbuzz_init(
 	}
 	err = FT_Set_Char_Size(
 			entry->harfbuzz.ft_face,
-			entry->font_size * 64,
-			entry->font_size * 64,
-			96,
-			96);
+			font_size * 64,
+			font_size * 64,
+			0,
+			0);
 	if (err) {
 		log_error("Error setting font size: %s\n",
 				get_ft_error_string(err));
@@ -146,15 +149,19 @@ void entry_backend_harfbuzz_init(
 	struct color color = entry->foreground_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_set_font_face(cr, entry->harfbuzz.cairo_face);
-	cairo_set_font_size(cr, entry->font_size * PT_TO_DPI);
+	cairo_set_font_size(cr, font_size);
 	cairo_font_options_t *opts = cairo_font_options_create();
-	//cairo_font_options_set_hint_style(opts, CAIRO_HINT_STYLE_NONE);
+	if (entry->harfbuzz.disable_hinting) {
+		cairo_font_options_set_hint_style(opts, CAIRO_HINT_STYLE_NONE);
+	} else {
+		cairo_font_options_set_hint_metrics(opts, CAIRO_HINT_METRICS_ON);
+	}
 	cairo_set_font_options(cr, opts);
 
 
 	/* We also need to set up the font for our other Cairo context. */
 	cairo_set_font_face(entry->cairo[1].cr, entry->harfbuzz.cairo_face);
-	cairo_set_font_size(entry->cairo[1].cr, entry->font_size * PT_TO_DPI);
+	cairo_set_font_size(entry->cairo[1].cr, font_size);
 	cairo_set_font_options(entry->cairo[1].cr, opts);
 
 	cairo_font_options_destroy(opts);

@@ -48,7 +48,7 @@ struct tofi {
 	} window;
 
 	/* Options */
-	int8_t anchor;
+	uint32_t anchor;
 	bool hide_cursor;
 	bool use_history;
 };

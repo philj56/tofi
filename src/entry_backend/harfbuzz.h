@@ -1,6 +1,7 @@
 #ifndef ENTRY_BACKEND_HARFBUZZ_H
 #define ENTRY_BACKEND_HARFBUZZ_H
 
+#include <stdbool.h>
 #include <cairo/cairo-ft.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -16,6 +17,8 @@ struct entry_backend_harfbuzz {
 
 	hb_font_t *hb_font;
 	hb_buffer_t *hb_buffer;
+
+	bool disable_hinting;
 };
 
 void entry_backend_harfbuzz_init(struct entry *entry, uint32_t *width, uint32_t *height);
