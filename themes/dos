@@ -1,4 +1,4 @@
-font-name = VT323
+font = VT323
 corner-radius = 120
 outline-color = #D3D1B9
 outline-width = 6

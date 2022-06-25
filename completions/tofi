@@ -1,55 +1,66 @@
 # vi: ft=bash
 
-containsElement () {
-	local e match="$1"
-	shift
-	for e; do [[ "$e" =~ $match ]] && return 0; done
-	return 1
-}
-
-_greetd_mini_wl_greeter()
+_tofi()
 {
-	local cur prev opts remaining
-	COMPREPLY=()
-	cur="${COMP_WORDS[COMP_CWORD]}"
-	prev="${COMP_WORDS[COMP_CWORD-1]}"
-	opts="--background-image --background-color --border-width --border-color --outline-width --outline-color --entry-padding --entry-color --text-color --font-name --font-size --password-character --command --user --width-characters --wide-layout --hide-cursor --help"
+	local cur prev words cword
+	_init_completion || return
 
+	words=(
+		--help
+		--config
+		--anchor
+		--background-color
+		--corner-radius
+		--font
+		--font-size
+		--num-results
+		--selection-color
+		--outline-width
+		--outline-color
+		--prompt-text
+		--result-spacing
+		--min-input-width
+		--border-width
+		--border-color
+		--text-color
+		--width
+		--height
+		--margin-top
+		--margin-bottom
+		--margin-left
+		--margin-right
+		--padding-top
+		--padding-bottom
+		--padding-left
+		--padding-right
+		--horizontal
+		--hide-cursor
+		--history
+		--hint-font
+     )
 
 	case "${prev}" in
-		--user|-u)
-			COMPREPLY=( $(compgen -W "${users}" -- ${cur}) )
+		--font)
+			;&
+		--config|-c)
+			_filedir
 			return 0
 			;;
-		--command|-c)
-			return 0
-			;;
-		--background-image|-b)
-			if ! containsElement '.*\.png' "${COMP_WORDS[@]}"; then
-				_filedir '*@(png)'
-			fi
-			return 0
-			;;
-		--wide-layout|-w)
-			;& # Fallthrough
-		--hide-cursor|-H)
-			;& # Fallthrough
 		--help|-h)
 			;;
-		*)
+		--*)
 			return 0
 			;;
 	esac
 	case "${cur}" in
-		-[a-zA-Z])
-			COMPREPLY=$cur
+		-[ch])
+			COMPREPLY=($cur)
 			;;
 		*)
-			remaining=$(echo ${opts[@]} ${COMP_WORDS[@]} ${COMP_WORDS[@]} | tr ' ' '\n' | sort | uniq -u)
-			COMPREPLY=( $(compgen -W "${remaining}" -- ${cur}) )
+			COMPREPLY=($(compgen -W "${words[*]}" -- ${cur}))
 			return 0
 			;;
 	esac
-	true
 }
-complete -F _greetd_mini_wl_greeter greetd-mini-wl-greeter
+complete -F _tofi tofi
+complete -F _tofi tofi-run

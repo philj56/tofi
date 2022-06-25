@@ -5,5 +5,5 @@ outline-width = 0
 padding-left = 35%
 padding-top = 35%
 result-spacing = 50
-font-name = monospace
+font = monospace
 background-color = #000A

@@ -237,7 +237,7 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->window.entry.background_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "corner-radius") == 0) {
 		tofi->window.entry.corner_radius = parse_uint32(filename, lineno, value, &err);
-	} else if (strcasecmp(option, "font-name") == 0) {
+	} else if (strcasecmp(option, "font") == 0) {
 		snprintf(tofi->window.entry.font_name, N_ELEM(tofi->window.entry.font_name), "%s", value);
 	} else if (strcasecmp(option, "font-size") == 0) {
 		tofi->window.entry.font_size = parse_uint32(filename, lineno, value, &err);

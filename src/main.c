@@ -562,7 +562,7 @@ static void usage()
 "Usage: tofi [options]\n"
 "  -h, --help                      Print this message and exit.\n"
 "  -c, --config                    Specify a config file.\n"
-"      --font-name <name|path>     Font to use.\n"
+"      --font <name|path>     Font to use.\n"
 "      --font-size <pt>            Point size of text.\n"
 "      --background-color <color>  Color of the background.\n"
 "      --outline-width <px>        Width of the border outlines.\n"
@@ -603,7 +603,7 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 		{"anchor", required_argument, NULL, 0},
 		{"background-color", required_argument, NULL, 0},
 		{"corner-radius", required_argument, NULL, 0},
-		{"font-name", required_argument, NULL, 0},
+		{"font", required_argument, NULL, 0},
 		{"font-size", required_argument, NULL, 0},
 		{"num-results", required_argument, NULL, 0},
 		{"selection-color", required_argument, NULL, 0},
