@@ -168,7 +168,7 @@ void config_load(struct tofi *tofi, const char *filename)
 			num_errs++;
 			continue;
 		}
-		char *value = strtok_r(NULL, "#;\r\n", &saveptr2);
+		char *value = strtok_r(NULL, "\r\n", &saveptr2);
 		if (!value) {
 			PARSE_ERROR(filename, lineno, "Config option \"%s\" missing value.\n", option_stripped);
 			num_errs++;

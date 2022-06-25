@@ -1,0 +1,17 @@
+anchor = top
+width = 100%
+height = 60
+horizontal = true
+font-size = 14
+prompt-text = " run: "
+font-name = monospace
+outline-width = 0
+border-width = 0
+background-color = #000000
+num-results = 10
+min-input-width = 240
+result-spacing = 30
+padding-top = 0
+padding-bottom = 0
+padding-left = 0
+padding-right = 0

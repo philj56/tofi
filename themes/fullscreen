@@ -1,0 +1,9 @@
+width = 100%
+height = 100%
+border-width = 0
+outline-width = 0
+padding-left = 35%
+padding-top = 35%
+result-spacing = 50
+font-name = monospace
+background-color = #000A

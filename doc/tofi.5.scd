@@ -192,7 +192,8 @@ options.
 
 # COLORS
 
-Colors can be specified in the form _RGB_, _RGBA_, _RRGGBB_ or _RRGGBBAA_.
+Colors can be specified in the form _RGB_, _RGBA_, _RRGGBB_ or _RRGGBBAA_,
+optionally prefixed with a hash (#).
 
 # PERCENTAGE VALUES
 
