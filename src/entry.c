@@ -67,10 +67,8 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	/* Draw the background */
 	struct color color = entry->background_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_save(cr);
 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 	cairo_paint(cr);
-	cairo_restore(cr);
 
 	/* Draw the border with outlines */
 	cairo_set_line_width(cr, 4 * entry->outline_width + 2 * entry->border_width);
@@ -98,6 +96,8 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
 	cairo_fill(cr);
 	cairo_restore(cr);
+
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
 
 	/* Move and clip following draws to be within this outline + padding */
