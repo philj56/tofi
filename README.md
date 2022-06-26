@@ -166,7 +166,7 @@ window has entered the screen. Results are the mean and standard deviation of
   <tbody>
     <tr>
       <th rowspan=4> Machine </th>
-      <th> Ryzen 3 3700X <br> 2560px × 1440px </th>
+      <th> Ryzen 7 3700X <br> 2560px × 1440px </th>
       <td align=right> 9.5ms ± 1.8ms </td>
       <td align=right> 5.2ms ± 1.5ms </td>
       <td align=right> 6.1ms ± 1.3ms </td>    </tr>
@@ -208,7 +208,7 @@ The table below additionally includes `--late-keyboard-init` in the arguments.
   <tbody>
     <tr>
       <th rowspan=4> Machine </th>
-      <th> Ryzen 3 3700X <br> 2560px × 1440px </th>
+      <th> Ryzen 7 3700X <br> 2560px × 1440px </th>
       <td align=right> 7.9ms ± 1.0ms </td>
       <td align=right> 2.3ms ± 0.8ms </td>
       <td align=right> 3.8ms ± 0.8ms </td>    </tr>
