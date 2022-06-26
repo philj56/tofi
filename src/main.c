@@ -10,6 +10,7 @@
 #include <threads.h>
 #include <unistd.h>
 #include <wayland-client.h>
+#include <wayland-util.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <xkbcommon/xkbcommon.h>
@@ -434,10 +435,14 @@ static void output_mode(
 		int32_t refresh)
 {
 	struct tofi *tofi = data;
-	if (flags & WL_OUTPUT_MODE_CURRENT) {
-		log_debug("Output mode %dx%d\n", width, height);
-		tofi->output_width = MAX(width, tofi->output_width);
-		tofi->output_height = MAX(height, tofi->output_height);
+	struct output_list_element *el;
+	wl_list_for_each(el, &tofi->output_list, link) {
+		if (el->wl_output == wl_output) {
+			if (flags & WL_OUTPUT_MODE_CURRENT) {
+				el->width = width;
+				el->height = height;
+			}
+		}
 	}
 }
 
@@ -447,8 +452,12 @@ static void output_scale(
 		int32_t factor)
 {
 	struct tofi *tofi = data;
-	tofi->window.scale = MAX(factor, (int32_t)tofi->window.scale);
-	log_debug("Output scale factor is %d.\n", factor);
+	struct output_list_element *el;
+	wl_list_for_each(el, &tofi->output_list, link) {
+		if (el->wl_output == wl_output) {
+			el->scale = factor;
+		}
+	}
 }
 
 static void output_name(
@@ -456,7 +465,13 @@ static void output_name(
 		struct wl_output *wl_output,
 		const char *name)
 {
-	/* Deliberately left blank */
+	struct tofi *tofi = data;
+	struct output_list_element *el;
+	wl_list_for_each(el, &tofi->output_list, link) {
+		if (el->wl_output == wl_output) {
+			el->name = xstrdup(name);
+		}
+	}
 }
 
 static void output_description(
@@ -509,15 +524,17 @@ static void registry_global(
 				tofi);
 		log_debug("Bound to seat %u.\n", name);
 	} else if (!strcmp(interface, wl_output_interface.name)) {
-		tofi->wl_output = wl_registry_bind(
+		struct output_list_element *el = xmalloc(sizeof(*el));
+		el->wl_output = wl_registry_bind(
 				wl_registry,
 				name,
 				&wl_output_interface,
 				4);
 		wl_output_add_listener(
-				tofi->wl_output,
+				el->wl_output,
 				&wl_output_listener,
 				tofi);
+		wl_list_insert(&tofi->output_list, &el->link);
 		log_debug("Bound to output %u.\n", name);
 	} else if (!strcmp(interface, wl_shm_interface.name)) {
 		tofi->wl_shm = wl_registry_bind(
@@ -593,6 +610,7 @@ static void usage()
 "      --width <px|%>              Width of the window.\n"
 "      --height <px|%>             Height of the window.\n"
 "      --corner-radius <px>        Radius of window corners.\n"
+"      --output <name>             Name of output to display window on.\n"
 "      --anchor <position>         Location on screen to anchor window.\n"
 "      --margin-top <px|%>         Offset from top of screen.\n"
 "      --margin-bottom <px|%>      Offset from bottom of screen.\n"
@@ -644,7 +662,8 @@ const struct option long_options[] = {
 	{"hide-cursor", required_argument, NULL, 0},
 	{"history", required_argument, NULL, 0},
 	{"hint-font", required_argument, NULL, 0},
-	{"late-keyboard-init", no_argument, NULL, 1},
+	{"output", required_argument, NULL, 'o'},
+	{"late-keyboard-init", no_argument, NULL, 'k'},
 	{NULL, 0, NULL, 0}
 };
 const char *short_options = ":hc:";
@@ -654,15 +673,17 @@ static void parse_early_args(struct tofi *tofi, int argc, char *argv[])
 	/* Handle errors ourselves (i.e. ignore them for now). */
 	opterr = 0;
 
-	/* Just check for help and late-keyboard-init */
+	/* Just check for help, late-keyboard-init and output */
 	optind = 1;
 	int opt = getopt_long(argc, argv, short_options, long_options, NULL);
 	while (opt != -1) {
 		if (opt == 'h') {
 			usage();
 			exit(EXIT_SUCCESS);
-		} else if (opt == 1) {
+		} else if (opt == 'k') {
 			tofi->late_keyboard_init = true;
+		} else if (opt == 'o') {
+			snprintf(tofi->target_output_name, N_ELEM(tofi->target_output_name), "%s", optarg);
 		}
 		opt = getopt_long(argc, argv, short_options, long_options, NULL);
 	}
@@ -761,9 +782,9 @@ int main(int argc, char *argv[])
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
 		.use_history = true,
 	};
+	wl_list_init(&tofi.output_list);
 
 	parse_early_args(&tofi, argc, argv);
-
 
 	/*
 	 * Initial Wayland & XKB setup.
@@ -771,6 +792,7 @@ int main(int argc, char *argv[])
 	 * so that we can bind to the various global objects and start talking
 	 * to Wayland.
 	 */
+
 	tofi.wl_display = wl_display_connect(NULL);
 	if (tofi.wl_display == NULL) {
 		log_error("Couldn't connect to Wayland display.\n");
@@ -808,6 +830,48 @@ int main(int argc, char *argv[])
 	wl_display_roundtrip(tofi.wl_display);
 	log_unindent();
 	log_debug("Second roundtrip done.\n");
+
+	/*
+	 * Walk through our output list and select the one we want if the
+	 * user's asked for a specific one, otherwise just get the first one.
+	 */
+	{
+		bool found_target = false;
+		struct output_list_element *head;
+		head = wl_container_of(tofi.output_list.next, head, link);
+
+		struct output_list_element *el;
+		struct output_list_element *tmp;
+		if (tofi.target_output_name[0] != 0) {
+			log_debug("Looking for output %s.\n", tofi.target_output_name);
+		}
+		wl_list_for_each_reverse_safe(el, tmp, &tofi.output_list, link) {
+			if (!strcmp(tofi.target_output_name, el->name)) {
+				found_target = true;
+				continue;
+			}
+			/*
+			 * If we've already found the output we're looking for
+			 * or this isn't the first output in the list, remove
+			 * it.
+			 */
+			if (found_target || el != head) {
+				wl_list_remove(&el->link);
+				wl_output_release(el->wl_output);
+				free(el->name);
+				free(el);
+			}
+		}
+		/*
+		 * The only output left should either be the one we want, or
+		 * the first that was advertised.
+		 */
+		el = wl_container_of(tofi.output_list.next, el, link);
+		tofi.output_width = el->width;
+		tofi.output_height = el->height;
+		tofi.window.scale = el->scale;
+		log_debug("Selected output %s.\n", el->name);
+	}
 
 	/*
 	 * We can now parse our arguments and config file, as we know the
@@ -863,11 +927,19 @@ int main(int argc, char *argv[])
 			tofi.window.surface.wl_surface,
 			tofi.window.scale);
 
+	/* Grab the first (and only remaining) output from our list. */
+	struct wl_output *wl_output;
+	{
+		struct output_list_element *el;
+		el = wl_container_of(tofi.output_list.next, el, link);
+		wl_output = el->wl_output;
+	}
+
 	tofi.window.zwlr_layer_surface = zwlr_layer_shell_v1_get_layer_surface(
 			tofi.zwlr_layer_shell,
 			tofi.window.surface.wl_surface,
-			tofi.wl_output,
-			ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
+			wl_output,
+			ZWLR_LAYER_SHELL_V1_LAYER_TOP,
 			"launcher");
 	zwlr_layer_surface_v1_set_keyboard_interactivity(
 			tofi.window.zwlr_layer_surface,
@@ -1010,7 +1082,8 @@ int main(int argc, char *argv[])
 	/*
 	 * For debug builds, try to cleanup as much as possible, to make using
 	 * e.g. Valgrind easier. There's still a few unavoidable leaks though,
-	 * mostly from Pango.
+	 * mostly from Pango, and Cairo holds onto quite a bit of cached data
+	 * (without leaking it)
 	 */
 	surface_destroy(&tofi.window.surface);
 	entry_destroy(&tofi.window.entry);
@@ -1024,7 +1097,14 @@ int main(int argc, char *argv[])
 	}
 	wl_compositor_destroy(tofi.wl_compositor);
 	wl_seat_release(tofi.wl_seat);
-	wl_output_release(tofi.wl_output);
+	{
+		struct output_list_element *el;
+		wl_list_for_each(el, &tofi.output_list, link) {
+			wl_output_release(el->wl_output);
+			free(el->name);
+			free(el);
+		}
+	}
 	wl_shm_destroy(tofi.wl_shm);
 	zwlr_layer_shell_v1_destroy(tofi.zwlr_layer_shell);
 	xkb_state_unref(tofi.xkb_state);

@@ -31,6 +31,9 @@ instead presenting a list of executables in the user's $PATH.
 *-c, --config* <path>
 	Specify path to custom config file.
 
+*--output* <name>
+	Select the output to appear on.
+
 *--late-keyboard-init*
 	Delay keyboard initialisation until after the first draw to screen.
 	This option is experimental, and will cause tofi to miss keypresses
