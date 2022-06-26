@@ -22,6 +22,7 @@
 #include "nelem.h"
 #include "shm.h"
 #include "string_vec.h"
+#include "xmalloc.h"
 
 #undef MAX
 #undef MIN
@@ -95,19 +96,26 @@ static void wl_keyboard_keymap(
 	char *map_shm = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
 	assert(map_shm != MAP_FAILED);
 
-	struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_string(
-			tofi->xkb_context,
-			map_shm,
-			XKB_KEYMAP_FORMAT_TEXT_V1,
-			XKB_KEYMAP_COMPILE_NO_FLAGS);
+	if (tofi->late_keyboard_init) {
+		tofi->xkb_keymap_string = xstrdup(map_shm);
+	} else {
+		struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_string(
+				tofi->xkb_context,
+				map_shm,
+				XKB_KEYMAP_FORMAT_TEXT_V1,
+				XKB_KEYMAP_COMPILE_NO_FLAGS);
+		munmap(map_shm, size);
+		close(fd);
+
+		struct xkb_state *xkb_state = xkb_state_new(xkb_keymap);
+		xkb_keymap_unref(tofi->xkb_keymap);
+		xkb_state_unref(tofi->xkb_state);
+		tofi->xkb_keymap = xkb_keymap;
+		tofi->xkb_state = xkb_state;
+	}
 	munmap(map_shm, size);
 	close(fd);
 
-	struct xkb_state *xkb_state = xkb_state_new(xkb_keymap);
-	xkb_keymap_unref(tofi->xkb_keymap);
-	xkb_state_unref(tofi->xkb_state);
-	tofi->xkb_keymap = xkb_keymap;
-	tofi->xkb_state = xkb_state;
 	log_debug("Keyboard configured.\n");
 }
 
@@ -140,6 +148,9 @@ static void wl_keyboard_key(
 {
 	struct tofi *tofi = data;
 	uint32_t keycode = key + 8;
+	if (tofi->xkb_state == NULL) {
+		return;
+	}
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(
 			tofi->xkb_state,
 			keycode);
@@ -223,6 +234,9 @@ static void wl_keyboard_modifiers(
 		uint32_t group)
 {
 	struct tofi *tofi = data;
+	if (tofi->xkb_state == NULL) {
+		return;
+	}
 	xkb_state_update_mask(
 			tofi->xkb_state,
 			mods_depressed,
@@ -560,9 +574,10 @@ static void usage()
 {
 	fprintf(stderr, "%s",
 "Usage: tofi [options]\n"
+"\n"
 "  -h, --help                      Print this message and exit.\n"
 "  -c, --config                    Specify a config file.\n"
-"      --font <name|path>     Font to use.\n"
+"      --font <name|path>          Font to use.\n"
 "      --font-size <pt>            Point size of text.\n"
 "      --background-color <color>  Color of the background.\n"
 "      --outline-width <px>        Width of the border outlines.\n"
@@ -591,47 +606,70 @@ static void usage()
 "      --horizontal <true|false>   List results horizontally.\n"
 "      --history <true|false>      Sort results by number of usages.\n"
 "      --hint-font <true|false>    Perform font hinting.\n"
+"      --late-keyboard-init        (EXPERIMENTAL) Delay keyboard initialisation\n"
+"                                  until after the first draw to screen.\n"
 	);
+}
+
+/* Option parsing with getopt. */
+const struct option long_options[] = {
+	{"help", no_argument, NULL, 'h'},
+	{"config", required_argument, NULL, 'c'},
+	{"anchor", required_argument, NULL, 0},
+	{"background-color", required_argument, NULL, 0},
+	{"corner-radius", required_argument, NULL, 0},
+	{"font", required_argument, NULL, 0},
+	{"font-size", required_argument, NULL, 0},
+	{"num-results", required_argument, NULL, 0},
+	{"selection-color", required_argument, NULL, 0},
+	{"outline-width", required_argument, NULL, 0},
+	{"outline-color", required_argument, NULL, 0},
+	{"prompt-text", required_argument, NULL, 0},
+	{"result-spacing", required_argument, NULL, 0},
+	{"min-input-width", required_argument, NULL, 0},
+	{"border-width", required_argument, NULL, 0},
+	{"border-color", required_argument, NULL, 0},
+	{"text-color", required_argument, NULL, 0},
+	{"width", required_argument, NULL, 0},
+	{"height", required_argument, NULL, 0},
+	{"margin-top", required_argument, NULL, 0},
+	{"margin-bottom", required_argument, NULL, 0},
+	{"margin-left", required_argument, NULL, 0},
+	{"margin-right", required_argument, NULL, 0},
+	{"padding-top", required_argument, NULL, 0},
+	{"padding-bottom", required_argument, NULL, 0},
+	{"padding-left", required_argument, NULL, 0},
+	{"padding-right", required_argument, NULL, 0},
+	{"horizontal", required_argument, NULL, 0},
+	{"hide-cursor", required_argument, NULL, 0},
+	{"history", required_argument, NULL, 0},
+	{"hint-font", required_argument, NULL, 0},
+	{"late-keyboard-init", no_argument, NULL, 1},
+	{NULL, 0, NULL, 0}
+};
+const char *short_options = ":hc:";
+
+static void parse_early_args(struct tofi *tofi, int argc, char *argv[])
+{
+	/* Handle errors ourselves (i.e. ignore them for now). */
+	opterr = 0;
+
+	/* Just check for help and late-keyboard-init */
+	optind = 1;
+	int opt = getopt_long(argc, argv, short_options, long_options, NULL);
+	while (opt != -1) {
+		if (opt == 'h') {
+			usage();
+			exit(EXIT_SUCCESS);
+		} else if (opt == 1) {
+			tofi->late_keyboard_init = true;
+		}
+		opt = getopt_long(argc, argv, short_options, long_options, NULL);
+	}
 }
 
 static void parse_args(struct tofi *tofi, int argc, char *argv[])
 {
-	/* Option parsing with getopt. */
-	const struct option long_options[] = {
-		{"help", no_argument, NULL, 'h'},
-		{"config", required_argument, NULL, 'c'},
-		{"anchor", required_argument, NULL, 0},
-		{"background-color", required_argument, NULL, 0},
-		{"corner-radius", required_argument, NULL, 0},
-		{"font", required_argument, NULL, 0},
-		{"font-size", required_argument, NULL, 0},
-		{"num-results", required_argument, NULL, 0},
-		{"selection-color", required_argument, NULL, 0},
-		{"outline-width", required_argument, NULL, 0},
-		{"outline-color", required_argument, NULL, 0},
-		{"prompt-text", required_argument, NULL, 0},
-		{"result-spacing", required_argument, NULL, 0},
-		{"min-input-width", required_argument, NULL, 0},
-		{"border-width", required_argument, NULL, 0},
-		{"border-color", required_argument, NULL, 0},
-		{"text-color", required_argument, NULL, 0},
-		{"width", required_argument, NULL, 0},
-		{"height", required_argument, NULL, 0},
-		{"margin-top", required_argument, NULL, 0},
-		{"margin-bottom", required_argument, NULL, 0},
-		{"margin-left", required_argument, NULL, 0},
-		{"margin-right", required_argument, NULL, 0},
-		{"padding-top", required_argument, NULL, 0},
-		{"padding-bottom", required_argument, NULL, 0},
-		{"padding-left", required_argument, NULL, 0},
-		{"padding-right", required_argument, NULL, 0},
-		{"horizontal", required_argument, NULL, 0},
-		{"hide-cursor", required_argument, NULL, 0},
-		{"history", required_argument, NULL, 0},
-		{"hint-font", required_argument, NULL, 0},
-		{NULL, 0, NULL, 0}
-	};
-	const char *short_options = ":hc:";
 
 	bool load_default_config = true;
 	int option_index = 0;
@@ -723,6 +761,8 @@ int main(int argc, char *argv[])
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
 		.use_history = true,
 	};
+
+	parse_early_args(&tofi, argc, argv);
 
 
 	/*
@@ -920,6 +960,23 @@ int main(int argc, char *argv[])
 
 	/* We've just rendered, so we don't need to do it again right now. */
 	tofi.window.surface.redraw = false;
+
+	/* If we delayed keyboard initialisation, do it now */
+	if (tofi.late_keyboard_init) {
+		struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_string(
+				tofi.xkb_context,
+				tofi.xkb_keymap_string,
+				XKB_KEYMAP_FORMAT_TEXT_V1,
+				XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+		struct xkb_state *xkb_state = xkb_state_new(xkb_keymap);
+		xkb_keymap_unref(tofi.xkb_keymap);
+		xkb_state_unref(tofi.xkb_state);
+		tofi.xkb_keymap = xkb_keymap;
+		tofi.xkb_state = xkb_state;
+		free(tofi.xkb_keymap_string);
+		tofi.late_keyboard_init = false;
+	}
 
 	while (wl_display_dispatch(tofi.wl_display) != -1) {
 		if (tofi.closed) {

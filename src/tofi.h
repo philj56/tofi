@@ -24,6 +24,7 @@ struct tofi {
 	struct wl_pointer *wl_pointer;
 
 	/* Keyboard objects */
+	char *xkb_keymap_string;
 	struct xkb_state *xkb_state;
 	struct xkb_context *xkb_context;
 	struct xkb_keymap *xkb_keymap;
@@ -50,6 +51,7 @@ struct tofi {
 	uint32_t anchor;
 	bool hide_cursor;
 	bool use_history;
+	bool late_keyboard_init;
 };
 
 #endif /* CLIENT_H */

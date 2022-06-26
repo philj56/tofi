@@ -37,6 +37,7 @@ _tofi()
 		--hide-cursor
 		--history
 		--hint-font
+		--late-keyboard-init
      )
 
 	case "${prev}" in
@@ -47,6 +48,8 @@ _tofi()
 			return 0
 			;;
 		--help|-h)
+			;;
+		--late-keyboard-init)
 			;;
 		--*)
 			return 0

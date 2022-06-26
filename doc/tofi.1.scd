@@ -31,6 +31,12 @@ instead presenting a list of executables in the user's $PATH.
 *-c, --config* <path>
 	Specify path to custom config file.
 
+*--late-keyboard-init*
+	Delay keyboard initialisation until after the first draw to screen.
+	This option is experimental, and will cause tofi to miss keypresses
+	for a short time after launch. The only reason to use this option is
+	performance on slow systems.
+
 All config file options described in *tofi*(5) are also accepted, in the form
 *--key=value*.
 
