@@ -101,7 +101,7 @@ tweak them to look correct on your display.
 
 By default, tofi isn't really any faster than its alternatives. However, when
 configured correctly, it can startup and get on screen within a single frame,
-or about 4ms in the ideal case.
+or about 2ms in the ideal case.
 
 ### Options
 In roughly descending order, the most important options for performance are:
@@ -136,6 +136,12 @@ In roughly descending order, the most important options for performance are:
   hidpi screens or large font sizes, this doesn't noticeably impact font
   sharpness, but your mileage may vary. This option has no effect if a path to
   a font file hasn't been passed to `--font`.
+
+* `--late-keyboard-init` - The last avoidable thing that slows down startup is
+  initialisation of the keyboard. This only takes 1-2ms on my laptop, but up
+  to 60ms on a Raspberry Pi Zero 2 W. Passing this option will delay keyboard
+  initialisation until after the first draw to screen, meaning that *keypresses
+  will be missed* until then, so it's disabled by default.
 
 ### Benchmarks
 
@@ -181,6 +187,48 @@ window has entered the screen. Results are the mean and standard deviation of
       <td align=right> 119.0ms ± 5.9ms </td>
       <td align=right> 67.3ms ± 10.2ms </td>
       <td align=right> 110.0ms ± 10.3ms </td>
+    </tr>
+  </tbody>
+</table>
+
+The table below additionally includes `--late-keyboard-init` in the arguments.
+
+<table>
+  <thead>
+    <tr>
+      <th colspan=2 rowspan=2/>
+      <th colspan=3> Theme </th>
+    </tr>
+    <tr>
+      <th> fullscreen </th>
+      <th> dmenu </th>
+      <th> dos </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th rowspan=4> Machine </th>
+      <th> Ryzen 3 3700X <br> 2560px × 1440px </th>
+      <td align=right> 7.9ms ± 1.0ms </td>
+      <td align=right> 2.3ms ± 0.8ms </td>
+      <td align=right> 3.8ms ± 0.8ms </td>    </tr>
+    <tr>
+      <th> Ryzen 5 5600U (AC) <br> 2880px × 1800px </th>
+      <td align=right> 13.4ms ± 0.8ms </td>
+      <td align=right> 2.6ms ± 0.5ms </td>
+      <td align=right> 5.5ms ± 0.51ms </td>
+    </tr>
+    <tr>
+      <th> Ryzen 5 5600U (battery) <br> 2880px × 1800px </th>
+      <td align=right> 21.8ms ± 1.8ms </td>
+      <td align=right> 3.6ms ± 0.7ms </td>
+      <td align=right> 8.1ms ± 0.7ms </td>
+    </tr>
+    <tr>
+      <th> Raspberry Pi Zero 2 W <br> 1920px × 1080px </th>
+      <td align=right> 98.3ms ± 5.7ms </td>
+      <td align=right> 44.8ms ± 16.3ms </td>
+      <td align=right> 87.4ms ± 9.9ms </td>
     </tr>
   </tbody>
 </table>
