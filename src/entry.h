@@ -55,7 +55,8 @@ struct entry {
 	uint32_t outline_width;
 	struct color foreground_color;
 	struct color background_color;
-	struct color selection_color;
+	struct color selection_foreground_color;
+	struct color selection_background_color;
 	struct color border_color;
 	struct color outline_color;
 };

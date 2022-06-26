@@ -87,15 +87,24 @@ void entry_backend_pango_update(struct entry *entry)
 		pango_layout_set_text(layout, str, -1);
 		pango_cairo_update_layout(cr, layout);
 		if (i == entry->selection) {
-			cairo_save(cr);
-			color = entry->selection_color;
+			cairo_push_group(cr);
+			color = entry->selection_foreground_color;
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 		}
 		pango_cairo_show_layout(cr, layout);
-		if (i == entry->selection) {
-			cairo_restore(cr);
-		}
 		pango_layout_get_size(layout, &width, &height);
+		if (i == entry->selection) {
+			cairo_pop_group_to_source(cr);
+			cairo_save(cr);
+			color = entry->selection_background_color;
+			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+			cairo_rectangle(cr, 0, 0, (int)(width / PANGO_SCALE), (int)(height / PANGO_SCALE));
+			cairo_fill(cr);
+			cairo_restore(cr);
+			cairo_paint(cr);
+			color = entry->foreground_color;
+			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+		}
 	}
 
 	cairo_restore(cr);

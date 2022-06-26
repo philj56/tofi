@@ -84,6 +84,11 @@ options.
 
 	Default: #F92672
 
+*selection-background*=_color_
+	Background color of selected result. See *COLORS* for more information.
+
+	Default: #00000000
+
 *result-spacing*=_px_
 	Spacing between results. Can be negative.
 

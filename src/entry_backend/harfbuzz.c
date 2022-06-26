@@ -231,13 +231,22 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 		hb_buffer_add_utf8(buffer, entry->results.buf[i], -1, 0, -1);
 		hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
 		if (i == entry->selection) {
-			cairo_save(cr);
-			color = entry->selection_color;
+			cairo_push_group(cr);
+			color = entry->selection_foreground_color;
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 		}
 		width = render_hb_buffer(cr, buffer);
 		if (i == entry->selection) {
+			cairo_pop_group_to_source(cr);
+			cairo_save(cr);
+			color = entry->selection_background_color;
+			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+			cairo_rectangle(cr, 0, 0, width, font_extents.height);
+			cairo_fill(cr);
 			cairo_restore(cr);
+			cairo_paint(cr);
+			color = entry->foreground_color;
+			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 		}
 	}
 

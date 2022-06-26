@@ -93,6 +93,13 @@ options.
 >
 > Default: \#F92672
 
+**selection-background**=*color*
+
+> Background color of selected result. See **COLORS** for more
+> information.
+>
+> Default: \#00000000
+
 **result-spacing**=*px*
 
 > Spacing between results. Can be negative.

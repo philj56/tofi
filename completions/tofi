@@ -8,6 +8,7 @@ _tofi()
 	words=(
 		--help
 		--config
+		--output
 		--anchor
 		--background-color
 		--corner-radius
@@ -15,6 +16,7 @@ _tofi()
 		--font-size
 		--num-results
 		--selection-color
+		--selection-background
 		--outline-width
 		--outline-color
 		--prompt-text

@@ -592,40 +592,42 @@ static void usage()
 	fprintf(stderr, "%s",
 "Usage: tofi [options]\n"
 "\n"
-"  -h, --help                      Print this message and exit.\n"
-"  -c, --config                    Specify a config file.\n"
-"      --font <name|path>          Font to use.\n"
-"      --font-size <pt>            Point size of text.\n"
-"      --background-color <color>  Color of the background.\n"
-"      --outline-width <px>        Width of the border outlines.\n"
-"      --outline-color <color>     Color of the border outlines.\n"
-"      --border-width <px>         Width of the border.\n"
-"      --border-color <color>      Color of the border.\n"
-"      --text-color <color>        Color of text.\n"
-"      --prompt-text <string>      Prompt text.\n"
-"      --num-results <n>           Maximum number of results to display.\n"
-"      --selection-color <color>   Color of selected result.\n"
-"      --result-spacing <px>       Spacing between results. Can be negative.\n"
-"      --min-input-width <px>      Minimum width of input in horizontal mode.\n"
-"      --width <px|%>              Width of the window.\n"
-"      --height <px|%>             Height of the window.\n"
-"      --corner-radius <px>        Radius of window corners.\n"
-"      --output <name>             Name of output to display window on.\n"
-"      --anchor <position>         Location on screen to anchor window.\n"
-"      --margin-top <px|%>         Offset from top of screen.\n"
-"      --margin-bottom <px|%>      Offset from bottom of screen.\n"
-"      --margin-left <px|%>        Offset from left of screen.\n"
-"      --margin-right <px|%>       Offset from right of screen.\n"
-"      --padding-top <px|%>        Padding between top border and text.\n"
-"      --padding-bottom <px|%>     Padding between bottom border and text.\n"
-"      --padding-left <px|%>       Padding between left border and text.\n"
-"      --padding-right <px|%>      Padding between right border and text.\n"
-"      --hide-cursor <true|false>  Hide the cursor.\n"
-"      --horizontal <true|false>   List results horizontally.\n"
-"      --history <true|false>      Sort results by number of usages.\n"
-"      --hint-font <true|false>    Perform font hinting.\n"
-"      --late-keyboard-init        (EXPERIMENTAL) Delay keyboard initialisation\n"
-"                                  until after the first draw to screen.\n"
+"  -h, --help                           Print this message and exit.\n"
+"  -c, --config                         Specify a config file.\n"
+"      --font <name|path>               Font to use.\n"
+"      --font-size <pt>                 Point size of text.\n"
+"      --background-color <color>       Color of the background.\n"
+"      --outline-width <px>             Width of the border outlines.\n"
+"      --outline-color <color>          Color of the border outlines.\n"
+"      --border-width <px>              Width of the border.\n"
+"      --border-color <color>           Color of the border.\n"
+"      --text-color <color>             Color of text.\n"
+"      --prompt-text <string>           Prompt text.\n"
+"      --num-results <n>                Maximum number of results to display.\n"
+"      --selection-color <color>        Color of selected result.\n"
+"      --selection-background <color>   Color of selected result background.\n"
+"      --result-spacing <px>            Spacing between results.\n"
+"      --min-input-width <px>           Minimum input width in horizontal mode.\n"
+"      --width <px|%>                   Width of the window.\n"
+"      --height <px|%>                  Height of the window.\n"
+"      --corner-radius <px>             Radius of window corners.\n"
+"      --output <name>                  Name of output to display window on.\n"
+"      --anchor <position>              Location on screen to anchor window.\n"
+"      --margin-top <px|%>              Offset from top of screen.\n"
+"      --margin-bottom <px|%>           Offset from bottom of screen.\n"
+"      --margin-left <px|%>             Offset from left of screen.\n"
+"      --margin-right <px|%>            Offset from right of screen.\n"
+"      --padding-top <px|%>             Padding between top border and text.\n"
+"      --padding-bottom <px|%>          Padding between bottom border and text.\n"
+"      --padding-left <px|%>            Padding between left border and text.\n"
+"      --padding-right <px|%>           Padding between right border and text.\n"
+"      --hide-cursor <true|false>       Hide the cursor.\n"
+"      --horizontal <true|false>        List results horizontally.\n"
+"      --history <true|false>           Sort results by number of usages.\n"
+"      --hint-font <true|false>         Perform font hinting.\n"
+"      --late-keyboard-init             (EXPERIMENTAL) Delay keyboard\n"
+"                                       initialisation until after the first\n"
+"                                       draw to screen.\n"
 	);
 }
 
@@ -640,6 +642,7 @@ const struct option long_options[] = {
 	{"font-size", required_argument, NULL, 0},
 	{"num-results", required_argument, NULL, 0},
 	{"selection-color", required_argument, NULL, 0},
+	{"selection-background", required_argument, NULL, 0},
 	{"outline-width", required_argument, NULL, 0},
 	{"outline-color", required_argument, NULL, 0},
 	{"prompt-text", required_argument, NULL, 0},
@@ -771,7 +774,7 @@ int main(int argc, char *argv[])
 				.outline_width = 4,
 				.background_color = {0.106f, 0.114f, 0.118f, 1.0f},
 				.foreground_color = {1.0f, 1.0f, 1.0f, 1.0f},
-				.selection_color = {0.976f, 0.149f, 0.447f, 1.0f},
+				.selection_foreground_color = {0.976f, 0.149f, 0.447f, 1.0f},
 				.border_color = {0.976f, 0.149f, 0.447f, 1.0f},
 				.outline_color = {0.031f, 0.031f, 0.0f, 1.0f},
 			}
