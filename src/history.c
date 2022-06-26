@@ -82,13 +82,14 @@ struct history history_load()
 	}
 
 	errno = 0;
-	char *buf = xmalloc(len);
+	char *buf = xmalloc(len + 1);
 	if (fread(buf, 1, len, histfile) != len) {
 		log_error("Error reading history file: %s.\n", strerror(errno));
 		fclose(histfile);
 		return vec;
 	}
 	fclose(histfile);
+	buf[len] = '\0';
 
 	char *saveptr = NULL;
 	char *tok = strtok_r(buf, " ", &saveptr);

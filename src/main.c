@@ -1099,7 +1099,9 @@ int main(int argc, char *argv[])
 	wl_seat_release(tofi.wl_seat);
 	{
 		struct output_list_element *el;
-		wl_list_for_each(el, &tofi.output_list, link) {
+		struct output_list_element *tmp;
+		wl_list_for_each_safe(el, tmp, &tofi.output_list, link) {
+			wl_list_remove(&el->link);
 			wl_output_release(el->wl_output);
 			free(el->name);
 			free(el);
