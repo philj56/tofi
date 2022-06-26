@@ -7,7 +7,9 @@ tofi - Tiny dynamic menu for Wayland, inspired by *rofi*(1) and *dmenu*(1).
 # SYNOPSIS
 
 *tofi* [options...]
+
 *tofi-run* [options...]
+
 *tofi-compgen*
 
 # DESCRIPTION
@@ -29,7 +31,7 @@ instead presenting a list of executables in the user's $PATH.
 *-c, --config* <path>
 	Specify path to custom config file.
 
-All config file options described in *tofi(5)* are also accepted, in the form
+All config file options described in *tofi*(5) are also accepted, in the form
 *--key=value*.
 
 # KEYS
