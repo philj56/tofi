@@ -83,6 +83,7 @@ compgen_sources = files(
 )
 
 cc = meson.get_compiler('c')
+librt = cc.find_library('rt', required: false)
 libm = cc.find_library('m', required: false)
 freetype = dependency('freetype2')
 harfbuzz = dependency('harfbuzz')
@@ -125,7 +126,7 @@ endforeach
 executable(
   'tofi',
   tofi_sources, wl_proto_src, wl_proto_headers,
-  dependencies: [libm, freetype, harfbuzz, cairo, pangocairo, wayland_client, xkbcommon],
+  dependencies: [librt, libm, freetype, harfbuzz, cairo, pangocairo, wayland_client, xkbcommon],
   install: true
 )
 
