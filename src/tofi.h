@@ -29,6 +29,7 @@ struct tofi {
 	struct wl_shm *wl_shm;
 	struct zwlr_layer_shell_v1 *zwlr_layer_shell;
 	struct wl_list output_list;
+	struct output_list_element *default_output;
 
 	/* Wayland objects */
 	struct wl_keyboard *wl_keyboard;

@@ -56,9 +56,6 @@ static void zwlr_layer_surface_configure(
 	tofi->window.surface.width = tofi->window.width;
 	tofi->window.surface.height = tofi->window.height;
 
-	/* Assume 4 bytes per pixel for WL_SHM_FORMAT_ARGB8888 */
-	tofi->window.surface.stride = tofi->window.surface.width * 4;
-
 	/*
 	 * Need to redraw the background at the new size. This entails
 	 * a wl_surface_commit, so no need to do so explicitly here.
@@ -587,6 +584,62 @@ static const struct wl_surface_listener wl_surface_listener = {
 	.leave = surface_leave
 };
 
+/*
+ * These "dummy_*" functions are callbacks just for the dummy surface used to
+ * select the default output if there's more than one.
+ */
+static void dummy_layer_surface_configure(
+		void *data,
+		struct zwlr_layer_surface_v1 *zwlr_layer_surface,
+		uint32_t serial,
+		uint32_t width,
+		uint32_t height)
+{
+	zwlr_layer_surface_v1_ack_configure(
+			zwlr_layer_surface,
+			serial);
+}
+
+static void dummy_layer_surface_close(
+		void *data,
+		struct zwlr_layer_surface_v1 *zwlr_layer_surface)
+{
+}
+
+static const struct zwlr_layer_surface_v1_listener dummy_layer_surface_listener = {
+	.configure = dummy_layer_surface_configure,
+	.closed = dummy_layer_surface_close
+};
+
+static void dummy_surface_enter(
+		void *data,
+		struct wl_surface *wl_surface,
+		struct wl_output *wl_output)
+{
+	struct tofi *tofi = data;
+	struct output_list_element *el;
+	wl_list_for_each(el, &tofi->output_list, link) {
+		if (el->wl_output == wl_output) {
+			tofi->default_output = el;
+			break;
+		}
+	}
+}
+
+static void dummy_surface_leave(
+		void *data,
+		struct wl_surface *wl_surface,
+		struct wl_output *wl_output)
+{
+	/* Deliberately left blank */
+}
+
+static const struct wl_surface_listener dummy_surface_listener = {
+	.enter = dummy_surface_enter,
+	.leave = dummy_surface_leave
+};
+
+
 static void usage()
 {
 	fprintf(stderr, "%s",
@@ -749,6 +802,9 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+	/* Call log_debug to initialise the timers we use for perf checking. */
+	log_debug("This is tofi.\n");
+
 	/*
 	 * Set the locale to the user's default, so we can deal with non-ASCII
 	 * characters.
@@ -834,11 +890,60 @@ int main(int argc, char *argv[])
 	log_unindent();
 	log_debug("Second roundtrip done.\n");
 
-	/*
-	 * Walk through our output list and select the one we want if the
-	 * user's asked for a specific one, otherwise just get the first one.
-	 */
-	{
+	/* If there's more than one output, we need to select one. */
+	if (wl_list_length(&tofi.output_list) > 1) {
+		/*
+		 * Determine the default output
+		 *
+		 * This seems like an ugly solution, but as far as I know
+		 * there's no way to determine the default output other than to
+		 * call get_layer_surface with NULL as the output and see which
+		 * output our surface turns up on.
+		 *
+		 * Here we set up a single pixel surface, perform the required
+		 * two roundtrips, then tear it down. tofi.default_output
+		 * should then contain the output our surface was assigned to.
+		 */
+		struct surface surface = {
+			.width = 1,
+			.height = 1
+		};
+		surface.wl_surface =
+			wl_compositor_create_surface(tofi.wl_compositor);
+		wl_surface_add_listener(
+				surface.wl_surface,
+				&dummy_surface_listener,
+				&tofi);
+
+		struct zwlr_layer_surface_v1 *zwlr_layer_surface =
+			zwlr_layer_shell_v1_get_layer_surface(
+					tofi.zwlr_layer_shell,
+					surface.wl_surface,
+					NULL,
+					ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND,
+					"dummy");
+		zwlr_layer_surface_v1_add_listener(
+				zwlr_layer_surface,
+				&dummy_layer_surface_listener,
+				&tofi);
+		zwlr_layer_surface_v1_set_size(
+				zwlr_layer_surface,
+				1,
+				1);
+		wl_surface_commit(surface.wl_surface);
+		wl_display_roundtrip(tofi.wl_display);
+		surface_init(&surface, tofi.wl_shm);
+		surface_draw(&surface);
+		wl_display_roundtrip(tofi.wl_display);
+		surface_destroy(&surface);
+		zwlr_layer_surface_v1_destroy(zwlr_layer_surface);
+		wl_surface_destroy(surface.wl_surface);
+
+		/*
+		 * Walk through our output list and select the one we want if
+		 * the user's asked for a specific one, otherwise just get the
+		 * default one.
+		 */
 		bool found_target = false;
 		struct output_list_element *head;
 		head = wl_container_of(tofi.output_list.next, head, link);
@@ -847,6 +952,14 @@ int main(int argc, char *argv[])
 		struct output_list_element *tmp;
 		if (tofi.target_output_name[0] != 0) {
 			log_debug("Looking for output %s.\n", tofi.target_output_name);
+		} else if (tofi.default_output != NULL) {
+			snprintf(
+					tofi.target_output_name,
+					N_ELEM(tofi.target_output_name),
+					"%s",
+					tofi.default_output->name);
+			/* We don't need this anymore. */
+			tofi.default_output = NULL;
 		}
 		wl_list_for_each_reverse_safe(el, tmp, &tofi.output_list, link) {
 			if (!strcmp(tofi.target_output_name, el->name)) {
@@ -865,10 +978,13 @@ int main(int argc, char *argv[])
 				free(el);
 			}
 		}
+	}
+	{
 		/*
 		 * The only output left should either be the one we want, or
 		 * the first that was advertised.
 		 */
+		struct output_list_element *el;
 		el = wl_container_of(tofi.output_list.next, el, link);
 		tofi.output_width = el->width;
 		tofi.output_height = el->height;
@@ -1013,10 +1129,7 @@ int main(int argc, char *argv[])
 	log_debug("Renderer initialised.\n");
 
 	/* Perform an initial render. */
-	surface_draw(
-			&tofi.window.surface,
-			&tofi.window.entry.background_color,
-			&tofi.window.entry.image);
+	surface_draw(&tofi.window.surface);
 
 	/*
 	 * entry_init() left the second of the two buffers we use for
@@ -1058,10 +1171,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 		if (tofi.window.surface.redraw) {
-			surface_draw(
-					&tofi.window.surface,
-					&tofi.window.entry.background_color,
-					&tofi.window.entry.image);
+			surface_draw(&tofi.window.surface);
 			tofi.window.surface.redraw = false;
 		}
 		if (tofi.submit) {

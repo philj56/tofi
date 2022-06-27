@@ -13,7 +13,11 @@ void surface_init(
 		struct wl_shm *wl_shm)
 {
 	const int height = surface->height;
-	const int stride = surface->stride;
+	const int width = surface->width;
+
+	/* Assume 4 bytes per pixel for WL_SHM_FORMAT_ARGB8888 */
+	const int stride = width * 4;
+	surface->stride = stride;
 
 	/* Double-buffered pool, so allocate space for two windows */
 	surface->shm_pool_size =
@@ -34,13 +38,13 @@ void surface_init(
 			surface->shm_pool_size);
 
 	for (int i = 0; i < 2; i++) {
-		int offset = surface->height * surface->stride * i;
+		int offset = height * stride * i;
 		surface->buffers[i] = wl_shm_pool_create_buffer(
 				surface->wl_shm_pool,
 				offset,
-				surface->width,
-				surface->height,
-				surface->stride,
+				width,
+				height,
+				stride,
 				WL_SHM_FORMAT_ARGB8888);
 	}
 
@@ -58,10 +62,7 @@ void surface_destroy(struct surface *surface)
 	wl_buffer_destroy(surface->buffers[1]);
 }
 
-void surface_draw(
-		struct surface *surface,
-		struct color *color,
-		struct image *texture)
+void surface_draw(struct surface *surface)
 {
 	wl_surface_attach(surface->wl_surface, surface->buffers[surface->index], 0, 0);
 	wl_surface_damage_buffer(surface->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
