@@ -210,7 +210,7 @@ static void wl_keyboard_key(
 		tofi->window.entry.selection += nsel;
 		tofi->window.entry.selection--;
 		tofi->window.entry.selection %= nsel;
-	} else if (sym == XKB_KEY_Down || sym == XKB_KEY_Right) {
+	} else if (sym == XKB_KEY_Down || sym == XKB_KEY_Right || sym == XKB_KEY_Tab) {
 		uint32_t nsel = MAX(MIN(tofi->window.entry.num_results, tofi->window.entry.results.count), 1);
 		tofi->window.entry.selection++;
 		tofi->window.entry.selection %= nsel;

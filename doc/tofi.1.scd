@@ -48,7 +48,7 @@ All config file options described in *tofi*(5) are also accepted, in the form
 <Up> | <Left>
 	Move the selection back one entry.
 
-<Down> | <Right>
+<Down> | <Right> | <Tab>
 	Move the selection back forward entry.
 
 <Enter>

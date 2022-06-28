@@ -54,7 +54,7 @@ the form **--key=value**.
 
 > Move the selection back one entry.
 
-\<Down\> \| \<Right\>
+\<Down\> \| \<Right\> \| \<Tab\>
 
 > Move the selection back forward entry.
 
