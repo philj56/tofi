@@ -45,11 +45,11 @@ All config file options described in *tofi*(5) are also accepted, in the form
 
 # KEYS
 
-<Up> | <Left>
+<Up> | <Left> | <Ctrl>-k
 	Move the selection back one entry.
 
-<Down> | <Right> | <Tab>
-	Move the selection back forward entry.
+<Down> | <Right> | <Ctrl>-j | <Tab>
+	Move the selection forward one entry.
 
 <Enter>
 	Confirm the current selection and quit.

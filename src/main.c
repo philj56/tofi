@@ -205,12 +205,26 @@ static void wl_keyboard_key(
 		return;
 	}
 
-	if (sym == XKB_KEY_Up || sym == XKB_KEY_Left) {
+	if (sym == XKB_KEY_Up || sym == XKB_KEY_Left
+			|| (sym == XKB_KEY_k
+				&& xkb_state_mod_name_is_active(
+					tofi->xkb_state,
+					XKB_MOD_NAME_CTRL,
+					XKB_STATE_MODS_EFFECTIVE)
+			   )
+			) {
 		uint32_t nsel = MAX(MIN(tofi->window.entry.num_results, tofi->window.entry.results.count), 1);
 		tofi->window.entry.selection += nsel;
 		tofi->window.entry.selection--;
 		tofi->window.entry.selection %= nsel;
-	} else if (sym == XKB_KEY_Down || sym == XKB_KEY_Right || sym == XKB_KEY_Tab) {
+	} else if (sym == XKB_KEY_Down || sym == XKB_KEY_Right || sym == XKB_KEY_Tab
+			|| (sym == XKB_KEY_j
+				&& xkb_state_mod_name_is_active(
+					tofi->xkb_state,
+					XKB_MOD_NAME_CTRL,
+					XKB_STATE_MODS_EFFECTIVE)
+			   )
+			) {
 		uint32_t nsel = MAX(MIN(tofi->window.entry.num_results, tofi->window.entry.results.count), 1);
 		tofi->window.entry.selection++;
 		tofi->window.entry.selection %= nsel;

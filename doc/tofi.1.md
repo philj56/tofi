@@ -50,13 +50,13 @@ the form **--key=value**.
 
 # KEYS
 
-\<Up\> \| \<Left\>
+\<Up\> \| \<Left\> \| \<Ctrl\>-k
 
 > Move the selection back one entry.
 
-\<Down\> \| \<Right\> \| \<Tab\>
+\<Down\> \| \<Right\> \| \<Ctrl\>-j \| \<Tab\>
 
-> Move the selection back forward entry.
+> Move the selection forward one entry.
 
 \<Enter\>
 
