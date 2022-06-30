@@ -56,11 +56,6 @@ static void zwlr_layer_surface_configure(
 	tofi->window.surface.width = tofi->window.width;
 	tofi->window.surface.height = tofi->window.height;
 
-	/*
-	 * Need to redraw the background at the new size. This entails
-	 * a wl_surface_commit, so no need to do so explicitly here.
-	 */
-	tofi->window.surface.redraw = true;
 	zwlr_layer_surface_v1_ack_configure(
 			tofi->window.zwlr_layer_surface,
 			serial);
