@@ -80,7 +80,7 @@ void entry_backend_pango_update(struct entry *entry)
 		}
 		const char *str;
 		if (i < entry->results.count) {
-			str = entry->results.buf[i];
+			str = entry->results.buf[i].string;
 		} else {
 			str = "";
 		}

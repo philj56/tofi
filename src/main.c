@@ -1187,11 +1187,11 @@ int main(int argc, char *argv[])
 			tofi.submit = false;
 			if (tofi.window.entry.results.count > 0) {
 				uint32_t selection = tofi.window.entry.selection;
-				printf("%s\n", tofi.window.entry.results.buf[selection]);
+				printf("%s\n", tofi.window.entry.results.buf[selection].string);
 				if (tofi.use_history) {
 					history_add(
 							&tofi.window.entry.history,
-							tofi.window.entry.results.buf[selection]);
+							tofi.window.entry.results.buf[selection].string);
 					history_save(&tofi.window.entry.history);
 				}
 				break;

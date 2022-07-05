@@ -2,12 +2,19 @@
 #define STRING_VEC_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
+
+struct scored_string {
+	char *string;
+	int8_t search_score;
+	int8_t history_score;
+};
 
 struct string_vec {
 	size_t count;
 	size_t size;
-	char **buf;
+	struct scored_string *buf;
 };
 
 [[nodiscard("memory leaked")]]

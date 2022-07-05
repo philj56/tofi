@@ -228,7 +228,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 
 		hb_buffer_clear_contents(buffer);
 		setup_hb_buffer(buffer);
-		hb_buffer_add_utf8(buffer, entry->results.buf[i], -1, 0, -1);
+		hb_buffer_add_utf8(buffer, entry->results.buf[i].string, -1, 0, -1);
 		hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
 		if (i == entry->selection) {
 			cairo_push_group(cr);

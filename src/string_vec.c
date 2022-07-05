@@ -27,12 +27,22 @@ static int cmpstringp(const void *restrict a, const void *restrict b)
 	return strcmp(str1, str2);
 }
 
+static int cmpscorep(const void *restrict a, const void *restrict b)
+{
+	struct scored_string *restrict str1 = (struct scored_string *)a;
+	struct scored_string *restrict str2 = (struct scored_string *)b;
+	if (str1->history_score != str2->history_score) {
+		return str2->history_score - str1->history_score;
+	}
+	return str1->search_score - str2->search_score;
+}
+
 struct string_vec string_vec_create(void)
 {
 	struct string_vec vec = {
 		.count = 0,
 		.size = 128,
-		.buf = xcalloc(128, sizeof(char *))
+		.buf = xcalloc(128, sizeof(*vec.buf)),
 	};
 	return vec;
 }
@@ -40,7 +50,7 @@ struct string_vec string_vec_create(void)
 void string_vec_destroy(struct string_vec *restrict vec)
 {
 	for (size_t i = 0; i < vec->count; i++) {
-		free(vec->buf[i]);
+		free(vec->buf[i].string);
 	}
 	free(vec->buf);
 }
@@ -50,11 +60,13 @@ struct string_vec string_vec_copy(struct string_vec *restrict vec)
 	struct string_vec copy = {
 		.count = vec->count,
 		.size = vec->size,
-		.buf = xcalloc(vec->size, sizeof(char *))
+		.buf = xcalloc(vec->size, sizeof(*copy.buf)),
 	};
 
 	for (size_t i = 0; i < vec->count; i++) {
-		copy.buf[i] = xstrdup(vec->buf[i]);
+		copy.buf[i].string = xstrdup(vec->buf[i].string);
+		copy.buf[i].search_score = vec->buf[i].search_score;
+		copy.buf[i].history_score = vec->buf[i].history_score;
 	}
 
 	return copy;
@@ -66,7 +78,7 @@ void string_vec_add(struct string_vec *restrict vec, const char *restrict str)
 		vec->size *= 2;
 		vec->buf = xrealloc(vec->buf, vec->size * sizeof(vec->buf[0]));
 	}
-	vec->buf[vec->count] = xstrdup(str);
+	vec->buf[vec->count].string = xstrdup(str);
 	vec->count++;
 }
 
@@ -79,9 +91,9 @@ void string_vec_uniq(struct string_vec *restrict vec)
 {
 	size_t count = vec->count;
 	for (size_t i = 1; i < vec->count; i++) {
-		if (!strcmp(vec->buf[i], vec->buf[i-1])) {
-			free(vec->buf[i-1]);
-			vec->buf[i-1] = NULL;
+		if (!strcmp(vec->buf[i].string, vec->buf[i-1].string)) {
+			free(vec->buf[i-1].string);
+			vec->buf[i-1].string = NULL;
 			count--;
 		}
 	}
@@ -100,10 +112,22 @@ struct string_vec string_vec_filter(
 {
 	struct string_vec filt = string_vec_create();
 	for (size_t i = 0; i < vec->count; i++) {
-		if (strcasestr(vec->buf[i], substr) != NULL) {
-			string_vec_add(&filt, vec->buf[i]);
+		char *c = strcasestr(vec->buf[i].string, substr);
+		if (c != NULL) {
+			string_vec_add(&filt, vec->buf[i].string);
+			/*
+			 * Store the position of the match in the string as
+			 * its search_score, for later sorting.
+			 */
+			filt.buf[filt.count - 1].search_score = c - vec->buf[i].string;
+			filt.buf[filt.count - 1].history_score = vec->buf[i].history_score;
 		}
 	}
+	/*
+	 * Sort the results by this search_score. This moves matches at the beginnings
+	 * of words to the front of the result list.
+	 */
+	qsort(filt.buf, filt.count, sizeof(filt.buf[0]), cmpscorep);
 	return filt;
 }
 
@@ -131,7 +155,7 @@ struct string_vec string_vec_load(FILE *file)
 void string_vec_save(struct string_vec *restrict vec, FILE *restrict file)
 {
 	for (size_t i = 0; i < vec->count; i++) {
-		fputs(vec->buf[i], file);
+		fputs(vec->buf[i].string, file);
 		fputc('\n', file);
 	}
 }

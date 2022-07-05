@@ -188,6 +188,7 @@ void compgen_history_sort(struct string_vec *programs, struct history *history)
 		free(*res);
 		*res = NULL;
 		string_vec_add(&to_add, history->buf[i].name);
+		to_add.buf[to_add.count - 1].history_score = history->buf[i].run_count;
 	}
 
 	/* Sort the vector to push the removed entries to the end. */
@@ -205,7 +206,8 @@ void compgen_history_sort(struct string_vec *programs, struct history *history)
 
 	/* Add our history to the front in order. */
 	for (size_t i = 0; i < to_add.count; i++) {
-		programs->buf[i] = xstrdup(to_add.buf[i]);
+		programs->buf[i].string = xstrdup(to_add.buf[i].string);
+		programs->buf[i].history_score = to_add.buf[i].history_score;
 	}
 	string_vec_destroy(&to_add);
 }
