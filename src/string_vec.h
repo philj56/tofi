@@ -8,7 +8,7 @@
 struct scored_string {
 	char *string;
 	int8_t search_score;
-	int8_t history_score;
+	int32_t history_score;
 };
 
 struct string_vec {
