@@ -40,6 +40,18 @@ install_data(
 
 install_symlink(
   'tofi-run',
+  install_dir: completion_location,
+  pointing_to: 'tofi',
+)
+
+install_symlink(
+  'tofi-drun',
+  install_dir: completion_location,
+  pointing_to: 'tofi',
+)
+
+install_symlink(
+  'tofi-run',
   install_dir: get_option('bindir'),
   pointing_to: 'tofi',
 )

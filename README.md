@@ -53,11 +53,26 @@ By default, running `tofi` causes it to act like dmenu, accepting options on
 `tofi-run` is a symlink to `tofi`, which will cause tofi to display a list of
 executables under the user's `$PATH`.
 
+`tofi-drun` is also a symlink to `tofi`, which will cause tofi to display a
+list of applications found in desktop files as described by the [Desktop Entry
+Specification](https://specifications.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html).
+
 To use as a launcher for Sway, add something similar to the following to your
 Sway config file:
 ```
 set $menu tofi-run | xargs swaymsg exec --
 bindsym $mod+d exec $menu
+```
+
+For `tofi-drun`, there are two possible methods:
+```
+# Launch via Sway
+set $drun tofi-drun | xargs swaymsg exec gio launch
+bindsym $mod+Shift+d exec $drun
+
+# Launch directly
+set $drun tofi-drun --drun-launch=true
+bindsym $mod+Shift+d exec $drun
 ```
 
 See the main [manpage](doc/tofi.1.md) for more info.
