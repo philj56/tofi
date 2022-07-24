@@ -16,6 +16,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include "tofi.h"
 #include "compgen.h"
+#include "drun.h"
 #include "config.h"
 #include "entry.h"
 #include "image.h"
@@ -160,7 +161,7 @@ static void wl_keyboard_key(
 			sizeof(buf));
 	wchar_t ch;
 	mbtowc(&ch, buf, sizeof(buf));
-	if (len > 0 && iswprint(ch) && !iswblank(ch)) {
+	if (len > 0 && iswprint(ch) && (tofi->window.entry.drun || !iswblank(ch))) {
 		if (entry->input_length < N_ELEM(entry->input) - 1) {
 			entry->input[entry->input_length] = ch;
 			entry->input_length++;
@@ -686,6 +687,7 @@ static void usage()
 "      --hide-cursor <true|false>       Hide the cursor.\n"
 "      --horizontal <true|false>        List results horizontally.\n"
 "      --history <true|false>           Sort results by number of usages.\n"
+"      --drun-launch <true|false>       Launch apps directly in drun mode.\n"
 "      --hint-font <true|false>         Perform font hinting.\n"
 "      --late-keyboard-init             (EXPERIMENTAL) Delay keyboard\n"
 "                                       initialisation until after the first\n"
@@ -726,6 +728,7 @@ const struct option long_options[] = {
 	{"horizontal", required_argument, NULL, 0},
 	{"hide-cursor", required_argument, NULL, 0},
 	{"history", required_argument, NULL, 0},
+	{"drun-launch", required_argument, NULL, 0},
 	{"hint-font", required_argument, NULL, 0},
 	{"output", required_argument, NULL, 'o'},
 	{"late-keyboard-init", no_argument, NULL, 'k'},
@@ -1012,6 +1015,7 @@ int main(int argc, char *argv[])
 
 	/*
 	 * If we were invoked as tofi-run, generate the command list.
+	 * If we were invoked as tofi-drun, generate the desktop app list.
 	 * Otherwise, just read standard input.
 	 */
 	if (strstr(argv[0], "-run")) {
@@ -1020,6 +1024,19 @@ int main(int argc, char *argv[])
 		tofi.window.entry.commands = compgen_cached();
 		log_unindent();
 		log_debug("Command list generated.\n");
+	} else if (strstr(argv[0], "-drun")) {
+		log_debug("Generating desktop app list.\n");
+		log_indent();
+		tofi.window.entry.drun = true;
+		struct desktop_vec apps = drun_generate_cached();
+		struct string_vec commands = string_vec_create();
+		for (size_t i = 0; i < apps.count; i++) {
+			string_vec_add(&commands, apps.buf[i].name);
+		}
+		tofi.window.entry.commands = commands;
+		tofi.window.entry.apps = apps;
+		log_unindent();
+		log_debug("App list generated.\n");
 	} else {
 		char *line = NULL;
 		size_t n = 0;
@@ -1035,7 +1052,7 @@ int main(int argc, char *argv[])
 		tofi.use_history = false;
 	}
 	if (tofi.use_history) {
-		tofi.window.entry.history = history_load();
+		tofi.window.entry.history = history_load(tofi.window.entry.drun);
 		compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
 	}
 	tofi.window.entry.results = string_vec_copy(&tofi.window.entry.commands);
@@ -1187,12 +1204,26 @@ int main(int argc, char *argv[])
 			tofi.submit = false;
 			if (tofi.window.entry.results.count > 0) {
 				uint32_t selection = tofi.window.entry.selection;
-				printf("%s\n", tofi.window.entry.results.buf[selection].string);
+				char *res = tofi.window.entry.results.buf[selection].string;
+				if (tofi.window.entry.drun) {
+					struct desktop_entry *app = desktop_vec_find(&tofi.window.entry.apps, res);
+					if (app == NULL) {
+						log_error("Couldn't find application file! This shouldn't happen.\n");
+					} else {
+						res = app->path;
+					}
+				};
+				if (tofi.window.entry.drun && tofi.drun_launch) {
+					drun_launch(res);
+				} else {
+					printf("%s\n", res);
+				}
 				if (tofi.use_history) {
 					history_add(
 							&tofi.window.entry.history,
 							tofi.window.entry.results.buf[selection].string);
-					history_save(&tofi.window.entry.history);
+					history_save(&tofi.window.entry.history,
+							tofi.window.entry.drun);
 				}
 				break;
 			}
@@ -1235,6 +1266,9 @@ int main(int argc, char *argv[])
 	xkb_keymap_unref(tofi.xkb_keymap);
 	xkb_context_unref(tofi.xkb_context);
 	wl_registry_destroy(tofi.wl_registry);
+	if (tofi.window.entry.drun) {
+		desktop_vec_destroy(&tofi.window.entry.apps);
+	}
 	string_vec_destroy(&tofi.window.entry.commands);
 	string_vec_destroy(&tofi.window.entry.results);
 	if (tofi.use_history) {

@@ -44,6 +44,12 @@ install_symlink(
   pointing_to: 'tofi',
 )
 
+install_symlink(
+  'tofi-drun',
+  install_dir: get_option('bindir'),
+  pointing_to: 'tofi',
+)
+
 add_project_arguments(
   [
     '-pedantic',
@@ -61,6 +67,8 @@ tofi_sources = files(
   'src/color.c',
   'src/compgen.c',
   'src/config.c',
+  'src/desktop_vec.c',
+  'src/drun.c',
   'src/entry.c',
   'src/entry_backend/pango.c',
   'src/entry_backend/harfbuzz.c',
@@ -94,6 +102,8 @@ wayland_client = dependency('wayland-client')
 wayland_protocols = dependency('wayland-protocols', native: true)
 wayland_scanner_dep = dependency('wayland-scanner', native: true)
 xkbcommon = dependency('xkbcommon')
+glib = dependency('glib-2.0')
+gio_unix = dependency('gio-unix-2.0')
 
 
 # Generate the necessary Wayland headers / sources with wayland-scanner
@@ -127,7 +137,7 @@ endforeach
 executable(
   'tofi',
   tofi_sources, wl_proto_src, wl_proto_headers,
-  dependencies: [librt, libm, freetype, harfbuzz, cairo, pangocairo, wayland_client, xkbcommon],
+  dependencies: [librt, libm, freetype, harfbuzz, cairo, pangocairo, wayland_client, xkbcommon, glib, gio_unix],
   install: true
 )
 

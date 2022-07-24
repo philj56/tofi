@@ -7,6 +7,7 @@
 #include <cairo/cairo.h>
 #include <wchar.h>
 #include "color.h"
+#include "desktop_vec.h"
 #include "history.h"
 #include "image.h"
 #include "surface.h"
@@ -35,10 +36,12 @@ struct entry {
 	uint32_t selection;
 	struct string_vec results;
 	struct string_vec commands;
+	struct desktop_vec apps;
 	struct history history;
 	bool use_pango;
 
 	/* Options */
+	bool drun;
 	bool horizontal;
 	uint32_t num_results;
 	int32_t result_spacing;

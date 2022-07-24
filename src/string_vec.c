@@ -79,6 +79,8 @@ void string_vec_add(struct string_vec *restrict vec, const char *restrict str)
 		vec->buf = xrealloc(vec->buf, vec->size * sizeof(vec->buf[0]));
 	}
 	vec->buf[vec->count].string = xstrdup(str);
+	vec->buf[vec->count].search_score = 0;
+	vec->buf[vec->count].history_score = 0;
 	vec->count++;
 }
 

@@ -12,7 +12,7 @@
 #include "string_vec.h"
 #include "xmalloc.h"
 
-static const char *default_state_dir = ".cache";
+static const char *default_cache_dir = ".cache";
 static const char *cache_basename = "tofi-compgen";
 
 [[nodiscard("memory leaked")]]
@@ -26,7 +26,7 @@ static char *get_cache_path() {
 			return NULL;
 		}
 		size_t len = strlen(home) + 1
-			+ strlen(default_state_dir) + 1
+			+ strlen(default_cache_dir) + 1
 			+ strlen(cache_basename) + 1;
 		cache_name = xmalloc(len);
 		snprintf(
@@ -34,7 +34,7 @@ static char *get_cache_path() {
 			len,
 			"%s/%s/%s",
 			home,
-			default_state_dir,
+			default_cache_dir,
 			cache_basename);
 	} else {
 		size_t len = strlen(state_path) + 1

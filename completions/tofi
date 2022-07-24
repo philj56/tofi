@@ -38,6 +38,7 @@ _tofi()
 		--horizontal
 		--hide-cursor
 		--history
+		--drun-launch
 		--hint-font
 		--late-keyboard-init
      )
@@ -69,3 +70,4 @@ _tofi()
 }
 complete -F _tofi tofi
 complete -F _tofi tofi-run
+complete -F _tofi tofi-drun

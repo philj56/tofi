@@ -13,11 +13,18 @@
 
 static const char *default_state_dir = ".local/state";
 static const char *histfile_basename = "tofi-history";
+static const char *drun_histfile_basename = "tofi-drun-history";
 
 [[nodiscard("memory leaked")]]
 static struct history history_create(void);
 
-static char *get_histfile_path() {
+static char *get_histfile_path(bool drun) {
+	const char *basename;
+	if (drun) {
+		basename = drun_histfile_basename;
+	} else {
+		basename = histfile_basename;
+	}
 	char *histfile_name = NULL;
 	const char *state_path = getenv("XDG_STATE_HOME");
 	if (state_path == NULL) {
@@ -28,7 +35,7 @@ static char *get_histfile_path() {
 		}
 		size_t len = strlen(home) + 1
 			+ strlen(default_state_dir) + 1
-			+ strlen(histfile_basename) + 1;
+			+ strlen(basename) + 1;
 		histfile_name = xmalloc(len);
 		snprintf(
 			histfile_name,
@@ -36,25 +43,25 @@ static char *get_histfile_path() {
 			"%s/%s/%s",
 			home,
 			default_state_dir,
-			histfile_basename);
+			basename);
 	} else {
 		size_t len = strlen(state_path) + 1
-			+ strlen(histfile_basename) + 1;
+			+ strlen(basename) + 1;
 		histfile_name = xmalloc(len);
 		snprintf(
 			histfile_name,
 			len,
 			"%s/%s",
 			state_path,
-			histfile_basename);
+			basename);
 	}
 	return histfile_name;
 }
 
-struct history history_load()
+struct history history_load(bool drun)
 {
 	struct history vec = history_create();
-	char *histfile_name = get_histfile_path();
+	char *histfile_name = get_histfile_path(drun);
 	if (histfile_name == NULL) {
 		return vec;
 	}
@@ -108,9 +115,9 @@ struct history history_load()
 	return vec;
 }
 
-void history_save(struct history *history)
+void history_save(struct history *history, bool drun)
 {
-	char *histfile_name = get_histfile_path();
+	char *histfile_name = get_histfile_path(drun);
 	if (histfile_name == NULL) {
 		return;
 	}

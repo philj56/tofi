@@ -187,6 +187,12 @@ options.
 
 	Default: true
 
+*drun-launch*=_true|false_
+	If true, directly launch applications on selection when in drun mode.
+	Otherwise, just print the path of the .desktop file to stdout.
+
+	Default: false
+
 *hint-font*=_true|false_
 	Perform font hinting. Only applies when a path to a font has been
 	specified via *font-name*. Disabling font hinting speeds up text

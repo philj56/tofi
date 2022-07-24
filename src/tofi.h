@@ -64,6 +64,7 @@ struct tofi {
 	bool hide_cursor;
 	bool use_history;
 	bool late_keyboard_init;
+	bool drun_launch;
 	char target_output_name[MAX_OUTPUT_NAME_LEN];
 };
 

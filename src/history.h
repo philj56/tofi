@@ -1,6 +1,7 @@
 #ifndef HISTORY_H
 #define HISTORY_H
 
+#include <stdbool.h>
 #include <stddef.h>
 
 struct program {
@@ -24,8 +25,8 @@ void history_add(struct history *restrict vec, const char *restrict str);
 //void history_remove(struct history *restrict vec, const char *restrict str);
 
 [[nodiscard("memory leaked")]]
-struct history history_load(void);
+struct history history_load(bool drun);
 
-void history_save(struct history *history);
+void history_save(struct history *history, bool drun);
 
 #endif /* HISTORY_H */

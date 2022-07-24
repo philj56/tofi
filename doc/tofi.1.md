@@ -9,6 +9,8 @@ tofi - Tiny dynamic menu for Wayland, inspired by **rofi**(1) and
 
 **tofi-run** \[options...\]
 
+**tofi-drun** \[options...\]
+
 **tofi-compgen**
 
 # DESCRIPTION
@@ -20,6 +22,10 @@ printed to stdout.
 
 When invoked via the name **tofi-run**, **tofi** will not accept items
 on stdin, instead presenting a list of executables in the user's $PATH.
+
+When invoked via the name **tofi-drun**, **tofi** will not accept items
+on stdin, and will generate a list of applications from desktop files as
+described in the Desktop Entry Specification.
 
 **tofi-compgen** just prints the list of executables used by
 **tofi-run**.
@@ -76,9 +82,18 @@ the form **--key=value**.
 
 > Cached list of executables under $PATH, regenerated as necessary.
 
+*$XDG_CACHE_HOME/tofi-drun*
+
+> Cached list of desktop applications, regenerated as necessary.
+
 *$XDG_STATE_HOME/tofi-history*
 
 > Numeric count of commands selected in **tofi-run**, to enable sorting
+> results by run count.
+
+*$XDG_STATE_HOME/tofi-drun-history*
+
+> Numeric count of commands selected in **tofi-drun**, to enable sorting
 > results by run count.
 
 # AUTHORS
