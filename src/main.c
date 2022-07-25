@@ -1088,7 +1088,7 @@ int main(int argc, char *argv[])
 			"launcher");
 	zwlr_layer_surface_v1_set_keyboard_interactivity(
 			tofi.window.zwlr_layer_surface,
-			ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND
+			ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE
 			);
 	zwlr_layer_surface_v1_add_listener(
 			tofi.window.zwlr_layer_surface,
