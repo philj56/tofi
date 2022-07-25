@@ -1106,10 +1106,10 @@ int main(int argc, char *argv[])
 			tofi.window.height / tofi.window.scale);
 	zwlr_layer_surface_v1_set_margin(
 			tofi.window.zwlr_layer_surface,
-			tofi.window.margin_top,
-			tofi.window.margin_right,
-			tofi.window.margin_bottom,
-			tofi.window.margin_left);
+			tofi.window.margin_top / tofi.window.scale,
+			tofi.window.margin_right / tofi.window.scale,
+			tofi.window.margin_bottom / tofi.window.scale,
+			tofi.window.margin_left / tofi.window.scale);
 	wl_surface_commit(tofi.window.surface.wl_surface);
 
 	/*
