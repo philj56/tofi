@@ -24,7 +24,7 @@ options.
 
 # OPTIONS
 
-*font-name*=_font_
+*font*=_font_
 	Font to use. If _font_ is a path to a font file, *tofi* will not have
 	to use Pango or Fontconfig. This greatly speeds up startup, but any
 	characters not in the chosen font will fail to render.

@@ -22,7 +22,7 @@ options.
 
 # OPTIONS
 
-**font-name**=*font*
+**font**=*font*
 
 > Font to use. If *font* is a path to a font file, **tofi** will not
 > have to use Pango or Fontconfig. This greatly speeds up startup, but
