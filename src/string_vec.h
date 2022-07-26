@@ -7,7 +7,7 @@
 
 struct scored_string {
 	char *string;
-	int8_t search_score;
+	int32_t search_score;
 	int32_t history_score;
 };
 

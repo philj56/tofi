@@ -170,9 +170,15 @@ static void wl_keyboard_key(
 					buf,
 					N_ELEM(buf));
 			entry->input_mb_length += len;
-			struct string_vec tmp = entry->results;
-			entry->results = string_vec_filter(&entry->results, entry->input_mb);
-			string_vec_destroy(&tmp);
+			if (tofi->window.entry.drun) {
+				struct string_vec results = desktop_vec_filter(&entry->apps, entry->input_mb);
+				string_vec_destroy(&entry->results);
+				entry->results = results;
+			} else {
+				struct string_vec tmp = entry->results;
+				entry->results = string_vec_filter(&entry->results, entry->input_mb);
+				string_vec_destroy(&tmp);
+			}
 		}
 	} else if (entry->input_length > 0 && sym == XKB_KEY_BackSpace) {
 		entry->input_length--;
@@ -185,7 +191,11 @@ static void wl_keyboard_key(
 				NULL);
 		entry->input_mb_length = siz;
 		string_vec_destroy(&entry->results);
-		entry->results = string_vec_filter(&entry->commands, entry->input_mb);
+		if (tofi->window.entry.drun) {
+			entry->results = desktop_vec_filter(&entry->apps, entry->input_mb);
+		} else {
+			entry->results = string_vec_filter(&entry->commands, entry->input_mb);
+		}
 	} else if (sym == XKB_KEY_Escape
 			|| (sym == XKB_KEY_c
 				&& xkb_state_mod_name_is_active(
@@ -1046,6 +1056,10 @@ int main(int argc, char *argv[])
 		log_debug("Generating command list.\n");
 		log_indent();
 		tofi.window.entry.commands = compgen_cached();
+		if (tofi.use_history) {
+			tofi.window.entry.history = history_load(tofi.window.entry.drun);
+			compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
+		}
 		log_unindent();
 		log_debug("Command list generated.\n");
 	} else if (strstr(argv[0], "-drun")) {
@@ -1053,6 +1067,12 @@ int main(int argc, char *argv[])
 		log_indent();
 		tofi.window.entry.drun = true;
 		struct desktop_vec apps = drun_generate_cached();
+		if (tofi.use_history) {
+			tofi.window.entry.history = history_load(tofi.window.entry.drun);
+			if (tofi.window.entry.drun) {
+				drun_history_sort(&apps, &tofi.window.entry.history);
+			}
+		}
 		struct string_vec commands = string_vec_create();
 		for (size_t i = 0; i < apps.count; i++) {
 			string_vec_add(&commands, apps.buf[i].name);
@@ -1074,10 +1094,6 @@ int main(int argc, char *argv[])
 		}
 		free(line);
 		tofi.use_history = false;
-	}
-	if (tofi.use_history) {
-		tofi.window.entry.history = history_load(tofi.window.entry.drun);
-		compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
 	}
 	tofi.window.entry.results = string_vec_copy(&tofi.window.entry.commands);
 

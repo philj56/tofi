@@ -290,3 +290,23 @@ void drun_launch(const char *filename)
 	g_object_unref(context);
 	g_object_unref(info);
 }
+
+static int cmpscorep(const void *restrict a, const void *restrict b)
+{
+	struct desktop_entry *restrict app1 = (struct desktop_entry *)a;
+	struct desktop_entry *restrict app2 = (struct desktop_entry *)b;
+	return app2->history_score - app1->history_score;
+}
+
+void drun_history_sort(struct desktop_vec *apps, struct history *history)
+{
+	log_debug("Moving already known apps to the front.\n");
+	for (size_t i = 0; i < history->count; i++) {
+		struct desktop_entry *res = desktop_vec_find(apps, history->buf[i].name);
+		if (res == NULL) {
+			continue;
+		}
+		res->history_score = history->buf[i].run_count;
+	}
+	qsort(apps->buf, apps->count, sizeof(apps->buf[0]), cmpscorep);
+}

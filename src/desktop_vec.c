@@ -24,6 +24,7 @@ void desktop_vec_destroy(struct desktop_vec *restrict vec)
 		free(vec->buf[i].id);
 		free(vec->buf[i].name);
 		free(vec->buf[i].path);
+		free(vec->buf[i].keywords);
 	}
 	free(vec->buf);
 }
@@ -32,7 +33,8 @@ void desktop_vec_add(
 		struct desktop_vec *restrict vec,
 		const char *restrict id,
 		const char *restrict name,
-		const char *restrict path)
+		const char *restrict path,
+		const char *restrict keywords)
 {
 	if (vec->count == vec->size) {
 		vec->size *= 2;
@@ -41,6 +43,9 @@ void desktop_vec_add(
 	vec->buf[vec->count].id = xstrdup(id);
 	vec->buf[vec->count].name = xstrdup(name);
 	vec->buf[vec->count].path = xstrdup(path);
+	vec->buf[vec->count].keywords = xstrdup(keywords);
+	vec->buf[vec->count].search_score = 0;
+	vec->buf[vec->count].history_score = 0;
 	vec->count++;
 }
 
@@ -65,6 +70,15 @@ void desktop_vec_add_file(struct desktop_vec *vec, const char *id, const char *p
 		goto cleanup_file;
 	}
 
+	/*
+	 * This is really a list rather than a string, but for the purposes of
+	 * matching against user input it's easier to just keep it as a string.
+	 */
+	char *keywords = g_key_file_get_locale_string(file, group, "Keywords", NULL, NULL);
+	if (keywords == NULL) {
+		keywords = "";
+	}
+
 	gsize length;
 	gchar **list = g_key_file_get_string_list(file, group, "OnlyShowIn", &length, NULL);
 	if (list) {
@@ -86,7 +100,7 @@ void desktop_vec_add_file(struct desktop_vec *vec, const char *id, const char *p
 		}
 	}
 
-	desktop_vec_add(vec, id, name, path);
+	desktop_vec_add(vec, id, name, path, keywords);
 
 cleanup_name:
 	free(name);
@@ -99,6 +113,16 @@ static int cmpdesktopp(const void *restrict a, const void *restrict b)
 	struct desktop_entry *restrict d1 = (struct desktop_entry *)a;
 	struct desktop_entry *restrict d2 = (struct desktop_entry *)b;
 	return strcmp(d1->name, d2->name);
+}
+
+static int cmpscorep(const void *restrict a, const void *restrict b)
+{
+	struct scored_string *restrict str1 = (struct scored_string *)a;
+	struct scored_string *restrict str2 = (struct scored_string *)b;
+	if (str1->history_score != str2->history_score) {
+		return str2->history_score - str1->history_score;
+	}
+	return str1->search_score - str2->search_score;
 }
 
 void desktop_vec_sort(struct desktop_vec *restrict vec)
@@ -114,6 +138,43 @@ struct desktop_entry *desktop_vec_find(struct desktop_vec *restrict vec, const c
 	 */
 	struct desktop_entry tmp = { .name = (char *)name };
 	return bsearch(&tmp, vec->buf, vec->count, sizeof(vec->buf[0]), cmpdesktopp);
+}
+
+struct string_vec desktop_vec_filter(
+		const struct desktop_vec *restrict vec,
+		const char *restrict substr)
+{
+	struct string_vec filt = string_vec_create();
+	for (size_t i = 0; i < vec->count; i++) {
+		char *c = strcasestr(vec->buf[i].name, substr);
+		if (c != NULL) {
+			string_vec_add(&filt, vec->buf[i].name);
+			/*
+			 * Store the position of the match in the string as
+			 * its search_score, for later sorting.
+			 */
+			filt.buf[filt.count - 1].search_score = c - vec->buf[i].name;
+			filt.buf[filt.count - 1].history_score = vec->buf[i].history_score;
+		} else {
+			/* If we didn't match the name, check the keywords. */
+			c = strcasestr(vec->buf[i].keywords, substr);
+			if (c != NULL) {
+				string_vec_add(&filt, vec->buf[i].name);
+				/*
+				 * Arbitrary score addition to make name
+				 * matches preferred over keyword matches.
+				 */
+				filt.buf[filt.count - 1].search_score = 10 + c - vec->buf[i].keywords;
+				filt.buf[filt.count - 1].history_score = vec->buf[i].history_score;
+			}
+		}
+	}
+	/*
+	 * Sort the results by this search_score. This moves matches at the beginnings
+	 * of words to the front of the result list.
+	 */
+	qsort(filt.buf, filt.count, sizeof(filt.buf[0]), cmpscorep);
+	return filt;
 }
 
 struct desktop_vec desktop_vec_load(FILE *file)
@@ -135,7 +196,9 @@ struct desktop_vec desktop_vec_load(FILE *file)
 		char *name = &line[sublen + 1];
 		sublen = strlen(name);
 		char *path = &name[sublen + 1];
-		desktop_vec_add(&vec, id, name, path);
+		sublen = strlen(path);
+		char *keywords = &path[sublen + 1];
+		desktop_vec_add(&vec, id, name, path, keywords);
 	}
 	free(line);
 
@@ -154,6 +217,8 @@ void desktop_vec_save(struct desktop_vec *restrict vec, FILE *restrict file)
 		fputs(vec->buf[i].name, file);
 		fputc('\0', file);
 		fputs(vec->buf[i].path, file);
+		fputc('\0', file);
+		fputs(vec->buf[i].keywords, file);
 		fputc('\n', file);
 	}
 }
