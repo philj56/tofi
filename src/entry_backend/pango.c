@@ -72,11 +72,30 @@ void entry_backend_pango_update(struct entry *entry)
 	pango_layout_get_size(layout, &width, &height);
 	width = MAX(width, (int)entry->input_width * PANGO_SCALE);
 
-	for (size_t i = 0; i < entry->num_results && i < entry->results.count; i++) {
+	cairo_matrix_t mat;
+	for (size_t i = 0; i < entry->results.count; i++) {
 		if (entry->horizontal) {
 			cairo_translate(cr, (int)(width / PANGO_SCALE) + entry->result_spacing, 0);
 		} else {
 			cairo_translate(cr, 0, (int)(height / PANGO_SCALE) + entry->result_spacing);
+		}
+		if (entry->num_results == 0) {
+			cairo_get_matrix(cr, &mat);
+			if (entry->horizontal) {
+				if (mat.x0 > entry->clip_x + entry->clip_width) {
+					entry->num_results_drawn = i;
+					log_debug("Drew %zu results.\n", i);
+					break;
+				}
+			} else {
+				if (mat.y0 > entry->clip_y + entry->clip_height) {
+					entry->num_results_drawn = i;
+					log_debug("Drew %zu results.\n", i);
+					break;
+				}
+			}
+		} else if (i >= entry->num_results) {
+			break;
 		}
 		const char *str;
 		if (i < entry->results.count) {

@@ -131,6 +131,14 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 		entry_backend_harfbuzz_init(entry, &width, &height);
 	}
 
+	/* Store the clip rectangle width and height. */
+	cairo_matrix_t mat;
+	cairo_get_matrix(cr, &mat);
+	entry->clip_x = mat.x0;
+	entry->clip_y = mat.y0;
+	entry->clip_width = width;
+	entry->clip_height = height;
+
 	/*
 	 * Perform an initial render of the text.
 	 * This is done here rather than by calling entry_update to avoid the
@@ -159,8 +167,6 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	 * frame has been displayed on screen (and while the user is unlikely
 	 * to press another key for the <10ms it takes to memcpy).
 	 */
-	cairo_matrix_t mat;
-	cairo_get_matrix(cr, &mat);
 	cairo_set_matrix(entry->cairo[1].cr, &mat);
 	cairo_rectangle(entry->cairo[1].cr, 0, 0, width, height);
 	cairo_clip(entry->cairo[1].cr);

@@ -218,12 +218,31 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	cairo_font_extents_t font_extents;
 	cairo_font_extents(cr, &font_extents);
 
+	cairo_matrix_t mat;
 	/* Render our results entry text */
-	for (size_t i = 0; i < entry->num_results && i < entry->results.count; i++) {
+	for (size_t i = 0; i < entry->results.count; i++) {
 		if (entry->horizontal) {
 			cairo_translate(cr, width + entry->result_spacing, 0);
 		} else {
 			cairo_translate(cr, 0, font_extents.height + entry->result_spacing);
+		}
+		if (entry->num_results == 0) {
+			cairo_get_matrix(cr, &mat);
+			if (entry->horizontal) {
+				if (mat.x0 > entry->clip_x + entry->clip_width) {
+					entry->num_results_drawn = i;
+					log_debug("Drew %zu results.\n", i);
+					break;
+				}
+			} else {
+				if (mat.y0 > entry->clip_y + entry->clip_height) {
+					entry->num_results_drawn = i;
+					log_debug("Drew %zu results.\n", i);
+					break;
+				}
+			}
+		} else if (i >= entry->num_results) {
+			break;
 		}
 
 		hb_buffer_clear_contents(buffer);

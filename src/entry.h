@@ -40,10 +40,16 @@ struct entry {
 	struct history history;
 	bool use_pango;
 
+	uint32_t clip_x;
+	uint32_t clip_y;
+	uint32_t clip_width;
+	uint32_t clip_height;
+
 	/* Options */
 	bool drun;
 	bool horizontal;
 	uint32_t num_results;
+	uint32_t num_results_drawn;
 	int32_t result_spacing;
 	uint32_t font_size;
 	char font_name[MAX_FONT_NAME_LENGTH];

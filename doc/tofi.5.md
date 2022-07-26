@@ -83,9 +83,10 @@ options.
 
 **num-results**=*n*
 
-> Maximum number of results to display.
+> Maximum number of results to display. If *n* = 0, tofi will draw as
+> many results as it can fit in the window.
 >
-> Default: 5
+> Default: 0
 
 **selection-color**=*color*
 

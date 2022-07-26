@@ -201,6 +201,11 @@ static void wl_keyboard_key(
 		return;
 	}
 
+	uint32_t num_results = tofi->window.entry.num_results;
+	if (num_results == 0) {
+		num_results = tofi->window.entry.num_results_drawn;
+	}
+	uint32_t nsel = MAX(MIN(num_results, tofi->window.entry.results.count), 1);
 	if (sym == XKB_KEY_Up || sym == XKB_KEY_Left
 			|| (sym == XKB_KEY_k
 				&& xkb_state_mod_name_is_active(
@@ -209,7 +214,6 @@ static void wl_keyboard_key(
 					XKB_STATE_MODS_EFFECTIVE)
 			   )
 			) {
-		uint32_t nsel = MAX(MIN(tofi->window.entry.num_results, tofi->window.entry.results.count), 1);
 		tofi->window.entry.selection += nsel;
 		tofi->window.entry.selection--;
 		tofi->window.entry.selection %= nsel;
@@ -221,7 +225,6 @@ static void wl_keyboard_key(
 					XKB_STATE_MODS_EFFECTIVE)
 			   )
 			) {
-		uint32_t nsel = MAX(MIN(tofi->window.entry.num_results, tofi->window.entry.results.count), 1);
 		tofi->window.entry.selection++;
 		tofi->window.entry.selection %= nsel;
 	} else {
@@ -839,7 +842,6 @@ int main(int argc, char *argv[])
 				.font_name = "Sans",
 				.font_size = 24,
 				.prompt_text = "run: ",
-				.num_results = 5,
 				.padding_top = 8,
 				.padding_bottom = 8,
 				.padding_left = 8,

@@ -75,9 +75,10 @@ options.
 	Default: "run: "
 
 *num-results*=_n_
-	Maximum number of results to display.
+	Maximum number of results to display. If _n_ = 0, tofi will draw as
+	many results as it can fit in the window.
 
-	Default: 5
+	Default: 0
 
 *selection-color*=_color_
 	Color of selected result. See *COLORS* for more information.

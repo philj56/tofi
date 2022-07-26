@@ -122,6 +122,11 @@ static void parse_desktop_file(gpointer key, gpointer value, void *data)
 
 struct desktop_vec drun_generate(void)
 {
+	/*
+	 * Note for the future: this custom logic could be replaced with
+	 * g_app_info_get_all(), but that's slower. Worth remembering
+	 * though if this runs into issues.
+	 */
 	log_debug("Retrieving application dirs.\n");
 	struct string_vec paths = get_application_paths();
  	struct string_vec desktop_files = string_vec_create();
