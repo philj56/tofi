@@ -8,7 +8,6 @@ font = monospace
 outline-width = 0
 border-width = 0
 background-color = #000000
-num-results = 10
 min-input-width = 240
 result-spacing = 30
 padding-top = 0
