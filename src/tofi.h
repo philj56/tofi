@@ -18,6 +18,7 @@ struct output_list_element {
 	uint32_t width;
 	uint32_t height;
 	int32_t scale;
+	int32_t transform;
 };
 
 struct tofi {
@@ -53,6 +54,7 @@ struct tofi {
 		uint32_t width;
 		uint32_t height;
 		uint32_t scale;
+		int32_t transform;
 		int32_t margin_top;
 		int32_t margin_bottom;
 		int32_t margin_left;

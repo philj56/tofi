@@ -430,7 +430,13 @@ static void output_geometry(
 		const char *model,
 		int32_t transform)
 {
-	/* Deliberately left blank */
+	struct tofi *tofi = data;
+	struct output_list_element *el;
+	wl_list_for_each(el, &tofi->output_list, link) {
+		if (el->wl_output == wl_output) {
+			el->transform = transform;
+		}
+	}
 }
 
 static void output_mode(
@@ -656,7 +662,7 @@ static void usage()
 "Usage: tofi [options]\n"
 "\n"
 "  -h, --help                           Print this message and exit.\n"
-"  -c, --config                         Specify a config file.\n"
+"  -c, --config <path>                  Specify a config file.\n"
 "      --font <name|path>               Font to use.\n"
 "      --font-size <pt>                 Point size of text.\n"
 "      --background-color <color>       Color of the background.\n"
@@ -998,9 +1004,25 @@ int main(int argc, char *argv[])
 		 */
 		struct output_list_element *el;
 		el = wl_container_of(tofi.output_list.next, el, link);
-		tofi.output_width = el->width;
-		tofi.output_height = el->height;
+
+		/*
+		 * If we're rotated 90 degrees, we need to swap width and
+		 * height to calculate percentages.
+		 */
+		switch (el->transform) {
+			case WL_OUTPUT_TRANSFORM_90:
+			case WL_OUTPUT_TRANSFORM_270:
+			case WL_OUTPUT_TRANSFORM_FLIPPED_90:
+			case WL_OUTPUT_TRANSFORM_FLIPPED_270:
+				tofi.output_width = el->height;
+				tofi.output_height = el->width;
+				break;
+			default:
+				tofi.output_width = el->width;
+				tofi.output_height = el->height;
+		}
 		tofi.window.scale = el->scale;
+		tofi.window.transform = el->transform;
 		log_debug("Selected output %s.\n", el->name);
 	}
 
