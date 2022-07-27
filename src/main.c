@@ -1246,6 +1246,14 @@ int main(int argc, char *argv[])
 				uint32_t selection = tofi.window.entry.selection;
 				char *res = tofi.window.entry.results.buf[selection].string;
 				if (tofi.window.entry.drun) {
+					/*
+					 * TODO: This is ugly. The list of apps
+					 * needs to be sorted alphabetically
+					 * for bsearch to find the selected
+					 * entry, but we previously sorted by
+					 * history count. This needs fixing.
+					 */
+					desktop_vec_sort(&tofi.window.entry.apps);
 					struct desktop_entry *app = desktop_vec_find(&tofi.window.entry.apps, res);
 					if (app == NULL) {
 						log_error("Couldn't find application file! This shouldn't happen.\n");
