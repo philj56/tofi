@@ -57,6 +57,12 @@ executables under the user's `$PATH`.
 list of applications found in desktop files as described by the [Desktop Entry
 Specification](https://specifications.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html).
 
+**WARNING**: Currently, when a selection is made in drun mode, the
+filename of the selected desktop file is printed to stdout. In the next
+version of tofi, this will change to an executable command line, to be
+passed to swaymsg exec or similar. The new behaviour can be enabled now
+by passing --drun-print-exec=true to tofi-drun.
+
 To use as a launcher for Sway, add something similar to the following to your
 Sway config file:
 ```
@@ -67,7 +73,7 @@ bindsym $mod+d exec $menu
 For `tofi-drun`, there are two possible methods:
 ```
 # Launch via Sway
-set $drun tofi-drun | xargs swaymsg exec gio launch
+set $drun tofi-drun --drun-print-exec=true | xargs swaymsg exec --
 bindsym $mod+Shift+d exec $drun
 
 # Launch directly

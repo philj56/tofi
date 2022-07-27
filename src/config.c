@@ -293,6 +293,8 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->use_history = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "drun-launch") == 0) {
 		tofi->drun_launch = parse_bool(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "drun-print-exec") == 0) {
+		tofi->drun_print_exec = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "hint-font") == 0) {
 		tofi->window.entry.harfbuzz.disable_hinting = !parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "late-keyboard-init") == 0) {

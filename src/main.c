@@ -707,6 +707,8 @@ static void usage()
 "      --horizontal <true|false>        List results horizontally.\n"
 "      --history <true|false>           Sort results by number of usages.\n"
 "      --drun-launch <true|false>       Launch apps directly in drun mode.\n"
+"      --drun-print-exec <true|false>   Print a command line in drun mode.\n"
+"                                       This will become the default in future.\n"
 "      --hint-font <true|false>         Perform font hinting.\n"
 "      --late-keyboard-init             (EXPERIMENTAL) Delay keyboard\n"
 "                                       initialisation until after the first\n"
@@ -748,6 +750,7 @@ const struct option long_options[] = {
 	{"hide-cursor", required_argument, NULL, 0},
 	{"history", required_argument, NULL, 0},
 	{"drun-launch", required_argument, NULL, 0},
+	{"drun-print-exec", required_argument, NULL, 0},
 	{"hint-font", required_argument, NULL, 0},
 	{"output", required_argument, NULL, 'o'},
 	{"late-keyboard-init", no_argument, NULL, 'k'},
@@ -1257,12 +1260,23 @@ int main(int argc, char *argv[])
 					struct desktop_entry *app = desktop_vec_find(&tofi.window.entry.apps, res);
 					if (app == NULL) {
 						log_error("Couldn't find application file! This shouldn't happen.\n");
+						break;
 					} else {
 						res = app->path;
 					}
-				};
-				if (tofi.window.entry.drun && tofi.drun_launch) {
-					drun_launch(res);
+					if (tofi.drun_launch) {
+						drun_launch(res);
+					} else if (tofi.drun_print_exec) {
+						drun_print(res);
+					} else {
+						log_warning("Using drun mode without --drun-print-exec=true is deprecated.\n"
+								"           In the next version of tofi, this will become the default behaviour,\n"
+								"           so fix your compositor configs now e.g. by replacing\n"
+								"               tofi-drun | xargs swaymsg exec gio launch\n"
+								"           with\n"
+								"               tofi-drun --drun-print-exec=true | xargs swaymsg exec --\n");
+						printf("%s\n", res);
+					}
 				} else {
 					printf("%s\n", res);
 				}

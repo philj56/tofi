@@ -278,6 +278,70 @@ struct desktop_vec drun_generate_cached()
 	return apps;
 }
 
+void drun_print(const char *filename)
+{
+	GKeyFile *file = g_key_file_new();
+	if (!g_key_file_load_from_file(file, filename, G_KEY_FILE_NONE, NULL)) {
+		log_error("Failed to open %s.\n", filename);
+		return;
+	}
+	const char *group = "Desktop Entry";
+
+	char *exec = g_key_file_get_string(file, group, "Exec", NULL);
+	if (exec == NULL) {
+		log_error("Failed to get Exec key from %s.\n", filename);
+		g_key_file_unref(file);
+		return;
+	}
+
+	/*
+	 * Build a string vector from the command line, replacing % field codes
+	 * with the appropriate values.
+	 */
+	struct string_vec pieces = string_vec_create();
+	char *search = exec;
+	char *last = search;
+	while ((search = strchr(search, '%')) != NULL) {
+		/* Add the string up to here to our vector. */
+		search[0] = '\0';
+		string_vec_add(&pieces, last);
+		search++;
+		last = search;
+
+		switch (search[0]) {
+			case 'i':
+				if (g_key_file_has_key(file, group, "Icon", NULL)) {
+					string_vec_add(&pieces, "--icon ");
+					string_vec_add(&pieces, g_key_file_get_string(file, group, "Icon", NULL));
+				}
+				break;
+			case 'c':
+				string_vec_add(&pieces, g_key_file_get_locale_string(file, group, "Name", NULL, NULL));
+				break;
+			case 'k':
+				string_vec_add(&pieces, filename);
+				break;
+		}
+	}
+	if (last == exec) {
+		/*
+		 * We didn't find any field codes, so just use the full exec
+		 * string.
+		 */
+		fputs(exec, stdout);
+	} else {
+		/* Build the command line from our vector. */
+		for (size_t i = 0; i < pieces.count; i++) {
+			fputs(pieces.buf[i].string, stdout);
+		}
+	}
+	fputc('\n', stdout);
+
+	string_vec_destroy(&pieces);
+	free(exec);
+	g_key_file_unref(file);
+}
+
 void drun_launch(const char *filename)
 {
 	GDesktopAppInfo *info = g_desktop_app_info_new_from_filename(filename);

@@ -67,6 +67,7 @@ struct tofi {
 	bool use_history;
 	bool late_keyboard_init;
 	bool drun_launch;
+	bool drun_print_exec;
 	char target_output_name[MAX_OUTPUT_NAME_LEN];
 };
 
