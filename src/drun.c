@@ -305,10 +305,8 @@ void drun_print(const char *filename)
 		/* Add the string up to here to our vector. */
 		search[0] = '\0';
 		string_vec_add(&pieces, last);
-		search++;
-		last = search;
 
-		switch (search[0]) {
+		switch (search[1]) {
 			case 'i':
 				if (g_key_file_has_key(file, group, "Icon", NULL)) {
 					string_vec_add(&pieces, "--icon ");
@@ -322,18 +320,15 @@ void drun_print(const char *filename)
 				string_vec_add(&pieces, filename);
 				break;
 		}
+
+		search += 2;
+		last = search;
 	}
-	if (last == exec) {
-		/*
-		 * We didn't find any field codes, so just use the full exec
-		 * string.
-		 */
-		fputs(exec, stdout);
-	} else {
-		/* Build the command line from our vector. */
-		for (size_t i = 0; i < pieces.count; i++) {
-			fputs(pieces.buf[i].string, stdout);
-		}
+	string_vec_add(&pieces, last);
+
+	/* Build the command line from our vector. */
+	for (size_t i = 0; i < pieces.count; i++) {
+		fputs(pieces.buf[i].string, stdout);
 	}
 	fputc('\n', stdout);
 
