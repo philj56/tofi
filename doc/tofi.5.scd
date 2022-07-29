@@ -184,7 +184,7 @@ options.
 	Default: false
 
 *history*=_true|false_
-	Sort results by number of usages.
+	Sort results by number of usages in run and drun modes.
 
 	Default: true
 
@@ -205,7 +205,7 @@ options.
 
 *hint-font*=_true|false_
 	Perform font hinting. Only applies when a path to a font has been
-	specified via *font-name*. Disabling font hinting speeds up text
+	specified via *font*. Disabling font hinting speeds up text
 	rendering appreciably, but will likely look poor at small font pixel
 	sizes.
 

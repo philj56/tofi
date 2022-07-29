@@ -1,0 +1,125 @@
+# Default config for tofi
+#
+# Copy this file to ~/.config/tofi/config and get customising!
+#
+# A complete reference of available options can be found in `man 5 tofi`.
+
+#
+### Fonts
+#
+	# Font to use, either a path to a font file or a name.
+	#
+	# If a path is given, tofi will startup much quicker, but any
+	# characters not in the chosen font will fail to render.
+	#
+	# Otherwise, fonts are interpreted in Pango format.
+	font = "Sans"
+
+	# Point size of text.
+	font-size = 24
+
+	# Perform font hinting. Only applies when a path to a font has been
+	# specified via `font`. Disabling font hinting speeds up text
+	# rendering appreciably, but will likely look poor at small font pixel
+	# sizes.
+	hint-font = true
+
+#
+### Colors
+#
+	# Window background
+	background-color = #1B1D1E
+
+	# Border outlines
+	outline-color = #080800
+
+	# Border
+	border-color = #F92672
+
+	# Default text
+	text-color = #FFFFFF
+
+	# Selection text
+	selection-color = #F92672
+
+	# Selection background
+	selection-background = #00000000
+
+#
+### Text layout
+#
+	# Prompt to display.
+	prompt-text = "run: "
+
+	# Maximum number of results to display.
+	# If 0, tofi will draw as many results as it can fit in the window.
+	num-results = 0
+
+	# Spacing between results in pixels. Can be negative.
+	result-spacing = 0
+
+	# List results horizontally.
+	horizontal = false
+
+	# Minimum width of input in horizontal mode.
+	min-input-width = 0
+
+#
+### Window layout
+#
+	# Width and height of the window. Can be pixels or a percentage.
+	width = 1280
+	height = 720
+
+	# Width of the border outlines in pixels.
+	outline-width = 4
+
+	# Width of the border in pixels.
+	border-width = 12
+
+	# Radius of window corners in pixels.
+	corner-radius = 0
+
+	# Padding between borders and text. Can be pixels or a percentage.
+	padding-top = 0
+	padding-bottom = 0
+	padding-left = 0
+	padding-right = 0
+
+#
+### Window positioning
+#
+	# Location on screen to anchor the window to.
+	#
+	# Supported values: top-left, top, top-right, right, bottom-right,
+	# bottom, bottom-left, left, center.
+	anchor = center
+
+	# Window offset from edge of screen. Only has an effect when anchored
+	# to the relevant edge. Can be pixels or a percentage.
+	margin-top = 0
+	margin-bottom = 0
+	margin-left = 0
+	margin-right = 0
+
+#
+### Behaviour
+#
+	# Hide the cursor.
+	hide-cursor = false
+
+	# Sort results by number of usages in run and drun modes.
+	history = true
+
+	# If true, directly launch applications on selection when in drun mode.
+	# Otherwise, just print the command line to stdout.
+	drun-launch = false
+
+	# If true, print an executable command line for the selected
+	# application when in drun mode. Otherwise, just print the path of the
+	# .desktop file.
+	#
+	# *WARNING*: This currently defaults to false. In the next version of
+	# tofi, this will change to always be true, as it should have been from
+	# the start.
+	drun-print-exec = true
