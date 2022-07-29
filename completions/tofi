@@ -16,6 +16,7 @@ _tofi()
 		--font-size
 		--num-results
 		--selection-color
+		--selection-padding
 		--selection-background
 		--outline-width
 		--outline-color

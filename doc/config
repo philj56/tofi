@@ -64,6 +64,9 @@
 	# Minimum width of input in horizontal mode.
 	min-input-width = 0
 
+	# Extra horizontal padding of the selection background in pixels.
+	selection-padding = 0
+
 #
 ### Window layout
 #

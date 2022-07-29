@@ -85,6 +85,11 @@ options.
 
 	Default: #F92672
 
+*selection-padding*=_px_
+	Extra horizontal padding of the selection background.
+
+	Default: 0
+
 *selection-background*=_color_
 	Background color of selected result. See *COLORS* for more information.
 

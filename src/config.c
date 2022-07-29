@@ -263,6 +263,8 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->window.entry.foreground_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "selection-color") == 0) {
 		tofi->window.entry.selection_foreground_color = parse_color(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "selection-padding") == 0) {
+		tofi->window.entry.selection_background_padding = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "selection-background") == 0) {
 		tofi->window.entry.selection_background_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "width") == 0) {

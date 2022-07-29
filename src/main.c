@@ -687,6 +687,8 @@ static void usage()
 "      --prompt-text <string>           Prompt text.\n"
 "      --num-results <n>                Maximum number of results to display.\n"
 "      --selection-color <color>        Color of selected result.\n"
+"      --selection-padding <px>         Extra horizontal padding for selected\n"
+"                                       result background.\n"
 "      --selection-background <color>   Color of selected result background.\n"
 "      --result-spacing <px>            Spacing between results.\n"
 "      --min-input-width <px>           Minimum input width in horizontal mode.\n"
@@ -727,6 +729,7 @@ const struct option long_options[] = {
 	{"font-size", required_argument, NULL, 0},
 	{"num-results", required_argument, NULL, 0},
 	{"selection-color", required_argument, NULL, 0},
+	{"selection-padding", required_argument, NULL, 0},
 	{"selection-background", required_argument, NULL, 0},
 	{"outline-width", required_argument, NULL, 0},
 	{"outline-color", required_argument, NULL, 0},
