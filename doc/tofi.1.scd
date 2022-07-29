@@ -71,8 +71,11 @@ All config file options described in *tofi*(5) are also accepted, in the form
 
 # FILES
 
+_/etc/xdg/tofi/config_
+	Example configuration file.
+
 _$XDG_CONFIG_HOME/tofi/config_
-	The default configuration file.
+	The default configuration file location.
 
 _$XDG_CACHE_HOME/tofi-compgen_
 	Cached list of executables under $PATH, regenerated as necessary.

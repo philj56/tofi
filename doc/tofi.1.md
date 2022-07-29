@@ -80,9 +80,13 @@ the form **--key=value**.
 
 # FILES
 
+*/etc/xdg/tofi/config*
+
+> Example configuration file.
+
 *$XDG_CONFIG_HOME/tofi/config*
 
-> The default configuration file.
+> The default configuration file location.
 
 *$XDG_CACHE_HOME/tofi-compgen*
 

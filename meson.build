@@ -20,10 +20,15 @@ if debug
   add_project_arguments('-DDEBUG', language : 'c')
 endif
 
-data_location = join_paths(
-  get_option('prefix'),
-  get_option('datadir'),
+config_location = join_paths(
+  get_option('sysconfdir'),
+  'xdg',
   'tofi'
+)
+
+install_data(
+  'doc/config',
+  install_dir: config_location
 )
 
 completion_location = join_paths(
