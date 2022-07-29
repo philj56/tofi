@@ -174,18 +174,6 @@ void entry_backend_harfbuzz_init(
 	hb_buffer_t *buffer = hb_buffer_create();
 	entry->harfbuzz.hb_buffer = buffer;
 	setup_hb_buffer(buffer);
-
-	/* Draw the prompt now, as this only needs to be done once */
-	log_debug("Drawing prompt.\n");
-	hb_buffer_add_utf8(entry->harfbuzz.hb_buffer, entry->prompt_text, -1, 0, -1);
-	hb_shape(entry->harfbuzz.hb_font, entry->harfbuzz.hb_buffer, NULL, 0);
-	uint32_t prompt_width = render_hb_buffer(cr, buffer);
-
-	/* Move and clip so we don't draw over the prompt later */
-	cairo_translate(cr, prompt_width, 0);
-	*width -= prompt_width;
-	cairo_rectangle(cr, 0, 0, *width, *height);
-	cairo_clip(cr);
 }
 
 void entry_backend_harfbuzz_destroy(struct entry *entry)
@@ -207,6 +195,15 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	struct color color = entry->foreground_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
+	/* Render the prompt */
+	hb_buffer_clear_contents(buffer);
+	setup_hb_buffer(buffer);
+	hb_buffer_add_utf8(entry->harfbuzz.hb_buffer, entry->prompt_text, -1, 0, -1);
+	hb_shape(entry->harfbuzz.hb_font, entry->harfbuzz.hb_buffer, NULL, 0);
+	width = render_hb_buffer(cr, buffer);
+
+	cairo_translate(cr, width, 0);
+
 	/* Render the entry text */
 	hb_buffer_clear_contents(buffer);
 	setup_hb_buffer(buffer);
@@ -219,7 +216,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	cairo_font_extents(cr, &font_extents);
 
 	cairo_matrix_t mat;
-	/* Render our results entry text */
+	/* Render our results */
 	for (size_t i = 0; i < entry->results.count; i++) {
 		if (entry->horizontal) {
 			cairo_translate(cr, width + entry->result_spacing, 0);
