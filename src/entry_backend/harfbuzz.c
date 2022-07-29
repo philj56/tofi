@@ -257,7 +257,10 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			cairo_save(cr);
 			color = entry->selection_background_color;
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-			uint32_t pad = entry->selection_background_padding;
+			int32_t pad = entry->selection_background_padding;
+			if (pad < 0) {
+				pad = entry->clip_width;
+			}
 			cairo_translate(cr, -pad, 0);
 			cairo_rectangle(cr, 0, 0, width + pad * 2, font_extents.height);
 			cairo_translate(cr, pad, 0);

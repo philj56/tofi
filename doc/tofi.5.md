@@ -96,7 +96,8 @@ options.
 
 **selection-padding**=*px*
 
-> Extra horizontal padding of the selection background.
+> Extra horizontal padding of the selection background. If *px* = -1,
+> the padding will fill the whole window width.
 >
 > Default: 0
 

@@ -59,7 +59,7 @@ struct entry {
 	uint32_t padding_bottom;
 	uint32_t padding_left;
 	uint32_t padding_right;
-	uint32_t selection_background_padding;
+	int32_t selection_background_padding;
 	uint32_t input_width;
 	uint32_t border_width;
 	uint32_t outline_width;

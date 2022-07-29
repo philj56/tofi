@@ -109,7 +109,10 @@ void entry_backend_pango_update(struct entry *entry)
 			cairo_save(cr);
 			color = entry->selection_background_color;
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-			uint32_t pad = entry->selection_background_padding;
+			int32_t pad = entry->selection_background_padding;
+			if (pad < 0) {
+				pad = entry->clip_width;
+			}
 			cairo_translate(cr, -pad, 0);
 			cairo_rectangle(cr, 0, 0, (int)(width / PANGO_SCALE) + pad * 2, (int)(height / PANGO_SCALE));
 			cairo_translate(cr, pad, 0);
