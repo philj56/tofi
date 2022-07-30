@@ -399,7 +399,14 @@ uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool
 
 struct color parse_color(const char *filename, size_t lineno, const char *str, bool *err)
 {
-	return hex_to_color(str);
+	struct color color = hex_to_color(str);
+	if (color.r == -1) {
+		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as a color.\n", str);
+		if (err) {
+			*err = true;
+		}
+	}
+	return color;
 }
 
 uint32_t parse_uint32(const char *filename, size_t lineno, const char *str, bool *err)

@@ -36,7 +36,7 @@ struct color hex_to_color(const char *hex)
 	} else if (len == 8) {
 		val = strtol(hex, NULL, 16);
 	} else {
-		log_error("Invalid hex color %s\n", hex);
+		return (struct color) { -1, -1, -1, -1 };
 	}
 
 	return (struct color) {
