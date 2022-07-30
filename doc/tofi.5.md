@@ -94,6 +94,14 @@ options.
 >
 > Default: \#F92672
 
+**selection-match-color**=*color*
+
+> Color of the matching portion of the selected result. Any color that
+> is fully transparent (alpha = 0) will disable this highlighting. See
+> **COLORS** for more information.
+>
+> Default: \#00000000
+
 **selection-padding**=*px*
 
 > Extra horizontal padding of the selection background. If *px* = -1,

@@ -4,6 +4,7 @@
 #include "../entry.h"
 #include "../log.h"
 #include "../nelem.h"
+#include "../xmalloc.h"
 
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -95,16 +96,53 @@ void entry_backend_pango_update(struct entry *entry)
 		} else {
 			str = "";
 		}
-		pango_layout_set_text(layout, str, -1);
-		pango_cairo_update_layout(cr, layout);
-		if (i == entry->selection) {
+		if (i != entry->selection) {
+			pango_layout_set_text(layout, str, -1);
+			pango_cairo_update_layout(cr, layout);
+			pango_cairo_show_layout(cr, layout);
+			pango_layout_get_size(layout, &width, &height);
+		} else {
+			ssize_t prematch_len = -1;
+			size_t match_len = entry->input_mb_length;
+			int32_t subwidth;
+			if (entry->input_mb_length > 0 && entry->selection_highlight_color.a != 0) {
+				char *match_pos = strcasestr(str, entry->input_mb);
+				if (match_pos != NULL) {
+					prematch_len = (match_pos - str);
+				}
+			}
+
 			cairo_push_group(cr);
 			color = entry->selection_foreground_color;
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-		}
-		pango_cairo_show_layout(cr, layout);
-		pango_layout_get_size(layout, &width, &height);
-		if (i == entry->selection) {
+
+			pango_layout_set_text(layout, str, prematch_len);
+			pango_cairo_update_layout(cr, layout);
+			pango_cairo_show_layout(cr, layout);
+			pango_layout_get_size(layout, &subwidth, &height);
+			width = subwidth;
+
+			if (prematch_len != -1) {
+				cairo_translate(cr, (int)(subwidth / PANGO_SCALE), 0);
+				color = entry->selection_highlight_color;
+				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+				pango_layout_set_text(layout, &str[prematch_len], match_len);
+				pango_cairo_update_layout(cr, layout);
+				pango_cairo_show_layout(cr, layout);
+				pango_layout_get_size(layout, &subwidth, &height);
+				width += subwidth;
+
+				cairo_translate(cr, (int)(subwidth / PANGO_SCALE), 0);
+				color = entry->selection_foreground_color;
+				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+				pango_layout_set_text(layout, &str[prematch_len + match_len], -1);
+				pango_cairo_update_layout(cr, layout);
+				pango_cairo_show_layout(cr, layout);
+				pango_layout_get_size(layout, &subwidth, &height);
+				width += subwidth;
+
+			}
+
 			cairo_pop_group_to_source(cr);
 			cairo_save(cr);
 			color = entry->selection_background_color;

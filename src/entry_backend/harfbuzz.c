@@ -242,17 +242,88 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			break;
 		}
 
-		hb_buffer_clear_contents(buffer);
-		setup_hb_buffer(buffer);
-		hb_buffer_add_utf8(buffer, entry->results.buf[i].string, -1, 0, -1);
-		hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
-		if (i == entry->selection) {
+		/* If this isn't the selected result, just print as normal. */
+		if (i != entry->selection) {
+			hb_buffer_clear_contents(buffer);
+			setup_hb_buffer(buffer);
+			hb_buffer_add_utf8(buffer, entry->results.buf[i].string, -1, 0, -1);
+			hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
+			width = render_hb_buffer(cr, buffer);
+		} else {
+			/*
+			 * For the selected result, there's a bit more to do.
+			 *
+			 * First, we need to use a different foreground color -
+			 * simple enough.
+			 *
+			 * Next, we may need to draw a background box - this
+			 * involves rendering to a cairo group, measuring the
+			 * size of the text, drawing the background on the main
+			 * canvas, then finally drawing the group on top of
+			 * that.
+			 *
+			 * Finally, we may need to highlight the matching
+			 * portion of text - this is achieved simply by
+			 * splitting the text into prematch, match and
+			 * postmatch chunks, and drawing each separately.
+			 */
+			size_t prematch_len;
+			char *prematch = xstrdup(entry->results.buf[i].string);
+			char *match = NULL;
+			char *postmatch = NULL;
+			uint32_t subwidth;
+			if (entry->input_mb_length > 0 && entry->selection_highlight_color.a != 0) {
+				char *match_pos = strcasestr(prematch, entry->input_mb);
+				if (match_pos != NULL) {
+					match = xstrdup(entry->results.buf[i].string);
+					postmatch = xstrdup(entry->results.buf[i].string);
+					prematch_len = (match_pos - prematch);
+					prematch[prematch_len] = '\0';
+					match[entry->input_mb_length + prematch_len] = '\0';
+				}
+			}
+
 			cairo_push_group(cr);
 			color = entry->selection_foreground_color;
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-		}
-		width = render_hb_buffer(cr, buffer);
-		if (i == entry->selection) {
+
+			hb_buffer_clear_contents(buffer);
+			setup_hb_buffer(buffer);
+			hb_buffer_add_utf8(buffer, prematch, -1, 0, -1);
+			hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
+			subwidth = render_hb_buffer(cr, buffer);
+			width = subwidth;
+
+			if (match != NULL) {
+				cairo_translate(cr, subwidth, 0);
+				color = entry->selection_highlight_color;
+				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+				hb_buffer_clear_contents(buffer);
+				setup_hb_buffer(buffer);
+				hb_buffer_add_utf8(buffer, &match[prematch_len], -1, 0, -1);
+				hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
+				subwidth = render_hb_buffer(cr, buffer);
+				width += subwidth;
+
+				cairo_translate(cr, subwidth, 0);
+				color = entry->selection_foreground_color;
+				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+				hb_buffer_clear_contents(buffer);
+				setup_hb_buffer(buffer);
+				hb_buffer_add_utf8(buffer, &postmatch[entry->input_mb_length + prematch_len], -1, 0, -1);
+				hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
+				subwidth = render_hb_buffer(cr, buffer);
+				width += subwidth;
+
+				free(match);
+				free(postmatch);
+				match = NULL;
+				postmatch = NULL;
+			}
+
+			free(prematch);
+			prematch = NULL;
+
 			cairo_pop_group_to_source(cr);
 			cairo_save(cr);
 			color = entry->selection_background_color;

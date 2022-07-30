@@ -85,6 +85,13 @@ options.
 
 	Default: #F92672
 
+*selection-match-color*=_color_
+	Color of the matching portion of the selected result. Any color that is
+	fully transparent (alpha = 0) will disable this highlighting.
+	See *COLORS* for more information.
+
+	Default: #00000000
+
 *selection-padding*=_px_
 	Extra horizontal padding of the selection background. If _px_ = -1,
 	the padding will fill the whole window width.

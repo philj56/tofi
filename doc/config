@@ -42,6 +42,9 @@
 	# Selection text
 	selection-color = #F92672
 
+	# Matching portion of selection text
+	selection-match-color = #00000000
+
 	# Selection background
 	selection-background = #00000000
 
