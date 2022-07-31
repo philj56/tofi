@@ -201,6 +201,19 @@ if scdoc.found()
     install_dir: '@0@/man1'.format(mandir)
   )
 
+  install_symlink(
+    'tofi-run.1',
+    install_dir: '@0@/man1'.format(mandir),
+    pointing_to: 'tofi.1'
+  )
+
+  install_symlink(
+    'tofi-drun.1',
+    install_dir: '@0@/man1'.format(mandir),
+    pointing_to: 'tofi.1'
+  )
+
+
   output = 'tofi.5'
   custom_target(
     output,
