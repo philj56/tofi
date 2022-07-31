@@ -31,6 +31,17 @@ install_data(
   install_dir: config_location
 )
 
+license_dir = join_paths(
+  get_option('datadir'),
+  'licenses',
+  'tofi'
+)
+
+install_data(
+  'LICENSE',
+  install_dir: license_dir
+)
+
 completion_location = join_paths(
   get_option('prefix'),
   get_option('datadir'),
