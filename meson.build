@@ -122,6 +122,14 @@ xkbcommon = dependency('xkbcommon')
 glib = dependency('glib-2.0')
 gio_unix = dependency('gio-unix-2.0')
 
+if wayland_client.version().version_compare('<1.20.0')
+  add_project_arguments(
+    ['-DNO_WL_OUTPUT_NAME=1'],
+    language: 'c'
+    )
+endif
+
+
 
 # Generate the necessary Wayland headers / sources with wayland-scanner
 wayland_scanner = find_program(

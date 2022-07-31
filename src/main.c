@@ -518,8 +518,10 @@ static const struct wl_output_listener wl_output_listener = {
 	.mode = output_mode,
 	.done = output_done,
 	.scale = output_scale,
+#ifndef NO_WL_OUTPUT_NAME
 	.name = output_name,
 	.description = output_description,
+#endif
 };
 
 static void registry_global(
@@ -551,11 +553,18 @@ static void registry_global(
 		log_debug("Bound to seat %u.\n", name);
 	} else if (!strcmp(interface, wl_output_interface.name)) {
 		struct output_list_element *el = xmalloc(sizeof(*el));
+		if (version < 4) {
+			el->name = xstrdup("");
+			log_warning("Using an outdated compositor, "
+					"output selection will not work.\n");
+		} else {
+			version = 4;
+		}
 		el->wl_output = wl_registry_bind(
 				wl_registry,
 				name,
 				&wl_output_interface,
-				4);
+				version);
 		wl_output_add_listener(
 				el->wl_output,
 				&wl_output_listener,
@@ -570,11 +579,17 @@ static void registry_global(
 				1);
 		log_debug("Bound to shm %u.\n", name);
 	} else if (!strcmp(interface, zwlr_layer_shell_v1_interface.name)) {
+		if (version < 4) {
+			log_warning("Using an outdated compositor, "
+					"screen anchoring may not work.\n");
+		} else {
+			version = 4;
+		}
 		tofi->zwlr_layer_shell = wl_registry_bind(
 				wl_registry,
 				name,
 				&zwlr_layer_shell_v1_interface,
-				4);
+				version);
 		log_debug("Bound to zwlr_layer_shell_v1 %u.\n", name);
 	}
 }
