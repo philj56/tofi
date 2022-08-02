@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <locale.h>
+#include <poll.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,6 +31,15 @@
 #undef MIN
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+static uint32_t gettime_ms() {
+	struct timespec t;
+	clock_gettime(CLOCK_MONOTONIC, &t);
+
+	uint32_t ms = t.tv_sec * 1000;
+	ms += t.tv_nsec / 1000000;
+	return ms;
+}
 
 static void zwlr_layer_surface_configure(
 		void *data,
@@ -132,25 +142,12 @@ static void wl_keyboard_leave(
 	/* Deliberately left blank */
 }
 
-static void wl_keyboard_key(
-		void *data,
-		struct wl_keyboard *wl_keyboard,
-		uint32_t serial,
-		uint32_t time,
-		uint32_t key,
-		uint32_t state)
+static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 {
-	struct tofi *tofi = data;
-	uint32_t keycode = key + 8;
 	if (tofi->xkb_state == NULL) {
 		return;
 	}
-	xkb_keysym_t sym = xkb_state_key_get_one_sym(
-			tofi->xkb_state,
-			keycode);
-	if (state != WL_KEYBOARD_KEY_STATE_PRESSED) {
-		return;
-	}
+	xkb_keysym_t sym = xkb_state_key_get_one_sym(tofi->xkb_state, keycode);
 
 	struct entry *entry = &tofi->window.entry;
 	char buf[5]; /* 4 UTF-8 bytes plus null terminator. */
@@ -206,6 +203,7 @@ static void wl_keyboard_key(
 		  )
 	{
 		tofi->closed = true;
+		return;
 	} else if (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter) {
 		tofi->submit = true;
 		return;
@@ -245,6 +243,39 @@ static void wl_keyboard_key(
 	
 }
 
+static void wl_keyboard_key(
+		void *data,
+		struct wl_keyboard *wl_keyboard,
+		uint32_t serial,
+		uint32_t time,
+		uint32_t key,
+		uint32_t state)
+{
+	struct tofi *tofi = data;
+
+	/*
+	 * If this wasn't a keypress (i.e. was a key release), just update key
+	 * repeat info and return.
+	 */
+	uint32_t keycode = key + 8;
+	if (state != WL_KEYBOARD_KEY_STATE_PRESSED) {
+		if (keycode == tofi->repeat.keycode) {
+			tofi->repeat.active = false;
+		} else {
+			tofi->repeat.next = gettime_ms() + tofi->repeat.delay;
+		}
+		return;
+	}
+
+	/* A rate of 0 disables key repeat */
+	if (xkb_keymap_key_repeats(tofi->xkb_keymap, keycode) && tofi->repeat.rate != 0) {
+		tofi->repeat.active = true;
+		tofi->repeat.keycode = keycode;
+		tofi->repeat.next = gettime_ms() + tofi->repeat.delay;
+	}
+	handle_keypress(tofi, keycode);
+}
+
 static void wl_keyboard_modifiers(
 		void *data,
 		struct wl_keyboard *wl_keyboard,
@@ -274,7 +305,16 @@ static void wl_keyboard_repeat_info(
 		int32_t rate,
 		int32_t delay)
 {
-	/* Deliberately left blank */
+	struct tofi *tofi = data;
+	tofi->repeat.rate = rate;
+	tofi->repeat.delay = delay;
+	if (rate > 0) {
+		log_debug("Key repeat every %u ms after %u ms.\n",
+				1000 / rate,
+				delay);
+	} else {
+		log_debug("Key repeat disabled.\n");
+	}
 }
 
 static const struct wl_keyboard_listener wl_keyboard_listener = {
@@ -855,6 +895,49 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 	}
 }
 
+static void do_submit(struct tofi *tofi)
+{
+	uint32_t selection = tofi->window.entry.selection;
+	char *res = tofi->window.entry.results.buf[selection].string;
+	if (tofi->window.entry.drun) {
+		/*
+		 * TODO: This is ugly. The list of apps needs to be sorted
+		 * alphabetically for bsearch to find the selected entry, but
+		 * we previously sorted by history count. This needs fixing.
+		 */
+		desktop_vec_sort(&tofi->window.entry.apps);
+		struct desktop_entry *app = desktop_vec_find(&tofi->window.entry.apps, res);
+		if (app == NULL) {
+			log_error("Couldn't find application file! This shouldn't happen.\n");
+			return;
+		} else {
+			res = app->path;
+		}
+		if (tofi->drun_launch) {
+			drun_launch(res);
+		} else if (tofi->drun_print_exec) {
+			drun_print(res);
+		} else {
+			log_warning("Using drun mode without --drun-print-exec=true is deprecated.\n"
+					"           In the next version of tofi, this will become the default behaviour,\n"
+					"           so fix your compositor configs now e.g. by replacing\n"
+					"               tofi-drun | xargs swaymsg exec gio launch\n"
+					"           with\n"
+					"               tofi-drun --drun-print-exec=true | xargs swaymsg exec --\n");
+			printf("%s\n", res);
+		}
+	} else {
+		printf("%s\n", res);
+	}
+	if (tofi->use_history) {
+		history_add(
+				&tofi->window.entry.history,
+				tofi->window.entry.results.buf[selection].string);
+		history_save(&tofi->window.entry.history,
+				tofi->window.entry.drun);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	/* Call log_debug to initialise the timers we use for perf checking. */
@@ -1256,10 +1339,66 @@ int main(int argc, char *argv[])
 		tofi.late_keyboard_init = false;
 	}
 
-	while (wl_display_dispatch(tofi.wl_display) != -1) {
-		if (tofi.closed) {
-			break;
+	/*
+	 * Main event loop.
+	 * See the wl_display(3) man page for an explanation of the
+	 * order of the various functions called here.
+	 */
+	while (!tofi.closed) {
+		struct pollfd pollfd;
+		pollfd.fd = wl_display_get_fd(tofi.wl_display);
+
+		/* Make sure we're ready to receive events on the main queue. */
+		while (wl_display_prepare_read(tofi.wl_display) != 0) {
+			wl_display_dispatch_pending(tofi.wl_display);
 		}
+
+		/* Make sure all our requests have been sent to the server. */
+		while (wl_display_flush(tofi.wl_display) != 0) {
+			pollfd.events = POLLOUT;
+			poll(&pollfd, 1, -1);
+		}
+
+		/*
+		 * Set time to wait for poll() to -1 (unlimited), unless
+		 * there's some key repeating going on.
+		 */
+		int timeout = -1;
+		if (tofi.repeat.active) {
+			int64_t wait = (int64_t)tofi.repeat.next - (int64_t)gettime_ms();
+			if (wait >= 0) {
+				timeout = wait;
+			} else {
+				timeout = 0;
+			}
+		}
+
+		pollfd.events = POLLIN | POLLPRI;
+		int res = poll(&pollfd, 1, timeout);
+		if (res == 0) {
+			/*
+			 * No events to process and no error - we presumably
+			 * have a key repeat to handle.
+			 */
+			wl_display_cancel_read(tofi.wl_display);
+			if (tofi.repeat.active) {
+				int64_t wait = (int64_t)tofi.repeat.next - (int64_t)gettime_ms();
+				if (wait <= 0) {
+					handle_keypress(&tofi, tofi.repeat.keycode);
+					tofi.repeat.next += 1000 / tofi.repeat.rate;
+				}
+			}
+		} else if (res < 0) {
+			/* There was an error polling the display. */
+			wl_display_cancel_read(tofi.wl_display);
+		} else {
+			/* Events to read, so put them on the queue. */
+			wl_display_read_events(tofi.wl_display);
+		}
+
+		/* Handle any events we read. */
+		wl_display_dispatch_pending(tofi.wl_display);
+
 		if (tofi.window.surface.redraw) {
 			surface_draw(&tofi.window.surface);
 			tofi.window.surface.redraw = false;
@@ -1267,50 +1406,11 @@ int main(int argc, char *argv[])
 		if (tofi.submit) {
 			tofi.submit = false;
 			if (tofi.window.entry.results.count > 0) {
-				uint32_t selection = tofi.window.entry.selection;
-				char *res = tofi.window.entry.results.buf[selection].string;
-				if (tofi.window.entry.drun) {
-					/*
-					 * TODO: This is ugly. The list of apps
-					 * needs to be sorted alphabetically
-					 * for bsearch to find the selected
-					 * entry, but we previously sorted by
-					 * history count. This needs fixing.
-					 */
-					desktop_vec_sort(&tofi.window.entry.apps);
-					struct desktop_entry *app = desktop_vec_find(&tofi.window.entry.apps, res);
-					if (app == NULL) {
-						log_error("Couldn't find application file! This shouldn't happen.\n");
-						break;
-					} else {
-						res = app->path;
-					}
-					if (tofi.drun_launch) {
-						drun_launch(res);
-					} else if (tofi.drun_print_exec) {
-						drun_print(res);
-					} else {
-						log_warning("Using drun mode without --drun-print-exec=true is deprecated.\n"
-								"           In the next version of tofi, this will become the default behaviour,\n"
-								"           so fix your compositor configs now e.g. by replacing\n"
-								"               tofi-drun | xargs swaymsg exec gio launch\n"
-								"           with\n"
-								"               tofi-drun --drun-print-exec=true | xargs swaymsg exec --\n");
-						printf("%s\n", res);
-					}
-				} else {
-					printf("%s\n", res);
-				}
-				if (tofi.use_history) {
-					history_add(
-							&tofi.window.entry.history,
-							tofi.window.entry.results.buf[selection].string);
-					history_save(&tofi.window.entry.history,
-							tofi.window.entry.drun);
-				}
+				do_submit(&tofi);
 				break;
 			}
 		}
+
 	}
 
 	log_debug("Window closed, performing cleanup.\n");

@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <xkbcommon/xkbcommon.h>
 #include "color.h"
 #include "entry.h"
 #include "image.h"
@@ -60,6 +61,13 @@ struct tofi {
 		int32_t margin_left;
 		int32_t margin_right;
 	} window;
+	struct {
+		uint32_t rate;
+		uint32_t delay;
+		uint32_t keycode;
+		uint32_t next;
+		bool active;
+	} repeat;
 
 	/* Options */
 	uint32_t anchor;
