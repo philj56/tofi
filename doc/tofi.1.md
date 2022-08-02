@@ -11,8 +11,6 @@ tofi - Tiny dynamic menu for Wayland, inspired by **rofi**(1) and
 
 **tofi-drun** \[options...\]
 
-**tofi-compgen**
-
 # DESCRIPTION
 
 **tofi** is a tiny dynamic menu for Wayland compositors supporting the
@@ -32,9 +30,6 @@ filename of the selected desktop file is printed to stdout. In the next
 version of tofi, this will change to an executable command line, to be
 passed to swaymsg exec or similar. The new behaviour can be enabled now
 by passing --drun-print-exec=true to tofi-drun.
-
-**tofi-compgen** just prints the list of executables used by
-**tofi-run**.
 
 # OPTIONS
 

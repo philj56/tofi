@@ -180,7 +180,7 @@ executable(
 executable(
   'tofi-compgen',
   compgen_sources,
-  install: true
+  install: false
 )
 
 scdoc = find_program('scdoc', required: get_option('man-pages'))
