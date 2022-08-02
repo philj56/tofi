@@ -22,6 +22,7 @@ struct string_vec string_vec_create(void);
 
 void string_vec_destroy(struct string_vec *restrict vec);
 
+[[nodiscard("memory leaked")]]
 struct string_vec string_vec_copy(struct string_vec *restrict vec);
 
 void string_vec_add(struct string_vec *restrict vec, const char *restrict str);
@@ -37,6 +38,7 @@ struct string_vec string_vec_filter(
 		const struct string_vec *restrict vec,
 		const char *restrict substr);
 
+[[nodiscard("memory leaked")]]
 struct string_vec string_vec_load(FILE *file);
 void string_vec_save(struct string_vec *restrict vec, FILE *restrict file);
 
