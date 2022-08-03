@@ -242,11 +242,22 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			break;
 		}
 
+
+		size_t index = i + entry->num_results * entry->page;
+		/*
+		 * We may be on the last page, which could have fewer results
+		 * than expected, so check and break if necessary.
+		 */
+		if (index >= entry->results.count) {
+			break;
+		}
+
+		const char *result = entry->results.buf[index].string;
 		/* If this isn't the selected result, just print as normal. */
 		if (i != entry->selection) {
 			hb_buffer_clear_contents(buffer);
 			setup_hb_buffer(buffer);
-			hb_buffer_add_utf8(buffer, entry->results.buf[i].string, -1, 0, -1);
+			hb_buffer_add_utf8(buffer, result, -1, 0, -1);
 			hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
 			width = render_hb_buffer(cr, buffer);
 		} else {
@@ -268,15 +279,15 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			 * postmatch chunks, and drawing each separately.
 			 */
 			size_t prematch_len;
-			char *prematch = xstrdup(entry->results.buf[i].string);
+			char *prematch = xstrdup(result);
 			char *match = NULL;
 			char *postmatch = NULL;
 			uint32_t subwidth;
 			if (entry->input_mb_length > 0 && entry->selection_highlight_color.a != 0) {
 				char *match_pos = strcasestr(prematch, entry->input_mb);
 				if (match_pos != NULL) {
-					match = xstrdup(entry->results.buf[i].string);
-					postmatch = xstrdup(entry->results.buf[i].string);
+					match = xstrdup(result);
+					postmatch = xstrdup(result);
 					prematch_len = (match_pos - prematch);
 					prematch[prematch_len] = '\0';
 					match[entry->input_mb_length + prematch_len] = '\0';

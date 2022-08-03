@@ -34,6 +34,7 @@ struct entry {
 	uint32_t input_mb_length;
 
 	uint32_t selection;
+	uint32_t page;
 	struct string_vec results;
 	struct string_vec commands;
 	struct desktop_vec apps;

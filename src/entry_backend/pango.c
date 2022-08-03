@@ -90,9 +90,18 @@ void entry_backend_pango_update(struct entry *entry)
 		} else if (i >= entry->num_results) {
 			break;
 		}
+		size_t index = i + entry->num_results * entry->page;
+		/*
+		 * We may be on the last page, which could have fewer results
+		 * than expected, so check and break if necessary.
+		 */
+		if (index >= entry->results.count) {
+			break;
+		}
+
 		const char *str;
 		if (i < entry->results.count) {
-			str = entry->results.buf[i].string;
+			str = entry->results.buf[index].string;
 		} else {
 			str = "";
 		}

@@ -158,7 +158,7 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 			sizeof(buf));
 	wchar_t ch;
 	mbtowc(&ch, buf, sizeof(buf));
-	if (len > 0 && iswprint(ch) && (tofi->window.entry.drun || !iswblank(ch))) {
+	if (len > 0 && iswprint(ch) && (entry->drun || !iswblank(ch))) {
 		if (entry->input_length < N_ELEM(entry->input) - 1) {
 			entry->input[entry->input_length] = ch;
 			entry->input_length++;
@@ -167,7 +167,7 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 					buf,
 					N_ELEM(buf));
 			entry->input_mb_length += len;
-			if (tofi->window.entry.drun) {
+			if (entry->drun) {
 				struct string_vec results = desktop_vec_filter(&entry->apps, entry->input_mb);
 				string_vec_destroy(&entry->results);
 				entry->results = results;
@@ -188,7 +188,7 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 				NULL);
 		entry->input_mb_length = siz;
 		string_vec_destroy(&entry->results);
-		if (tofi->window.entry.drun) {
+		if (entry->drun) {
 			entry->results = desktop_vec_filter(&entry->apps, entry->input_mb);
 		} else {
 			entry->results = string_vec_filter(&entry->commands, entry->input_mb);
@@ -209,11 +209,27 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		return;
 	}
 
-	uint32_t num_results = tofi->window.entry.num_results;
-	if (num_results == 0) {
-		num_results = tofi->window.entry.num_results_drawn;
+	/*
+	 * If 0 was passed to num-results, use the number we've managed to fit
+	 * in the window from now on.
+	 */
+	if (entry->num_results == 0) {
+		entry->num_results = entry->num_results_drawn;
 	}
-	uint32_t nsel = MAX(MIN(num_results, tofi->window.entry.results.count), 1);
+	/* Number of pages of results available. */
+	uint32_t n_pages = ceil(entry->results.count / (double)entry->num_results);
+	uint32_t page_size;
+
+	/* There may be fewer than num-results entries on the last page. */
+	if (entry->page == n_pages - 1) {
+		page_size = entry->results.count % entry->num_results;
+		if (page_size == 0) {
+			page_size = entry->num_results;
+		}
+	} else {
+		page_size = entry->num_results;
+	}
+	uint32_t nsel = MAX(MIN(page_size, entry->results.count), 1);
 	if (sym == XKB_KEY_Up || sym == XKB_KEY_Left
 			|| (sym == XKB_KEY_k
 				&& xkb_state_mod_name_is_active(
@@ -222,9 +238,26 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 					XKB_STATE_MODS_EFFECTIVE)
 			   )
 			) {
-		tofi->window.entry.selection += nsel;
-		tofi->window.entry.selection--;
-		tofi->window.entry.selection %= nsel;
+		if (entry->selection > 0) {
+			entry->selection--;
+		} else {
+			if (entry->page > 0) {
+				entry->page--;
+				entry->selection = entry->num_results - 1;
+			} else {
+				/*
+				 * We're about to wrap around to the last
+				 * result, so we need to calculate the size of
+				 * the last page.
+				 */
+				entry->page = n_pages - 1;
+				page_size = entry->results.count % entry->num_results;
+				if (page_size == 0) {
+					page_size = entry->num_results;
+				}
+				entry->selection = page_size - 1;
+			}
+		}
 	} else if (sym == XKB_KEY_Down || sym == XKB_KEY_Right || sym == XKB_KEY_Tab
 			|| (sym == XKB_KEY_j
 				&& xkb_state_mod_name_is_active(
@@ -233,10 +266,15 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 					XKB_STATE_MODS_EFFECTIVE)
 			   )
 			) {
-		tofi->window.entry.selection++;
-		tofi->window.entry.selection %= nsel;
+		entry->selection++;
+		if (entry->selection >= nsel) {
+			entry->selection -= nsel;
+			entry->page++;
+			entry->page %= n_pages;
+		}
 	} else {
-		tofi->window.entry.selection = 0;
+		entry->selection = 0;
+		entry->page = 0;
 	}
 	entry_update(&tofi->window.entry);
 	tofi->window.surface.redraw = true;
@@ -897,16 +935,17 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 
 static void do_submit(struct tofi *tofi)
 {
-	uint32_t selection = tofi->window.entry.selection;
-	char *res = tofi->window.entry.results.buf[selection].string;
-	if (tofi->window.entry.drun) {
+	struct entry *entry = &tofi->window.entry;
+	uint32_t selection = entry->selection + entry->num_results * entry->page;
+	char *res = entry->results.buf[selection].string;
+	if (entry->drun) {
 		/*
 		 * TODO: This is ugly. The list of apps needs to be sorted
 		 * alphabetically for bsearch to find the selected entry, but
 		 * we previously sorted by history count. This needs fixing.
 		 */
-		desktop_vec_sort(&tofi->window.entry.apps);
-		struct desktop_entry *app = desktop_vec_find(&tofi->window.entry.apps, res);
+		desktop_vec_sort(&entry->apps);
+		struct desktop_entry *app = desktop_vec_find(&entry->apps, res);
 		if (app == NULL) {
 			log_error("Couldn't find application file! This shouldn't happen.\n");
 			return;
@@ -931,10 +970,9 @@ static void do_submit(struct tofi *tofi)
 	}
 	if (tofi->use_history) {
 		history_add(
-				&tofi->window.entry.history,
-				tofi->window.entry.results.buf[selection].string);
-		history_save(&tofi->window.entry.history,
-				tofi->window.entry.drun);
+				&entry->history,
+				entry->results.buf[selection].string);
+		history_save(&entry->history, entry->drun);
 	}
 }
 
