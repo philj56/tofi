@@ -120,12 +120,3 @@
 	# If true, directly launch applications on selection when in drun mode.
 	# Otherwise, just print the command line to stdout.
 	drun-launch = false
-
-	# If true, print an executable command line for the selected
-	# application when in drun mode. Otherwise, just print the path of the
-	# .desktop file.
-	#
-	# *WARNING*: This currently defaults to false. In the next version of
-	# tofi, this will change to always be true, as it should have been from
-	# the start.
-	drun-print-exec = true

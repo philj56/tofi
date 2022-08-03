@@ -805,7 +805,8 @@ static void usage()
 "      --history <true|false>           Sort results by number of usages.\n"
 "      --drun-launch <true|false>       Launch apps directly in drun mode.\n"
 "      --drun-print-exec <true|false>   Print a command line in drun mode.\n"
-"                                       This will become the default in future.\n"
+"                                       This is now always the case,\n"
+"                                       and this option is deprecated.\n"
 "      --hint-font <true|false>         Perform font hinting.\n"
 "      --late-keyboard-init             (EXPERIMENTAL) Delay keyboard\n"
 "                                       initialisation until after the first\n"
@@ -954,16 +955,8 @@ static void do_submit(struct tofi *tofi)
 		}
 		if (tofi->drun_launch) {
 			drun_launch(res);
-		} else if (tofi->drun_print_exec) {
-			drun_print(res);
 		} else {
-			log_warning("Using drun mode without --drun-print-exec=true is deprecated.\n"
-					"           In the next version of tofi, this will become the default behaviour,\n"
-					"           so fix your compositor configs now e.g. by replacing\n"
-					"               tofi-drun | xargs swaymsg exec gio launch\n"
-					"           with\n"
-					"               tofi-drun --drun-print-exec=true | xargs swaymsg exec --\n");
-			printf("%s\n", res);
+			drun_print(res);
 		}
 	} else {
 		printf("%s\n", res);

@@ -8,7 +8,8 @@ An extremely fast and simple [dmenu](https://tools.suckless.org/dmenu/) /
 
 The aim is to do just what I want it to as quick as possible.
 
-When configured correctly, tofi can get on screen within a single frame.
+When [configured correctly](#performance), tofi can get on screen within a
+single frame.
 
 ![](screenshot_fullscreen.png)
 
@@ -57,11 +58,15 @@ executables under the user's `$PATH`.
 list of applications found in desktop files as described by the [Desktop Entry
 Specification](https://specifications.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html).
 
-**WARNING**: Currently, when a selection is made in drun mode, the
-filename of the selected desktop file is printed to stdout. In the next
-version of tofi, this will change to an executable command line, to be
-passed to swaymsg exec or similar. The new behaviour can be enabled now
-by passing --drun-print-exec=true to tofi-drun.
+**WARNING**: In the latest version of tofi, the default behaviour of drun mode
+has changed. Previously, when a selection was made in drun mode, the filename
+of the selected desktop file was printed to stdout. This couldn't be passed
+directly to swaymsg exec however, so applications launched in drun mode
+wouldn't always stay in the correct workspace. In the current version of tofi,
+this has changed to an executable command line, to be passed to swaymsg exec or
+similar. The drun-print-exec option is therefore useless and deprecated, and
+may be removed from a future version of tofi, so you should remove it from your
+configs.
 
 To use as a launcher for Sway, add something similar to the following to your
 Sway config file:
@@ -73,7 +78,7 @@ bindsym $mod+d exec $menu
 For `tofi-drun`, there are two possible methods:
 ```
 # Launch via Sway
-set $drun tofi-drun --drun-print-exec=true | xargs swaymsg exec --
+set $drun tofi-drun | xargs swaymsg exec --
 bindsym $mod+Shift+d exec $drun
 
 # Launch directly

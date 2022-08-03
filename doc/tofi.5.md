@@ -241,14 +241,11 @@ options.
 
 **drun-print-exec**=*true\|false*
 
-> If true, print an executable command line for the selected application
-> when in drun mode. Otherwise, just print the path of the .desktop
-> file.
+> **WARNING**: In the current version of tofi, this option has changed
+> to always be true and has no effect, as it should have been from the
+> start. It may be removed in a future version of tofi.
 >
-> **WARNING**: In the next version of tofi, this will change to always
-> be true, as it should have been from the start.
->
-> Default: false
+> Default: true.
 
 **hint-font**=*true\|false*
 

@@ -25,11 +25,12 @@ When invoked via the name **tofi-drun**, **tofi** will not accept items
 on stdin, and will generate a list of applications from desktop files as
 described in the Desktop Entry Specification.
 
-**WARNING**: Currently, when a selection is made in drun mode, the
-filename of the selected desktop file is printed to stdout. In the next
-version of tofi, this will change to an executable command line, to be
-passed to swaymsg exec or similar. The new behaviour can be enabled now
-by passing --drun-print-exec=true to tofi-drun.
+**WARNING**: In the last version of tofi, when a selection was made in
+drun mode, the filename of the selected desktop file was printed to
+stdout. In the current version of tofi, this has changed to an
+executable command line, to be passed to swaymsg exec or similar.
+Consequently, the --drun-print-exec does nothing, and may be removed in
+a future version of tofi.
 
 # OPTIONS
 

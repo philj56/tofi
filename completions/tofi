@@ -41,7 +41,6 @@ _tofi()
 		--hide-cursor
 		--history
 		--drun-launch
-		--drun-print-exec
 		--hint-font
 		--late-keyboard-init
      )
