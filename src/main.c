@@ -209,27 +209,7 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		return;
 	}
 
-	/*
-	 * If 0 was passed to num-results, use the number we've managed to fit
-	 * in the window from now on.
-	 */
-	if (entry->num_results == 0) {
-		entry->num_results = entry->num_results_drawn;
-	}
-	/* Number of pages of results available. */
-	uint32_t n_pages = ceil(entry->results.count / (double)entry->num_results);
-	uint32_t page_size;
-
-	/* There may be fewer than num-results entries on the last page. */
-	if (entry->page == n_pages - 1) {
-		page_size = entry->results.count % entry->num_results;
-		if (page_size == 0) {
-			page_size = entry->num_results;
-		}
-	} else {
-		page_size = entry->num_results;
-	}
-	uint32_t nsel = MAX(MIN(page_size, entry->results.count), 1);
+	uint32_t nsel = MAX(MIN(entry->num_results_drawn, entry->results.count), 1);
 	if (sym == XKB_KEY_Up || sym == XKB_KEY_Left
 			|| (sym == XKB_KEY_k
 				&& xkb_state_mod_name_is_active(
@@ -241,21 +221,12 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		if (entry->selection > 0) {
 			entry->selection--;
 		} else {
-			if (entry->page > 0) {
-				entry->page--;
-				entry->selection = entry->num_results - 1;
-			} else {
-				/*
-				 * We're about to wrap around to the last
-				 * result, so we need to calculate the size of
-				 * the last page.
-				 */
-				entry->page = n_pages - 1;
-				page_size = entry->results.count % entry->num_results;
-				if (page_size == 0) {
-					page_size = entry->num_results;
-				}
-				entry->selection = page_size - 1;
+			if (entry->first_result > nsel) {
+				entry->first_result -= entry->last_num_results_drawn;
+				entry->selection = entry->last_num_results_drawn - 1;
+			} else if (entry->first_result > 0) {
+				entry->selection = entry->first_result - 1;
+				entry->first_result = 0;
 			}
 		}
 	} else if (sym == XKB_KEY_Down || sym == XKB_KEY_Right || sym == XKB_KEY_Tab
@@ -269,12 +240,13 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		entry->selection++;
 		if (entry->selection >= nsel) {
 			entry->selection -= nsel;
-			entry->page++;
-			entry->page %= n_pages;
+			entry->first_result += nsel;
+			entry->first_result %= entry->results.count;
+			entry->last_num_results_drawn = entry->num_results_drawn;
 		}
 	} else {
 		entry->selection = 0;
-		entry->page = 0;
+		entry->first_result = 0;
 	}
 	entry_update(&tofi->window.entry);
 	tofi->window.surface.redraw = true;
@@ -937,7 +909,7 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 static void do_submit(struct tofi *tofi)
 {
 	struct entry *entry = &tofi->window.entry;
-	uint32_t selection = entry->selection + entry->num_results * entry->page;
+	uint32_t selection = entry->selection + entry->first_result;
 	char *res = entry->results.buf[selection].string;
 	if (entry->drun) {
 		/*

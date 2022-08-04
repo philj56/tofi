@@ -9,6 +9,9 @@
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#undef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 void entry_backend_pango_init(struct entry *entry, uint32_t *width, uint32_t *height)
 {
 	cairo_t *cr = entry->cairo[0].cr;
@@ -35,6 +38,23 @@ void entry_backend_pango_destroy(struct entry *entry)
 {
 	g_object_unref(entry->pango.layout);
 	g_object_unref(entry->pango.context);
+}
+
+static bool size_overflows(struct entry *entry, uint32_t width, uint32_t height)
+{
+	cairo_t *cr = entry->cairo[entry->index].cr;
+	cairo_matrix_t mat;
+	cairo_get_matrix(cr, &mat);
+	if (entry->horizontal) {
+		if (mat.x0 + width > entry->clip_x + entry->clip_width) {
+			return true;
+		}
+	} else {
+		if (mat.y0 + height > entry->clip_y + entry->clip_height) {
+			return true;
+		}
+	}
+	return false;
 }
 
 void entry_backend_pango_update(struct entry *entry)
@@ -64,33 +84,28 @@ void entry_backend_pango_update(struct entry *entry)
 	pango_layout_get_size(layout, &width, &height);
 	width = MAX(width, (int)entry->input_width * PANGO_SCALE);
 
-	cairo_matrix_t mat;
+	uint32_t num_results;
+	if (entry->num_results == 0) {
+		num_results = entry->results.count;
+	} else {
+		num_results = MIN(entry->num_results, entry->results.count);
+	}
 	/* Render our results */
-	for (size_t i = 0; i < entry->results.count; i++) {
+	size_t i;
+	for (i = 0; i < num_results; i++) {
 		if (entry->horizontal) {
 			cairo_translate(cr, (int)(width / PANGO_SCALE) + entry->result_spacing, 0);
 		} else {
 			cairo_translate(cr, 0, (int)(height / PANGO_SCALE) + entry->result_spacing);
 		}
 		if (entry->num_results == 0) {
-			cairo_get_matrix(cr, &mat);
-			if (entry->horizontal) {
-				if (mat.x0 > entry->clip_x + entry->clip_width) {
-					entry->num_results_drawn = i;
-					log_debug("Drew %zu results.\n", i);
-					break;
-				}
-			} else {
-				if (mat.y0 > entry->clip_y + entry->clip_height) {
-					entry->num_results_drawn = i;
-					log_debug("Drew %zu results.\n", i);
-					break;
-				}
+			if (size_overflows(entry, 0, 0)) {
+				break;
 			}
 		} else if (i >= entry->num_results) {
 			break;
 		}
-		size_t index = i + entry->num_results * entry->page;
+		size_t index = i + entry->first_result;
 		/*
 		 * We may be on the last page, which could have fewer results
 		 * than expected, so check and break if necessary.
@@ -108,8 +123,35 @@ void entry_backend_pango_update(struct entry *entry)
 		if (i != entry->selection) {
 			pango_layout_set_text(layout, str, -1);
 			pango_cairo_update_layout(cr, layout);
-			pango_cairo_show_layout(cr, layout);
-			pango_layout_get_size(layout, &width, &height);
+
+			if (entry->num_results > 0) {
+				pango_cairo_show_layout(cr, layout);
+				pango_layout_get_size(layout, &width, &height);
+			} else if (!entry->horizontal) {
+				if (size_overflows(entry, 0, height / PANGO_SCALE)) {
+					entry->num_results_drawn = i;
+					break;
+				} else {
+					pango_cairo_show_layout(cr, layout);
+					pango_layout_get_size(layout, &width, &height);
+				}
+			} else {
+				cairo_push_group(cr);
+				pango_cairo_show_layout(cr, layout);
+				pango_layout_get_size(layout, &width, &height);
+				cairo_pattern_t *group = cairo_pop_group(cr);
+				if (size_overflows(entry, width / PANGO_SCALE, 0)) {
+					entry->num_results_drawn = i;
+					cairo_pattern_destroy(group);
+					break;
+				} else {
+					cairo_save(cr);
+					cairo_set_source(cr, group);
+					cairo_paint(cr);
+					cairo_restore(cr);
+					cairo_pattern_destroy(group);
+				}
+			}
 		} else {
 			ssize_t prematch_len = -1;
 			size_t match_len = entry->input_mb_length;
@@ -170,6 +212,8 @@ void entry_backend_pango_update(struct entry *entry)
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 		}
 	}
+	entry->num_results_drawn = i;
+	log_debug("Drew %zu results.\n", i);
 
 	cairo_restore(cr);
 }

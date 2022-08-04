@@ -26,6 +26,9 @@ const struct {
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#undef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 static const char *get_ft_error_string(int err_code)
 {
 	for (size_t i = 0; i < N_ELEM(ft_errors); i++) {
@@ -185,6 +188,23 @@ void entry_backend_harfbuzz_destroy(struct entry *entry)
 	FT_Done_FreeType(entry->harfbuzz.ft_library);
 }
 
+static bool size_overflows(struct entry *entry, uint32_t width, uint32_t height)
+{
+	cairo_t *cr = entry->cairo[entry->index].cr;
+	cairo_matrix_t mat;
+	cairo_get_matrix(cr, &mat);
+	if (entry->horizontal) {
+		if (mat.x0 + width > entry->clip_x + entry->clip_width) {
+			return true;
+		}
+	} else {
+		if (mat.y0 + height > entry->clip_y + entry->clip_height) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void entry_backend_harfbuzz_update(struct entry *entry)
 {
 	cairo_t *cr = entry->cairo[entry->index].cr;
@@ -215,35 +235,30 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	cairo_font_extents_t font_extents;
 	cairo_font_extents(cr, &font_extents);
 
-	cairo_matrix_t mat;
+	uint32_t num_results;
+	if (entry->num_results == 0) {
+		num_results = entry->results.count;
+	} else {
+		num_results = MIN(entry->num_results, entry->results.count);
+	}
 	/* Render our results */
-	for (size_t i = 0; i < entry->results.count; i++) {
+	size_t i;
+	for (i = 0; i < num_results; i++) {
 		if (entry->horizontal) {
 			cairo_translate(cr, width + entry->result_spacing, 0);
 		} else {
 			cairo_translate(cr, 0, font_extents.height + entry->result_spacing);
 		}
 		if (entry->num_results == 0) {
-			cairo_get_matrix(cr, &mat);
-			if (entry->horizontal) {
-				if (mat.x0 > entry->clip_x + entry->clip_width) {
-					entry->num_results_drawn = i;
-					log_debug("Drew %zu results.\n", i);
-					break;
-				}
-			} else {
-				if (mat.y0 > entry->clip_y + entry->clip_height) {
-					entry->num_results_drawn = i;
-					log_debug("Drew %zu results.\n", i);
-					break;
-				}
+			if (size_overflows(entry, 0, 0)) {
+				break;
 			}
 		} else if (i >= entry->num_results) {
 			break;
 		}
 
 
-		size_t index = i + entry->num_results * entry->page;
+		size_t index = i + entry->first_result;
 		/*
 		 * We may be on the last page, which could have fewer results
 		 * than expected, so check and break if necessary.
@@ -259,7 +274,48 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			setup_hb_buffer(buffer);
 			hb_buffer_add_utf8(buffer, result, -1, 0, -1);
 			hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
-			width = render_hb_buffer(cr, buffer);
+
+			if (entry->num_results > 0) {
+				/*
+				 * We're not auto-detecting how many results we
+				 * can fit, so just render the text.
+				 */
+				width = render_hb_buffer(cr, buffer);
+			} else if (!entry->horizontal) {
+				/*
+				 * The height of the text doesn't change, so
+				 * we don't need to re-measure it each time.
+				 */
+				if (size_overflows(entry, 0, font_extents.height)) {
+					entry->num_results_drawn = i;
+					break;
+				} else {
+					width = render_hb_buffer(cr, buffer);
+				}
+			} else {
+				/*
+				 * The difficult case: we're auto-detecting how
+				 * many results to draw, but we can't know
+				 * whether this results will fit without
+				 * drawing it! To solve this, draw to a
+				 * temporary group, measure that, then copy it
+				 * to the main canvas only if it will fit.
+				 */
+				cairo_push_group(cr);
+				width = render_hb_buffer(cr, buffer);
+				cairo_pattern_t *group = cairo_pop_group(cr);
+				if (size_overflows(entry, width, 0)) {
+					entry->num_results_drawn = i;
+					cairo_pattern_destroy(group);
+					break;
+				} else {
+					cairo_save(cr);
+					cairo_set_source(cr, group);
+					cairo_paint(cr);
+					cairo_restore(cr);
+					cairo_pattern_destroy(group);
+				}
+			}
 		} else {
 			/*
 			 * For the selected result, there's a bit more to do.
@@ -277,6 +333,10 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			 * portion of text - this is achieved simply by
 			 * splitting the text into prematch, match and
 			 * postmatch chunks, and drawing each separately.
+			 *
+			 * N.B. The size_overflows check isn't necessary here,
+			 * as it's currently not possible for the selection to
+			 * do so.
 			 */
 			size_t prematch_len;
 			char *prematch = xstrdup(result);
@@ -353,6 +413,8 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 		}
 	}
+	entry->num_results_drawn = i;
+	log_debug("Drew %zu results.\n", i);
 
 	cairo_restore(cr);
 }

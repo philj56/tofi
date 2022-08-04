@@ -34,7 +34,7 @@ struct entry {
 	uint32_t input_mb_length;
 
 	uint32_t selection;
-	uint32_t page;
+	uint32_t first_result;
 	struct string_vec results;
 	struct string_vec commands;
 	struct desktop_vec apps;
@@ -51,6 +51,7 @@ struct entry {
 	bool horizontal;
 	uint32_t num_results;
 	uint32_t num_results_drawn;
+	uint32_t last_num_results_drawn;
 	int32_t result_spacing;
 	uint32_t font_size;
 	char font_name[MAX_FONT_NAME_LENGTH];

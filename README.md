@@ -154,6 +154,12 @@ In roughly descending order, the most important options for performance are:
   the first frame). Again, on battery power on my laptop, drawing a fullscreen
   window (2880px × 1800px) takes ~20ms on the first frame, whereas a dmenu-like
   ribbon (2880px × 60px) takes ~1ms.
+  
+* `--num-results` - By default, tofi auto-detects how many results will fit in
+  the window. This is quite tricky when `--horizontal=true` is passed, and
+  leads to a few ms slowdown (only in this case). Setting a fixed number of
+  results will speed this up, but since this likely only applies to dmenu-like
+  themes (which are already very quick) it's probably not worth setting this.
 
 * `--hint-font` - Getting really into it now, one of the remaining slow points
   is hinting fonts. For the dmenu theme on battery power on my laptop, with a
