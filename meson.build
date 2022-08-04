@@ -101,6 +101,7 @@ tofi_sources = files(
   'src/entry_backend/pango.c',
   'src/entry_backend/harfbuzz.c',
   'src/history.c',
+  'src/icon.c',
   'src/log.c',
   'src/mkdirp.c',
   'src/shm.c',
