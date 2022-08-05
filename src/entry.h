@@ -10,6 +10,7 @@
 #include "desktop_vec.h"
 #include "history.h"
 #include "image.h"
+#include "rect_vec.h"
 #include "surface.h"
 #include "string_vec.h"
 
@@ -22,6 +23,7 @@ struct entry {
 	struct entry_backend_harfbuzz harfbuzz;
 	struct entry_backend_pango pango;
 	struct {
+		struct rect_vec damage_list;
 		cairo_surface_t *surface;
 		cairo_t *cr;
 	} cairo[2];
@@ -41,10 +43,7 @@ struct entry {
 	struct history history;
 	bool use_pango;
 
-	uint32_t clip_x;
-	uint32_t clip_y;
-	uint32_t clip_width;
-	uint32_t clip_height;
+	struct rectangle clip;
 
 	/* Options */
 	bool drun;

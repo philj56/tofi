@@ -46,11 +46,11 @@ static bool size_overflows(struct entry *entry, uint32_t width, uint32_t height)
 	cairo_matrix_t mat;
 	cairo_get_matrix(cr, &mat);
 	if (entry->horizontal) {
-		if (mat.x0 + width > entry->clip_x + entry->clip_width) {
+		if (mat.x0 + width > entry->clip.x + entry->clip.width) {
 			return true;
 		}
 	} else {
-		if (mat.y0 + height > entry->clip_y + entry->clip_height) {
+		if (mat.y0 + height > entry->clip.y + entry->clip.height) {
 			return true;
 		}
 	}
@@ -200,7 +200,7 @@ void entry_backend_pango_update(struct entry *entry)
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 			int32_t pad = entry->selection_background_padding;
 			if (pad < 0) {
-				pad = entry->clip_width;
+				pad = entry->clip.width;
 			}
 			cairo_translate(cr, -pad, 0);
 			cairo_rectangle(cr, 0, 0, (int)(width / PANGO_SCALE) + pad * 2, (int)(height / PANGO_SCALE));

@@ -5,6 +5,7 @@
 #include "../entry.h"
 #include "../log.h"
 #include "../nelem.h"
+#include "../rect_vec.h"
 #include "../xmalloc.h"
 
 /*
@@ -62,7 +63,7 @@ static void setup_hb_buffer(hb_buffer_t *buffer)
  * Render a hb_buffer with Cairo, and return the width of the rendered area in
  * Cairo units.
  */
-static uint32_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
+static cairo_text_extents_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
 {
 	cairo_save(cr);
 
@@ -95,15 +96,48 @@ static uint32_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
 
 	cairo_show_glyphs(cr, cairo_glyphs, glyph_count);
 
+	cairo_text_extents_t extents;
+	cairo_glyph_extents(cr, cairo_glyphs, glyph_count, &extents);
+
+	/* Account for the shifted baseline in our returned text extents. */
+	extents.y_bearing += font_extents.ascent;
+
 	free(cairo_glyphs);
 
 	cairo_restore(cr);
 
-	double width = 0;
-	for (unsigned int i=0; i < glyph_count; i++) {
-		width += glyph_pos[i].x_advance / 64.0;
+	return extents;
+}
+
+static bool size_overflows(struct entry *entry, uint32_t width, uint32_t height)
+{
+	cairo_t *cr = entry->cairo[entry->index].cr;
+	cairo_matrix_t mat;
+	cairo_get_matrix(cr, &mat);
+	if (entry->horizontal) {
+		if (mat.x0 + width > entry->clip.x + entry->clip.width) {
+			return true;
+		}
+	} else {
+		if (mat.y0 + height > entry->clip.y + entry->clip.height) {
+			return true;
+		}
 	}
-	return ceil(width);
+	return false;
+}
+
+static void damage_extents(struct entry *entry, cairo_text_extents_t *const extents)
+{
+	cairo_t *cr = entry->cairo[entry->index].cr;
+	struct rect_vec *damage = &entry->cairo[entry->index].damage_list;
+	cairo_matrix_t mat;
+	cairo_get_matrix(cr, &mat);
+	rect_vec_add(damage, (struct rectangle) {
+			.x = floor(MAX(mat.x0 + extents->x_bearing, 0)),
+			.y = floor(MAX(mat.y0 + extents->y_bearing - 1, 0)),
+			.width = ceil(extents->width) + 1,
+			.height = ceil(extents->height) + 1
+			});
 }
 
 void entry_backend_harfbuzz_init(
@@ -188,28 +222,11 @@ void entry_backend_harfbuzz_destroy(struct entry *entry)
 	FT_Done_FreeType(entry->harfbuzz.ft_library);
 }
 
-static bool size_overflows(struct entry *entry, uint32_t width, uint32_t height)
-{
-	cairo_t *cr = entry->cairo[entry->index].cr;
-	cairo_matrix_t mat;
-	cairo_get_matrix(cr, &mat);
-	if (entry->horizontal) {
-		if (mat.x0 + width > entry->clip_x + entry->clip_width) {
-			return true;
-		}
-	} else {
-		if (mat.y0 + height > entry->clip_y + entry->clip_height) {
-			return true;
-		}
-	}
-	return false;
-}
-
 void entry_backend_harfbuzz_update(struct entry *entry)
 {
 	cairo_t *cr = entry->cairo[entry->index].cr;
 	hb_buffer_t *buffer = entry->harfbuzz.hb_buffer;
-	uint32_t width;
+	cairo_text_extents_t extents;
 
 	cairo_save(cr);
 	struct color color = entry->foreground_color;
@@ -220,17 +237,19 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	setup_hb_buffer(buffer);
 	hb_buffer_add_utf8(entry->harfbuzz.hb_buffer, entry->prompt_text, -1, 0, -1);
 	hb_shape(entry->harfbuzz.hb_font, entry->harfbuzz.hb_buffer, NULL, 0);
-	width = render_hb_buffer(cr, buffer);
+	extents = render_hb_buffer(cr, buffer);
+	damage_extents(entry, &extents);
 
-	cairo_translate(cr, width, 0);
+	cairo_translate(cr, extents.x_advance, 0);
 
 	/* Render the entry text */
 	hb_buffer_clear_contents(buffer);
 	setup_hb_buffer(buffer);
 	hb_buffer_add_utf8(buffer, entry->input_mb, -1, 0, -1);
 	hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
-	width = render_hb_buffer(cr, buffer);
-	width = MAX(width, entry->input_width);
+	extents = render_hb_buffer(cr, buffer);
+	damage_extents(entry, &extents);
+	extents.x_advance = MAX(extents.x_advance, entry->input_width);
 
 	cairo_font_extents_t font_extents;
 	cairo_font_extents(cr, &font_extents);
@@ -245,7 +264,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	size_t i;
 	for (i = 0; i < num_results; i++) {
 		if (entry->horizontal) {
-			cairo_translate(cr, width + entry->result_spacing, 0);
+			cairo_translate(cr, extents.x_advance + entry->result_spacing, 0);
 		} else {
 			cairo_translate(cr, 0, font_extents.height + entry->result_spacing);
 		}
@@ -280,7 +299,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				 * We're not auto-detecting how many results we
 				 * can fit, so just render the text.
 				 */
-				width = render_hb_buffer(cr, buffer);
+				extents = render_hb_buffer(cr, buffer);
 			} else if (!entry->horizontal) {
 				/*
 				 * The height of the text doesn't change, so
@@ -290,7 +309,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 					entry->num_results_drawn = i;
 					break;
 				} else {
-					width = render_hb_buffer(cr, buffer);
+					extents = render_hb_buffer(cr, buffer);
 				}
 			} else {
 				/*
@@ -302,9 +321,9 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				 * to the main canvas only if it will fit.
 				 */
 				cairo_push_group(cr);
-				width = render_hb_buffer(cr, buffer);
+				extents = render_hb_buffer(cr, buffer);
 				cairo_pattern_t *group = cairo_pop_group(cr);
-				if (size_overflows(entry, width, 0)) {
+				if (size_overflows(entry, extents.x_advance, 0)) {
 					entry->num_results_drawn = i;
 					cairo_pattern_destroy(group);
 					break;
@@ -316,6 +335,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 					cairo_pattern_destroy(group);
 				}
 			}
+			damage_extents(entry, &extents);
 		} else {
 			/*
 			 * For the selected result, there's a bit more to do.
@@ -342,7 +362,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			char *prematch = xstrdup(result);
 			char *match = NULL;
 			char *postmatch = NULL;
-			uint32_t subwidth;
+			cairo_text_extents_t subextents;
 			if (entry->input_mb_length > 0 && entry->selection_highlight_color.a != 0) {
 				char *match_pos = strcasestr(prematch, entry->input_mb);
 				if (match_pos != NULL) {
@@ -362,29 +382,29 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			setup_hb_buffer(buffer);
 			hb_buffer_add_utf8(buffer, prematch, -1, 0, -1);
 			hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
-			subwidth = render_hb_buffer(cr, buffer);
-			width = subwidth;
+			subextents = render_hb_buffer(cr, buffer);
+			extents = subextents;
 
 			if (match != NULL) {
-				cairo_translate(cr, subwidth, 0);
+				cairo_translate(cr, subextents.x_advance, 0);
 				color = entry->selection_highlight_color;
 				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 				hb_buffer_clear_contents(buffer);
 				setup_hb_buffer(buffer);
 				hb_buffer_add_utf8(buffer, &match[prematch_len], -1, 0, -1);
 				hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
-				subwidth = render_hb_buffer(cr, buffer);
-				width += subwidth;
+				subextents = render_hb_buffer(cr, buffer);
+				extents.x_advance += subextents.x_advance;
 
-				cairo_translate(cr, subwidth, 0);
+				cairo_translate(cr, subextents.x_advance, 0);
 				color = entry->selection_foreground_color;
 				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 				hb_buffer_clear_contents(buffer);
 				setup_hb_buffer(buffer);
 				hb_buffer_add_utf8(buffer, &postmatch[entry->input_mb_length + prematch_len], -1, 0, -1);
 				hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
-				subwidth = render_hb_buffer(cr, buffer);
-				width += subwidth;
+				subextents = render_hb_buffer(cr, buffer);
+				extents.x_advance += subextents.x_advance;
 
 				free(match);
 				free(postmatch);
@@ -401,11 +421,22 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 			int32_t pad = entry->selection_background_padding;
 			if (pad < 0) {
-				pad = entry->clip_width;
+				pad = entry->clip.width;
 			}
-			cairo_translate(cr, -pad, 0);
-			cairo_rectangle(cr, 0, 0, width + pad * 2, font_extents.height);
-			cairo_translate(cr, pad, 0);
+			cairo_translate(cr, -pad + extents.x_bearing, 0);
+			cairo_rectangle(cr, 0, 0, extents.width + pad * 2, font_extents.height);
+
+			/* Manually damage this rectangle. */
+			cairo_matrix_t mat;
+			cairo_get_matrix(cr, &mat);
+			rect_vec_add(&entry->cairo[entry->index].damage_list, (struct rectangle) {
+					.x = MAX(mat.x0 - 0.5, 0),
+					.y = MAX(mat.y0 - 0.5, 0),
+					.width = extents.width + pad * 2 + 2,
+					.height = font_extents.height + 2
+					});
+
+			cairo_translate(cr, pad - extents.x_bearing, 0);
 			cairo_fill(cr);
 			cairo_restore(cr);
 			cairo_paint(cr);

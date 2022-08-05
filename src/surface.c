@@ -62,10 +62,29 @@ void surface_destroy(struct surface *surface)
 	wl_buffer_destroy(surface->buffers[1]);
 }
 
-void surface_draw(struct surface *surface)
+void surface_draw(struct surface *surface, struct rect_vec *damage_lists[2])
 {
 	wl_surface_attach(surface->wl_surface, surface->buffers[surface->index], 0, 0);
-	wl_surface_damage_buffer(surface->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
+	if (damage_lists == NULL) {
+		wl_surface_damage_buffer(surface->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
+	} else {
+		for (size_t i = 0; i < damage_lists[0]->count; i++) {
+			struct rectangle rect = damage_lists[0]->buf[i];
+			wl_surface_damage_buffer(surface->wl_surface,
+					rect.x,
+					rect.y,
+					rect.width,
+					rect.height);
+		}
+		for (size_t i = 0; i < damage_lists[1]->count; i++) {
+			struct rectangle rect = damage_lists[1]->buf[i];
+			wl_surface_damage_buffer(surface->wl_surface,
+					rect.x,
+					rect.y,
+					rect.width,
+					rect.height);
+		}
+	}
 	wl_surface_commit(surface->wl_surface);
 
 	surface->index = !surface->index;

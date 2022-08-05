@@ -6,6 +6,7 @@
 #include <wayland-client.h>
 #include "color.h"
 #include "image.h"
+#include "rect_vec.h"
 
 struct surface {
 	struct wl_surface *wl_surface;
@@ -26,6 +27,6 @@ void surface_init(
 		struct surface *surface,
 		struct wl_shm *wl_shm);
 void surface_destroy(struct surface *surface);
-void surface_draw(struct surface *surface);
+void surface_draw(struct surface *surface, struct rect_vec *damage_lists[2]);
 
 #endif /* SURFACE_H */

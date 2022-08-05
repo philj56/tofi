@@ -103,6 +103,7 @@ tofi_sources = files(
   'src/history.c',
   'src/log.c',
   'src/mkdirp.c',
+  'src/rect_vec.c',
   'src/shm.c',
   'src/string_vec.c',
   'src/surface.c',

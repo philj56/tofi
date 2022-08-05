@@ -134,10 +134,15 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	/* Store the clip rectangle width and height. */
 	cairo_matrix_t mat;
 	cairo_get_matrix(cr, &mat);
-	entry->clip_x = mat.x0;
-	entry->clip_y = mat.y0;
-	entry->clip_width = width;
-	entry->clip_height = height;
+	entry->clip = (struct rectangle) {
+		.x = mat.x0,
+		.y = mat.y0,
+		.width = width,
+		.height = height
+	};
+
+	entry->cairo[0].damage_list = rect_vec_create();
+	entry->cairo[1].damage_list = rect_vec_create();
 
 	/*
 	 * Perform an initial render of the text.
@@ -179,6 +184,8 @@ void entry_destroy(struct entry *entry)
 	} else {
 		entry_backend_harfbuzz_destroy(entry);
 	}
+	rect_vec_destroy(&entry->cairo[0].damage_list);
+	rect_vec_destroy(&entry->cairo[1].damage_list);
 	cairo_destroy(entry->cairo[0].cr);
 	cairo_destroy(entry->cairo[1].cr);
 	cairo_surface_destroy(entry->cairo[0].surface);
@@ -189,13 +196,22 @@ void entry_update(struct entry *entry)
 {
 	log_debug("Start rendering entry.\n");
 	cairo_t *cr = entry->cairo[entry->index].cr;
+	struct rect_vec *damage_list = &entry->cairo[entry->index].damage_list;
 
 	/* Clear the image. */
 	struct color color = entry->background_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_save(cr);
 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-	cairo_paint(cr);
+	cairo_matrix_t mat;
+	cairo_get_matrix(cr, &mat);
+	cairo_translate(cr, -mat.x0, -mat.y0);
+	for (size_t i = 0; i < damage_list->count; i++) {
+		struct rectangle rect = damage_list->buf[i];
+		cairo_rectangle(cr, rect.x, rect.y, rect.width, rect.height);
+		cairo_fill(cr);
+	}
+	rect_vec_clear(damage_list);
 	cairo_restore(cr);
 
 	/* Draw our text. */
@@ -204,6 +220,20 @@ void entry_update(struct entry *entry)
 	} else {
 		entry_backend_harfbuzz_update(entry);
 	}
+
+	//cairo_set_source_rgba(cr, 1, color.g, color.b, color.a);
+	//cairo_save(cr);
+	//cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	//cairo_get_matrix(cr, &mat);
+	//cairo_translate(cr, -mat.x0, -mat.y0);
+	//cairo_set_line_width(cr, 1);
+	//cairo_set_source_rgba(cr, 1, color.g, color.b, color.a);
+	//for (size_t i = 0; i < damage_list->count; i++) {
+	//	struct rectangle rect = damage_list->buf[i];
+	//	cairo_rectangle(cr, rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2);
+	//	cairo_stroke(cr);
+	//}
+	//cairo_restore(cr);
 
 	log_debug("Finish rendering entry.\n");
 

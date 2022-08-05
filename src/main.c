@@ -241,7 +241,11 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		if (entry->selection >= nsel) {
 			entry->selection -= nsel;
 			entry->first_result += nsel;
-			entry->first_result %= entry->results.count;
+			if (entry->results.count > 0) {
+				entry->first_result %= entry->results.count;
+			} else {
+				entry->first_result = 0;
+			}
 			entry->last_num_results_drawn = entry->num_results_drawn;
 		}
 	} else {
@@ -1073,7 +1077,7 @@ int main(int argc, char *argv[])
 		wl_surface_commit(surface.wl_surface);
 		wl_display_roundtrip(tofi.wl_display);
 		surface_init(&surface, tofi.wl_shm);
-		surface_draw(&surface);
+		surface_draw(&surface, NULL);
 		wl_display_roundtrip(tofi.wl_display);
 		surface_destroy(&surface);
 		zwlr_layer_surface_v1_destroy(zwlr_layer_surface);
@@ -1305,7 +1309,7 @@ int main(int argc, char *argv[])
 	log_debug("Renderer initialised.\n");
 
 	/* Perform an initial render. */
-	surface_draw(&tofi.window.surface);
+	surface_draw(&tofi.window.surface, NULL);
 
 	/*
 	 * entry_init() left the second of the two buffers we use for
@@ -1321,6 +1325,18 @@ int main(int argc, char *argv[])
 		cairo_image_surface_get_data(tofi.window.entry.cairo[0].surface),
 		tofi.window.entry.image.width * tofi.window.entry.image.height * sizeof(uint32_t)
 	);
+	/*
+	 * We also need to mark the whole buffer as damaged to properly render
+	 * the first frame, otherwise there'll be leftover text scattered
+	 * around the place.
+	 */
+	rect_vec_add(&tofi.window.entry.cairo[1].damage_list,
+			(struct rectangle) {
+			.x = 0,
+			.y = 0,
+			.width = tofi.window.entry.image.width,
+			.height = tofi.window.entry.image.height
+			});
 
 	/* We've just rendered, so we don't need to do it again right now. */
 	tofi.window.surface.redraw = false;
@@ -1403,7 +1419,26 @@ int main(int argc, char *argv[])
 		wl_display_dispatch_pending(tofi.wl_display);
 
 		if (tofi.window.surface.redraw) {
-			surface_draw(&tofi.window.surface);
+			//log_debug("Damaging %u x %u @ (%u, %u)\n",
+			//		tofi.window.entry.prompt_damage.width,
+			//		tofi.window.entry.prompt_damage.height,
+			//		tofi.window.entry.prompt_damage.x,
+			//		tofi.window.entry.prompt_damage.y);
+			//wl_surface_attach(tofi.window.surface.wl_surface, tofi.window.surface.buffers[tofi.window.surface.index], 0, 0);
+			////wl_surface_damage_buffer(
+			////		tofi.window.surface.wl_surface,
+			////		tofi.window.entry.prompt_damage.x,
+			////		tofi.window.entry.prompt_damage.y,
+			////		tofi.window.entry.prompt_damage.width,
+			////		tofi.window.entry.prompt_damage.height);
+			//wl_surface_commit(tofi.window.surface.wl_surface);
+
+			//tofi.window.surface.index = !tofi.window.surface.index;
+			struct rect_vec *damage_lists[2] = {
+				&tofi.window.entry.cairo[0].damage_list,
+				&tofi.window.entry.cairo[1].damage_list,
+			};
+			surface_draw(&tofi.window.surface, damage_lists);
 			tofi.window.surface.redraw = false;
 		}
 		if (tofi.submit) {
