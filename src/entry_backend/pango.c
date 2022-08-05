@@ -57,6 +57,12 @@ static bool size_overflows(struct entry *entry, uint32_t width, uint32_t height)
 	return false;
 }
 
+/*
+ * This is pretty much a direct translation of the corresponding function in
+ * the harfbuzz backend. As that's the one that I care about most, there are
+ * more explanatory comments than there are here, so go look at that if you
+ * want to understand how tofi's text rendering works.
+ */
 void entry_backend_pango_update(struct entry *entry)
 {
 	cairo_t *cr = entry->cairo[entry->index].cr;
@@ -71,18 +77,18 @@ void entry_backend_pango_update(struct entry *entry)
 	pango_cairo_update_layout(cr, layout);
 	pango_cairo_show_layout(cr, layout);
 
-	int width;
-	int height;
-	pango_layout_get_pixel_size(entry->pango.layout, &width, NULL);
-	cairo_translate(cr, width, 0);
+	PangoRectangle ink_rect;
+	PangoRectangle logical_rect;
+	pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
+	cairo_translate(cr, logical_rect.width + logical_rect.x, 0);
 
 
 	/* Render the entry text */
 	pango_layout_set_text(layout, entry->input_mb, -1);
 	pango_cairo_update_layout(cr, layout);
 	pango_cairo_show_layout(cr, layout);
-	pango_layout_get_size(layout, &width, &height);
-	width = MAX(width, (int)entry->input_width * PANGO_SCALE);
+	pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
+	logical_rect.width = MAX(logical_rect.width, (int)entry->input_width);
 
 	uint32_t num_results;
 	if (entry->num_results == 0) {
@@ -94,9 +100,9 @@ void entry_backend_pango_update(struct entry *entry)
 	size_t i;
 	for (i = 0; i < num_results; i++) {
 		if (entry->horizontal) {
-			cairo_translate(cr, (int)(width / PANGO_SCALE) + entry->result_spacing, 0);
+			cairo_translate(cr, logical_rect.x + logical_rect.width + entry->result_spacing, 0);
 		} else {
-			cairo_translate(cr, 0, (int)(height / PANGO_SCALE) + entry->result_spacing);
+			cairo_translate(cr, 0, logical_rect.height + entry->result_spacing);
 		}
 		if (entry->num_results == 0) {
 			if (size_overflows(entry, 0, 0)) {
@@ -126,21 +132,21 @@ void entry_backend_pango_update(struct entry *entry)
 
 			if (entry->num_results > 0) {
 				pango_cairo_show_layout(cr, layout);
-				pango_layout_get_size(layout, &width, &height);
+				pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
 			} else if (!entry->horizontal) {
-				if (size_overflows(entry, 0, height / PANGO_SCALE)) {
+				if (size_overflows(entry, 0, logical_rect.height)) {
 					entry->num_results_drawn = i;
 					break;
 				} else {
 					pango_cairo_show_layout(cr, layout);
-					pango_layout_get_size(layout, &width, &height);
+					pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
 				}
 			} else {
 				cairo_push_group(cr);
 				pango_cairo_show_layout(cr, layout);
-				pango_layout_get_size(layout, &width, &height);
+				pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
 				cairo_pattern_t *group = cairo_pop_group(cr);
-				if (size_overflows(entry, width / PANGO_SCALE, 0)) {
+				if (size_overflows(entry, logical_rect.width, 0)) {
 					entry->num_results_drawn = i;
 					cairo_pattern_destroy(group);
 					break;
@@ -154,12 +160,18 @@ void entry_backend_pango_update(struct entry *entry)
 			}
 		} else {
 			ssize_t prematch_len = -1;
+			ssize_t postmatch_len = -1;
 			size_t match_len = entry->input_mb_length;
-			int32_t subwidth;
+			PangoRectangle ink_subrect;
+			PangoRectangle logical_subrect;
 			if (entry->input_mb_length > 0 && entry->selection_highlight_color.a != 0) {
 				char *match_pos = strcasestr(str, entry->input_mb);
 				if (match_pos != NULL) {
 					prematch_len = (match_pos - str);
+					postmatch_len = strlen(str) - prematch_len - match_len;
+					if (postmatch_len <= 0) {
+						postmatch_len = -1;
+					}
 				}
 			}
 
@@ -170,27 +182,43 @@ void entry_backend_pango_update(struct entry *entry)
 			pango_layout_set_text(layout, str, prematch_len);
 			pango_cairo_update_layout(cr, layout);
 			pango_cairo_show_layout(cr, layout);
-			pango_layout_get_size(layout, &subwidth, &height);
-			width = subwidth;
+			pango_layout_get_pixel_extents(entry->pango.layout, &ink_subrect, &logical_subrect);
+			ink_rect = ink_subrect;
+			logical_rect = logical_subrect;
 
 			if (prematch_len != -1) {
-				cairo_translate(cr, (int)(subwidth / PANGO_SCALE), 0);
+				cairo_translate(cr, logical_subrect.x + logical_subrect.width, 0);
 				color = entry->selection_highlight_color;
 				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 				pango_layout_set_text(layout, &str[prematch_len], match_len);
 				pango_cairo_update_layout(cr, layout);
 				pango_cairo_show_layout(cr, layout);
-				pango_layout_get_size(layout, &subwidth, &height);
-				width += subwidth;
+				pango_layout_get_pixel_extents(entry->pango.layout, &ink_subrect, &logical_subrect);
+				if (prematch_len == 0) {
+					ink_rect = ink_subrect;
+					logical_rect = logical_subrect;
+				} else {
+					ink_rect.width = logical_rect.width
+						- ink_rect.x
+						+ ink_subrect.x
+						+ ink_subrect.width;
+					logical_rect.width += logical_subrect.x + logical_subrect.width;
+				}
+			}
 
-				cairo_translate(cr, (int)(subwidth / PANGO_SCALE), 0);
+			if (postmatch_len != -1) {
+				cairo_translate(cr, logical_subrect.x + logical_subrect.width, 0);
 				color = entry->selection_foreground_color;
 				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 				pango_layout_set_text(layout, &str[prematch_len + match_len], -1);
 				pango_cairo_update_layout(cr, layout);
 				pango_cairo_show_layout(cr, layout);
-				pango_layout_get_size(layout, &subwidth, &height);
-				width += subwidth;
+				pango_layout_get_pixel_extents(entry->pango.layout, &ink_subrect, &logical_subrect);
+				ink_rect.width = logical_rect.width
+					- ink_rect.x
+					+ ink_subrect.x
+					+ ink_subrect.width;
+				logical_rect.width += logical_subrect.x + logical_subrect.width;
 
 			}
 
@@ -202,9 +230,8 @@ void entry_backend_pango_update(struct entry *entry)
 			if (pad < 0) {
 				pad = entry->clip_width;
 			}
-			cairo_translate(cr, -pad, 0);
-			cairo_rectangle(cr, 0, 0, (int)(width / PANGO_SCALE) + pad * 2, (int)(height / PANGO_SCALE));
-			cairo_translate(cr, pad, 0);
+			cairo_translate(cr, floor(-pad + ink_rect.x), 0);
+			cairo_rectangle(cr, 0, 0, ceil(ink_rect.width + pad * 2), ceil(logical_rect.height));
 			cairo_fill(cr);
 			cairo_restore(cr);
 			cairo_paint(cr);
