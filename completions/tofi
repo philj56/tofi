@@ -54,8 +54,6 @@ _tofi()
 			;;
 		--help|-h)
 			;;
-		--late-keyboard-init)
-			;;
 		--*)
 			return 0
 			;;

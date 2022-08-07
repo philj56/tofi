@@ -824,32 +824,11 @@ const struct option long_options[] = {
 	{"drun-launch", required_argument, NULL, 0},
 	{"drun-print-exec", required_argument, NULL, 0},
 	{"hint-font", required_argument, NULL, 0},
-	{"output", required_argument, NULL, 'o'},
-	{"late-keyboard-init", no_argument, NULL, 'k'},
+	{"output", required_argument, NULL, 0},
+	{"late-keyboard-init", optional_argument, NULL, 'k'},
 	{NULL, 0, NULL, 0}
 };
 const char *short_options = ":hc:";
-
-static void parse_early_args(struct tofi *tofi, int argc, char *argv[])
-{
-	/* Handle errors ourselves (i.e. ignore them for now). */
-	opterr = 0;
-
-	/* Just check for help, late-keyboard-init and output */
-	optind = 1;
-	int opt = getopt_long(argc, argv, short_options, long_options, NULL);
-	while (opt != -1) {
-		if (opt == 'h') {
-			usage();
-			exit(EXIT_SUCCESS);
-		} else if (opt == 'k') {
-			tofi->late_keyboard_init = true;
-		} else if (opt == 'o') {
-			snprintf(tofi->target_output_name, N_ELEM(tofi->target_output_name), "%s", optarg);
-		}
-		opt = getopt_long(argc, argv, short_options, long_options, NULL);
-	}
-}
 
 static void parse_args(struct tofi *tofi, int argc, char *argv[])
 {
@@ -894,7 +873,17 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 	opt = getopt_long(argc, argv, short_options, long_options, &option_index);
 	while (opt != -1) {
 		if (opt == 0) {
-			apply_option(tofi, long_options[option_index].name, optarg);
+			config_apply(tofi, long_options[option_index].name, optarg);
+		} else if (opt == 'k') {
+			/*
+			 * Backwards compatibility for --late-keyboard-init not
+			 * taking an argument.
+			 */
+			if (optarg) {
+				config_apply(tofi, long_options[option_index].name, optarg);
+			} else {
+				tofi->late_keyboard_init = true;
+			}
 		}
 		opt = getopt_long(argc, argv, short_options, long_options, &option_index);
 	}
@@ -983,7 +972,7 @@ int main(int argc, char *argv[])
 	};
 	wl_list_init(&tofi.output_list);
 
-	parse_early_args(&tofi, argc, argv);
+	parse_args(&tofi, argc, argv);
 
 	/*
 	 * Initial Wayland & XKB setup.
@@ -1148,11 +1137,8 @@ int main(int argc, char *argv[])
 		log_debug("Selected output %s.\n", el->name);
 	}
 
-	/*
-	 * We can now parse our arguments and config file, as we know the
-	 * output size required for specifying window sizes in percent.
-	 */
-	parse_args(&tofi, argc, argv);
+	/* We can now calculate any percentages, as we know the output size. */
+	config_fix_percentages(&tofi);
 
 	/* Scale fonts to the correct size. */
 	tofi.window.entry.font_size *= tofi.window.scale;

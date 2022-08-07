@@ -61,6 +61,10 @@ struct entry {
 	uint32_t padding_bottom;
 	uint32_t padding_left;
 	uint32_t padding_right;
+	bool padding_top_is_percent;
+	bool padding_bottom_is_percent;
+	bool padding_left_is_percent;
+	bool padding_right_is_percent;
 	int32_t selection_background_padding;
 	uint32_t input_width;
 	uint32_t border_width;

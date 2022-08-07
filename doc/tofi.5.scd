@@ -135,6 +135,13 @@ options.
 
 	Default: center
 
+*output*=_name_
+	The name of the output to appear on, if multiple outputs are present.
+	If empty, the compositor will choose which output to display the window
+	on (usually the currently focused output).
+
+	Default: ""
+
 *margin-top*=_px|%_
 	Offset from top of screen. See *PERCENTAGE VALUES* for more
 	information. Only has an effect when anchored to the top of the screen.
@@ -221,6 +228,14 @@ options.
 	sizes.
 
 	Default: true
+
+*late-keyboard-init*=_true|false_
+	Delay keyboard initialisation until after the first draw to screen.
+	This option is experimental, and will cause tofi to miss keypresses
+	for a short time after launch. The only reason to use this option is
+	performance on slow systems.
+
+	Default: false
 
 # COLORS
 

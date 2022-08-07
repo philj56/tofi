@@ -39,15 +39,6 @@ nothing, and may be removed in a future version of tofi.
 *-c, --config* <path>
 	Specify path to custom config file.
 
-*--output* <name>
-	Select the output to appear on.
-
-*--late-keyboard-init*
-	Delay keyboard initialisation until after the first draw to screen.
-	This option is experimental, and will cause tofi to miss keypresses
-	for a short time after launch. The only reason to use this option is
-	performance on slow systems.
-
 All config file options described in *tofi*(5) are also accepted, in the form
 *--key=value*.
 

@@ -95,6 +95,10 @@
 #
 ### Window positioning
 #
+	# The name of the output to appear on. An empty string will use the
+	# default output chosen by the compositor.
+	output = ""
+
 	# Location on screen to anchor the window to.
 	#
 	# Supported values: top-left, top, top-right, right, bottom-right,
@@ -120,3 +124,9 @@
 	# If true, directly launch applications on selection when in drun mode.
 	# Otherwise, just print the command line to stdout.
 	drun-launch = false
+
+	# Delay keyboard initialisation until after the first draw to screen.
+	# This option is experimental, and will cause tofi to miss keypresses
+	# for a short time after launch. The only reason to use this option is
+	# performance on slow systems.
+	late-keyboard-init = false

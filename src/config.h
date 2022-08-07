@@ -4,6 +4,7 @@
 #include "tofi.h"
 
 void config_load(struct tofi *tofi, const char *filename);
-void apply_option(struct tofi *tofi, const char *option, const char *value);
+void config_apply(struct tofi *tofi, const char *option, const char *value);
+void config_fix_percentages(struct tofi *tofi);
 
 #endif /* TOFI_CONFIG_H */
