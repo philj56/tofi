@@ -268,3 +268,52 @@ The table below additionally includes `--late-keyboard-init` in the arguments.
     </tr>
   </tbody>
 </table>
+
+#### Bonus Round: Transparent HugePages
+
+It turns out that it's possible to speed up fullscreen windows somewhat with
+some advanced memory tweaks. See [this Stack Overflow
+question](https://stackoverflow.com/questions/73278608/can-mmaps-performance-be-improved-for-shared-memory)
+if you want full details, but basically by setting
+`/sys/kernel/mm/transparent_hugepage/shmem_enabled` to `advise`, we can tell
+the kernel we're going to be working with large memory areas. This results in
+fewer page faults when first allocating memory, speeding up tofi.
+
+Note that I don't recommend you play with this unless you know what you're
+doing (I don't), but I've included it just in case, and to show that the
+slowdown on large screens is partially due to factors beyond tofi's control.
+
+The table below shows the effects of additionally enabling hugepages from the
+table above. The dmenu theme has been skipped, as the window it creates is too
+small to benefit from them. The Raspberry Pi is also omitted, as it doesn't
+support hugepages.
+
+<table>
+  <thead>
+    <tr>
+      <th colspan=2 rowspan=2/>
+      <th colspan=2> Theme </th>
+    </tr>
+    <tr>
+      <th> fullscreen </th>
+      <th> dos </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th rowspan=3> Machine </th>
+      <th> Ryzen 7 3700X <br> 2560px × 1440px </th>
+      <td align=right> 6.9ms ± 1.1ms </td>
+      <td align=right> 3.2ms ± 0.4ms </td>    </tr>
+    <tr>
+      <th> Ryzen 5 5600U (AC) <br> 2880px × 1800px </th>
+      <td align=right> 7.9ms ± 1.2ms </td>
+      <td align=right> 3.4ms ± 1.0ms </td>
+    </tr>
+    <tr>
+      <th> Ryzen 5 5600U (battery) <br> 2880px × 1800px </th>
+      <td align=right> 13.7ms ± 0.9ms </td>
+      <td align=right> 5.6ms ± 0.8ms </td>
+    </tr>
+  </tbody>
+</table>
