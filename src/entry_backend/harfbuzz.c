@@ -270,8 +270,21 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 		}
 
 		const char *result = entry->results.buf[index].string;
-		/* If this isn't the selected result, just print as normal. */
-		if (i != entry->selection) {
+		/*
+		 * If this isn't the selected result, or it is but we're not
+		 * doing any fancy match-highlighting or backgrounds, just
+		 * print as normal.
+		 */
+		if (i != entry->selection
+				|| (entry->selection_highlight_color.a == 0
+					&& entry->selection_background_color.a == 0)) {
+			if (i == entry->selection) {
+				color = entry->selection_foreground_color;
+			} else {
+				color = entry->foreground_color;
+			}
+			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+
 			hb_buffer_clear_contents(buffer);
 			setup_hb_buffer(buffer);
 			hb_buffer_add_utf8(buffer, result, -1, 0, -1);
@@ -444,8 +457,6 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			cairo_fill(cr);
 			cairo_restore(cr);
 			cairo_paint(cr);
-			color = entry->foreground_color;
-			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 		}
 	}
 	entry->num_results_drawn = i;

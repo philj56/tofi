@@ -161,6 +161,10 @@ In roughly descending order, the most important options for performance are:
   results will speed this up, but since this likely only applies to dmenu-like
   themes (which are already very quick) it's probably not worth setting this.
 
+* `--selection-match-color`, `--selection-background` - Passing either of these
+  options causes some more complex rendering to take place, again leading to a
+  couple of ms slowdown.
+
 * `--hint-font` - Getting really into it now, one of the remaining slow points
   is hinting fonts. For the dmenu theme on battery power on my laptop, with a
   specific font file chosen, the initial text render with the default font
