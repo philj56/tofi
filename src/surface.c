@@ -32,6 +32,20 @@ void surface_init(
 			MAP_SHARED,
 			surface->shm_pool_fd,
 			0);
+#ifdef __linux__
+	/*
+	 * On linux, ask for Transparent HugePages if available and our
+	 * buffer's at least 2MiB. This can greatly speed up the first
+	 * cairo_paint() by reducing page faults, but unfortunately is disabled
+	 * for shared memory at the time of writing.
+	 *
+	 * MADV_HUGEPAGE isn't available on *BSD, which we could conceivably be
+	 * running on.
+	 */
+	if (surface->shm_pool_size >= (2 << 20)) {
+		madvise(surface->shm_pool_data, surface->shm_pool_size, MADV_HUGEPAGE);
+	}
+#endif
 	surface->wl_shm_pool = wl_shm_create_pool(
 			wl_shm,
 			surface->shm_pool_fd,
