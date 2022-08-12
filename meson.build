@@ -100,6 +100,7 @@ tofi_sources = files(
   'src/entry.c',
   'src/entry_backend/pango.c',
   'src/entry_backend/harfbuzz.c',
+  'src/fuzzy_match.c',
   'src/history.c',
   'src/log.c',
   'src/mkdirp.c',

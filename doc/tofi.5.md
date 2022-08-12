@@ -240,6 +240,14 @@ options.
 >
 > Default: true
 
+**fuzzy-match**=*true\|false*
+
+> If true, searching is performed via a simple fuzzy matching algorithm.
+> If false, substring matching is used, weighted to favour matches
+> closer to the beginning of the string.
+>
+> Default: false
+
 **drun-launch**=*true\|false*
 
 > If true, directly launch applications on selection when in drun mode.

@@ -1,6 +1,7 @@
 #ifndef STRING_VEC_H
 #define STRING_VEC_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -23,7 +24,7 @@ struct string_vec string_vec_create(void);
 void string_vec_destroy(struct string_vec *restrict vec);
 
 [[nodiscard("memory leaked")]]
-struct string_vec string_vec_copy(struct string_vec *restrict vec);
+struct string_vec string_vec_copy(const struct string_vec *restrict vec);
 
 void string_vec_add(struct string_vec *restrict vec, const char *restrict str);
 
@@ -36,7 +37,8 @@ char **string_vec_find(struct string_vec *restrict vec, const char *str);
 [[nodiscard("memory leaked")]]
 struct string_vec string_vec_filter(
 		const struct string_vec *restrict vec,
-		const char *restrict substr);
+		const char *restrict substr,
+		bool fuzzy);
 
 [[nodiscard("memory leaked")]]
 struct string_vec string_vec_load(FILE *file);

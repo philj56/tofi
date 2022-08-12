@@ -1,6 +1,7 @@
 #include <glib.h>
 #include <stdbool.h>
 #include "desktop_vec.h"
+#include "fuzzy_match.h"
 #include "log.h"
 #include "string_vec.h"
 #include "xmalloc.h"
@@ -119,10 +120,10 @@ static int cmpscorep(const void *restrict a, const void *restrict b)
 {
 	struct scored_string *restrict str1 = (struct scored_string *)a;
 	struct scored_string *restrict str2 = (struct scored_string *)b;
-	if (str1->history_score != str2->history_score) {
-		return str2->history_score - str1->history_score;
-	}
-	return str1->search_score - str2->search_score;
+
+	int hist_diff = str2->history_score - str1->history_score;
+	int search_diff = str2->search_score - str1->search_score;
+	return hist_diff + search_diff;
 }
 
 void desktop_vec_sort(struct desktop_vec *restrict vec)
@@ -142,29 +143,49 @@ struct desktop_entry *desktop_vec_find(struct desktop_vec *restrict vec, const c
 
 struct string_vec desktop_vec_filter(
 		const struct desktop_vec *restrict vec,
-		const char *restrict substr)
+		const char *restrict substr,
+		bool fuzzy)
 {
 	struct string_vec filt = string_vec_create();
 	for (size_t i = 0; i < vec->count; i++) {
-		char *c = strcasestr(vec->buf[i].name, substr);
-		if (c != NULL) {
+		int32_t search_score;
+		if (fuzzy) {
+			search_score = fuzzy_match(substr, vec->buf[i].name);
+		} else {
+			char *c = strcasestr(vec->buf[i].name, substr);
+			if (c == NULL) {
+				search_score = INT32_MIN;
+			} else {
+				search_score = vec->buf[i].name - c;
+			}
+		}
+		if (search_score != INT32_MIN) {
 			string_vec_add(&filt, vec->buf[i].name);
 			/*
 			 * Store the position of the match in the string as
 			 * its search_score, for later sorting.
 			 */
-			filt.buf[filt.count - 1].search_score = c - vec->buf[i].name;
+			filt.buf[filt.count - 1].search_score = search_score;
 			filt.buf[filt.count - 1].history_score = vec->buf[i].history_score;
 		} else {
 			/* If we didn't match the name, check the keywords. */
-			c = strcasestr(vec->buf[i].keywords, substr);
-			if (c != NULL) {
+			if (fuzzy) {
+				search_score = fuzzy_match(substr, vec->buf[i].keywords);
+			} else {
+				char *c = strcasestr(vec->buf[i].keywords, substr);
+				if (c == NULL) {
+					search_score = INT32_MIN;
+				} else {
+					search_score = vec->buf[i].keywords - c;
+				}
+			}
+			if (search_score != INT32_MIN) {
 				string_vec_add(&filt, vec->buf[i].name);
 				/*
 				 * Arbitrary score addition to make name
 				 * matches preferred over keyword matches.
 				 */
-				filt.buf[filt.count - 1].search_score = 10 + c - vec->buf[i].keywords;
+				filt.buf[filt.count - 1].search_score = search_score - 20;
 				filt.buf[filt.count - 1].history_score = vec->buf[i].history_score;
 			}
 		}

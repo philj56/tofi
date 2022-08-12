@@ -1,6 +1,7 @@
 #ifndef DESKTOP_VEC_H
 #define DESKTOP_VEC_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -35,7 +36,8 @@ void desktop_vec_sort(struct desktop_vec *restrict vec);
 struct desktop_entry *desktop_vec_find(struct desktop_vec *restrict vec, const char *name);
 struct string_vec desktop_vec_filter(
 		const struct desktop_vec *restrict vec,
-		const char *restrict substr);
+		const char *restrict substr,
+		bool fuzzy);
 
 struct desktop_vec desktop_vec_load(FILE *file);
 void desktop_vec_save(struct desktop_vec *restrict vec, FILE *restrict file);

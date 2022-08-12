@@ -168,12 +168,12 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 					N_ELEM(buf));
 			entry->input_mb_length += len;
 			if (entry->drun) {
-				struct string_vec results = desktop_vec_filter(&entry->apps, entry->input_mb);
+				struct string_vec results = desktop_vec_filter(&entry->apps, entry->input_mb, tofi->fuzzy_match);
 				string_vec_destroy(&entry->results);
 				entry->results = results;
 			} else {
 				struct string_vec tmp = entry->results;
-				entry->results = string_vec_filter(&entry->results, entry->input_mb);
+				entry->results = string_vec_filter(&entry->results, entry->input_mb, tofi->fuzzy_match);
 				string_vec_destroy(&tmp);
 			}
 		}
@@ -189,9 +189,9 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		entry->input_mb_length = siz;
 		string_vec_destroy(&entry->results);
 		if (entry->drun) {
-			entry->results = desktop_vec_filter(&entry->apps, entry->input_mb);
+			entry->results = desktop_vec_filter(&entry->apps, entry->input_mb, tofi->fuzzy_match);
 		} else {
-			entry->results = string_vec_filter(&entry->commands, entry->input_mb);
+			entry->results = string_vec_filter(&entry->commands, entry->input_mb, tofi->fuzzy_match);
 		}
 	} else if (sym == XKB_KEY_Escape
 			|| (sym == XKB_KEY_c
@@ -775,6 +775,7 @@ static void usage()
 "      --hide-cursor <true|false>       Hide the cursor.\n"
 "      --horizontal <true|false>        List results horizontally.\n"
 "      --history <true|false>           Sort results by number of usages.\n"
+"      --fuzzy-match <true|false>       Use fuzzy matching for searching.\n"
 "      --drun-launch <true|false>       Launch apps directly in drun mode.\n"
 "      --drun-print-exec <true|false>   Print a command line in drun mode.\n"
 "                                       This is now always the case,\n"
@@ -821,6 +822,7 @@ const struct option long_options[] = {
 	{"horizontal", required_argument, NULL, 0},
 	{"hide-cursor", required_argument, NULL, 0},
 	{"history", required_argument, NULL, 0},
+	{"fuzzy-match", required_argument, NULL, 0},
 	{"drun-launch", required_argument, NULL, 0},
 	{"drun-print-exec", required_argument, NULL, 0},
 	{"hint-font", required_argument, NULL, 0},

@@ -82,6 +82,7 @@ struct tofi {
 	bool late_keyboard_init;
 	bool drun_launch;
 	bool drun_print_exec;
+	bool fuzzy_match;
 	char target_output_name[MAX_OUTPUT_NAME_LEN];
 };
 

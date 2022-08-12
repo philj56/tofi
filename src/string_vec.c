@@ -1,8 +1,10 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include "fuzzy_match.h"
 #include "string_vec.h"
 #include "xmalloc.h"
 
@@ -31,10 +33,10 @@ static int cmpscorep(const void *restrict a, const void *restrict b)
 {
 	struct scored_string *restrict str1 = (struct scored_string *)a;
 	struct scored_string *restrict str2 = (struct scored_string *)b;
-	if (str1->history_score != str2->history_score) {
-		return str2->history_score - str1->history_score;
-	}
-	return str1->search_score - str2->search_score;
+
+	int hist_diff = str2->history_score - str1->history_score;
+	int search_diff = str2->search_score - str1->search_score;
+	return hist_diff + search_diff;
 }
 
 struct string_vec string_vec_create(void)
@@ -55,7 +57,7 @@ void string_vec_destroy(struct string_vec *restrict vec)
 	free(vec->buf);
 }
 
-struct string_vec string_vec_copy(struct string_vec *restrict vec)
+struct string_vec string_vec_copy(const struct string_vec *restrict vec)
 {
 	struct string_vec copy = {
 		.count = vec->count,
@@ -110,18 +112,32 @@ char **string_vec_find(struct string_vec *restrict vec, const char * str)
 
 struct string_vec string_vec_filter(
 		const struct string_vec *restrict vec,
-		const char *restrict substr)
+		const char *restrict substr,
+		bool fuzzy)
 {
+	if (substr[0] == '\0') {
+		return string_vec_copy(vec);
+	}
 	struct string_vec filt = string_vec_create();
 	for (size_t i = 0; i < vec->count; i++) {
-		char *c = strcasestr(vec->buf[i].string, substr);
-		if (c != NULL) {
+		int32_t search_score;
+		if (fuzzy) {
+			search_score = fuzzy_match(substr, vec->buf[i].string);
+		} else {
+			char *c = strcasestr(vec->buf[i].string, substr);
+			if (c == NULL) {
+				search_score = INT32_MIN;
+			} else {
+				search_score = vec->buf[i].string - c;
+			}
+		}
+		if (search_score != INT32_MIN) {
 			string_vec_add(&filt, vec->buf[i].string);
 			/*
 			 * Store the position of the match in the string as
 			 * its search_score, for later sorting.
 			 */
-			filt.buf[filt.count - 1].search_score = c - vec->buf[i].string;
+			filt.buf[filt.count - 1].search_score = search_score;
 			filt.buf[filt.count - 1].history_score = vec->buf[i].history_score;
 		}
 	}
