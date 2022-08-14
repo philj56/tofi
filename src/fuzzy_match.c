@@ -9,11 +9,94 @@
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+static int32_t compute_score(
+		int32_t jump,
+		bool first_char,
+		const char *restrict match);
+
+static int32_t fuzzy_match_recurse(
+		const char *restrict pattern,
+		const char *restrict str,
+		int32_t score,
+		bool first_char);
+
 /*
  * Returns score if each character in pattern is found sequentially within str.
  * Returns INT32_MIN otherwise.
+ */
+int32_t fuzzy_match(const char *restrict pattern, const char *restrict str)
+{
+	const int unmatched_letter_penalty = -1;
+	const size_t slen = strlen(str);
+	const size_t plen = strlen(pattern);
+	int32_t score = 0;
+
+	if (*pattern == '\0') {
+		return score;
+	}
+	if (slen < plen) {
+		return INT32_MIN;
+	}
+
+	/* We can already penalise any unused letters. */
+	score += unmatched_letter_penalty * (int32_t)(slen - plen);
+
+	/* Perform the match. */
+	score = fuzzy_match_recurse(pattern, str, score, true);
+
+	return score;
+}
+
+/*
+ * Recursively match the whole of pattern against str.
+ * The score parameter is the score of the previously matched character.
  *
- * The scoring system is taken from fts_fuzzy_match v0.1.0 by Forrest Smith,
+ * This reaches a maximum recursion depth of strlen(pattern) + 1. However, the
+ * stack usage is small (the maximum I've seen on x86_64 is 144 bytes with
+ * gcc -O3), so this shouldn't matter unless pattern contains thousands of
+ * characters.
+ */
+int32_t fuzzy_match_recurse(
+		const char *restrict pattern,
+		const char *restrict str,
+		int32_t score,
+		bool first_char)
+{
+	if (*pattern == '\0') {
+		/* We've matched the full pattern. */
+		return score;
+	}
+
+	const char *match = str;
+	const char search[2] = { *pattern, '\0' };
+
+	int32_t best_score = INT32_MIN;
+
+	/*
+	 * Find all occurrences of the next pattern character in str, and
+	 * recurse on them.
+	 */
+	while ((match = strcasestr(match, search)) != NULL) {
+		int32_t subscore = fuzzy_match_recurse(
+				pattern + 1,
+				match + 1,
+				compute_score(match - str, first_char, match),
+				false);
+		best_score = MAX(best_score, subscore);
+		match++;
+	}
+
+	if (best_score == INT32_MIN) {
+		/* We couldn't match the rest of the pattern. */
+		return INT32_MIN;
+	} else {
+		return score + best_score;
+	}
+}
+
+/*
+ * Calculate the score for a single matching letter.
+ * The scoring system is taken from fts_fuzzy_match v0.2.0 by Forrest Smith,
  * which is licensed to the public domain.
  *
  * The factors affecting score are:
@@ -24,69 +107,42 @@
  *
  *   - Penalties:
  *     - If there are letters before the first match.
- *     - If there are superfluous characters in str.
+ *     - If there are superfluous characters in str (already accounted for).
  */
-int32_t fuzzy_match(const char *restrict pattern, const char *restrict str)
+int32_t compute_score(int32_t jump, bool first_char, const char *restrict match)
 {
-	if (*pattern == '\0') {
-		return 0;
-	}
-	if (strlen(str) < strlen(pattern)) {
-		return INT32_MIN;
-	}
+	const int adjacency_bonus = 15;
+	const int separator_bonus = 30;
+	const int camel_bonus = 30;
+	const int first_letter_bonus = 15;
 
-	const int adjacency_bonus = 5;
-	const int separator_bonus = 10;
-	const int camel_bonus = 10;
-
-	const int leading_letter_penalty = -3;
-	const int max_leading_letter_penalty = -9;
-	const int unmatched_letter_penalty = -1;
+	const int leading_letter_penalty = -5;
+	const int max_leading_letter_penalty = -15;
 
 	int32_t score = 0;
-	const char *last_match = str;
 
-	/*
-	 * Iterate through pattern, jumping to the next matching character in
-	 * str. This will only ever find the first fuzzy match, not the best,
-	 * but it's good enough and very quick.
-	 */
-	for (size_t pidx = 0; pattern[pidx] != '\0'; pidx++) {
-		char search[2] = { pattern[pidx], '\0' };
-		char *match = strcasestr(last_match, search);
-		if (match == NULL) {
-			return INT32_MIN;
+	/* Apply bonuses. */
+	if (!first_char && jump == 0) {
+		score += adjacency_bonus;
+	}
+	if (!first_char || jump > 0) {
+		if (isupper(*match) && islower(*(match - 1))) {
+			score += camel_bonus;
 		}
-
-		int32_t jump = match - last_match;
-
-		/* Apply bonuses. */
-		if (pidx > 0 && jump == 0) {
-			score += adjacency_bonus;
-		}
-		if (pidx > 0 || jump > 0) {
-			if (isupper(*match) && islower(*(match - 1))) {
-				score += camel_bonus;
-			}
-			if (isalnum(*match) && !isalnum(*(match - 1))) {
-				score += separator_bonus;
-			}
-		}
-		if (pidx == 0 && jump == 0) {
-			/* Match at start of string gets separator bonus. */
+		if (isalnum(*match) && !isalnum(*(match - 1))) {
 			score += separator_bonus;
 		}
-
-		/* Apply penalties. */
-		if (pidx == 0) {
-			score += MAX(leading_letter_penalty * jump,
-					max_leading_letter_penalty);
-		}
-
-		last_match = match + 1;
+	}
+	if (first_char && jump == 0) {
+		/* Match at start of string gets separator bonus. */
+		score += first_letter_bonus;
 	}
 
-	score += unmatched_letter_penalty * (strlen(str) - strlen(pattern));
+	/* Apply penalties. */
+	if (first_char) {
+		score += MAX(leading_letter_penalty * jump,
+				max_leading_letter_penalty);
+	}
 
 	return score;
 }
