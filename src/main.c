@@ -763,6 +763,7 @@ static void usage()
 "      --height <px|%>                  Height of the window.\n"
 "      --corner-radius <px>             Radius of window corners.\n"
 "      --output <name>                  Name of output to display window on.\n"
+"      --scale <true|false>             Follow the output's scale factor.\n"
 "      --anchor <position>              Location on screen to anchor window.\n"
 "      --margin-top <px|%>              Offset from top of screen.\n"
 "      --margin-bottom <px|%>           Offset from bottom of screen.\n"
@@ -827,6 +828,7 @@ const struct option long_options[] = {
 	{"drun-print-exec", required_argument, NULL, 0},
 	{"hint-font", required_argument, NULL, 0},
 	{"output", required_argument, NULL, 0},
+	{"scale", required_argument, NULL, 0},
 	{"late-keyboard-init", optional_argument, NULL, 'k'},
 	{NULL, 0, NULL, 0}
 };
@@ -1139,11 +1141,11 @@ int main(int argc, char *argv[])
 		log_debug("Selected output %s.\n", el->name);
 	}
 
-	/* We can now calculate any percentages, as we know the output size. */
-	config_fix_percentages(&tofi);
-
-	/* Scale fonts to the correct size. */
-	tofi.window.entry.font_size *= tofi.window.scale;
+	/*
+	 * We can now scale values and calculate any percentages, as we know
+	 * the output size and scale.
+	 */
+	config_fixup_values(&tofi);
 
 	/*
 	 * If we were invoked as tofi-run, generate the command list.

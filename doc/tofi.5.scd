@@ -143,6 +143,16 @@ options.
 
 	Default: ""
 
+*scale*=_true|false_
+	Scale the window by the output's scale factor.
+
+	*WARNING*: In the next version of tofi, this will default to true, so
+	set this to false now if you don't want that behaviour. Note that
+	currently, font scaling will still occur when this is set to _false_ -
+	that will change when _true_ becomes the default.
+
+	Default: false
+
 *margin-top*=_px|%_
 	Offset from top of screen. See *PERCENTAGE VALUES* for more
 	information. Only has an effect when anchored to the top of the screen.

@@ -5,6 +5,6 @@
 
 void config_load(struct tofi *tofi, const char *filename);
 void config_apply(struct tofi *tofi, const char *option, const char *value);
-void config_fix_percentages(struct tofi *tofi);
+void config_fixup_values(struct tofi *tofi);
 
 #endif /* TOFI_CONFIG_H */

@@ -79,6 +79,7 @@ struct tofi {
 	uint32_t anchor;
 	bool hide_cursor;
 	bool use_history;
+	bool use_scale;
 	bool late_keyboard_init;
 	bool drun_launch;
 	bool drun_print_exec;

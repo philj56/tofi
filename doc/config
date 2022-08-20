@@ -92,6 +92,9 @@
 	padding-left = 0
 	padding-right = 0
 
+	# Whether to scale the window by the output's scale factor.
+	scale = true
+
 #
 ### Window positioning
 #

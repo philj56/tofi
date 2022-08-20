@@ -25,6 +25,7 @@ struct uint32_percent {
 static char *strip(const char *str);
 static bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const char *option, const char *value);
 static char *get_config_path(void);
+static uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent, uint32_t scale, bool use_scale);
 
 static uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err);
 static bool parse_bool(const char *filename, size_t lineno, const char *str, bool *err);
@@ -334,6 +335,8 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->late_keyboard_init = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "output") == 0) {
 		snprintf(tofi->target_output_name, N_ELEM(tofi->target_output_name), "%s", value);
+	} else if (strcasecmp(option, "scale") == 0) {
+		tofi->use_scale = parse_bool(filename, lineno, value, &err);
 	} else {
 		PARSE_ERROR(filename, lineno, "Unknown option \"%s\"\n", option);
 		err = true;
@@ -348,38 +351,101 @@ void config_apply(struct tofi *tofi, const char *option, const char *value)
 	};
 }
 
-void config_fix_percentages(struct tofi *tofi)
+uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent, uint32_t scale, bool use_scale)
 {
-	if (tofi->window.width_is_percent) {
-		tofi->window.width = tofi->window.width * tofi->output_width / 100;
+	if (is_percent) {
+		return value * base / 100;
+	} else if (use_scale) {
+		return value * scale;
 	}
-	if (tofi->window.height_is_percent) {
-		tofi->window.height = tofi->window.height * tofi->output_height / 100;
+	return value;
+}
+
+void config_fixup_values(struct tofi *tofi)
+{
+	uint32_t scale = tofi->window.scale;
+
+	/*
+	 * Scale fonts to the correct size.
+	 *
+	 * TODO: In the next release (0.6.0), this should be moved within
+	 * the use_scale conditional.
+	 */
+	tofi->window.entry.font_size *= scale;
+
+	if (tofi->use_scale) {
+		struct entry *entry = &tofi->window.entry;
+
+		entry->corner_radius *= scale;
+		entry->selection_background_padding *= scale;
+		entry->result_spacing *= scale;
+		entry->input_width *= scale;
+		entry->outline_width *= scale;
+		entry->border_width *= scale;
+		entry->input_width *= scale;
 	}
-	if (tofi->window.margin_top_is_percent) {
-		tofi->window.margin_top = tofi->window.margin_top * tofi->output_height / 100;
-	}
-	if (tofi->window.margin_bottom_is_percent) {
-		tofi->window.margin_bottom = tofi->window.margin_bottom * tofi->output_height / 100;
-	}
-	if (tofi->window.margin_left_is_percent) {
-		tofi->window.margin_left = tofi->window.margin_left * tofi->output_width / 100;
-	}
-	if (tofi->window.margin_right_is_percent) {
-		tofi->window.margin_right = tofi->window.margin_right * tofi->output_width / 100;
-	}
-	if (tofi->window.entry.padding_top_is_percent) {
-		tofi->window.entry.padding_top = tofi->window.entry.padding_top * tofi->output_height / 100;
-	}
-	if (tofi->window.entry.padding_bottom_is_percent) {
-		tofi->window.entry.padding_bottom = tofi->window.entry.padding_bottom * tofi->output_height / 100;
-	}
-	if (tofi->window.entry.padding_left_is_percent) {
-		tofi->window.entry.padding_left = tofi->window.entry.padding_left * tofi->output_width / 100;
-	}
-	if (tofi->window.entry.padding_right_is_percent) {
-		tofi->window.entry.padding_right = tofi->window.entry.padding_right * tofi->output_width / 100;
-	}
+
+	/* These values should only be scaled if they're not percentages. */
+	tofi->window.width = fixup_percentage(
+			tofi->window.width,
+			tofi->output_width,
+			tofi->window.width_is_percent,
+			tofi->window.scale,
+			tofi->use_scale);
+	tofi->window.height = fixup_percentage(
+			tofi->window.height,
+			tofi->output_height,
+			tofi->window.height_is_percent,
+			tofi->window.scale,
+			tofi->use_scale);
+	tofi->window.margin_top = fixup_percentage(
+			tofi->window.margin_top,
+			tofi->output_height,
+			tofi->window.margin_top_is_percent,
+			tofi->window.scale,
+			tofi->use_scale);
+	tofi->window.margin_bottom = fixup_percentage(
+			tofi->window.margin_bottom,
+			tofi->output_height,
+			tofi->window.margin_bottom_is_percent,
+			tofi->window.scale,
+			tofi->use_scale);
+	tofi->window.margin_left = fixup_percentage(
+			tofi->window.margin_left,
+			tofi->output_width,
+			tofi->window.margin_left_is_percent,
+			tofi->window.scale,
+			tofi->use_scale);
+	tofi->window.margin_right = fixup_percentage(
+			tofi->window.margin_right,
+			tofi->output_width,
+			tofi->window.margin_right_is_percent,
+			tofi->window.scale,
+			tofi->use_scale);
+	tofi->window.entry.padding_top = fixup_percentage(
+			tofi->window.entry.padding_top,
+			tofi->output_height,
+			tofi->window.entry.padding_top_is_percent,
+			tofi->window.scale,
+			tofi->use_scale);
+	tofi->window.entry.padding_bottom = fixup_percentage(
+			tofi->window.entry.padding_bottom,
+			tofi->output_height,
+			tofi->window.entry.padding_bottom_is_percent,
+			tofi->window.scale,
+			tofi->use_scale);
+	tofi->window.entry.padding_left = fixup_percentage(
+			tofi->window.entry.padding_left,
+			tofi->output_width,
+			tofi->window.entry.padding_left_is_percent,
+			tofi->window.scale,
+			tofi->use_scale);
+	tofi->window.entry.padding_right = fixup_percentage(
+			tofi->window.entry.padding_right,
+			tofi->output_width,
+			tofi->window.entry.padding_right_is_percent,
+			tofi->window.scale,
+			tofi->use_scale);
 }
 
 char *get_config_path()

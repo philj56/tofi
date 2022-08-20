@@ -9,6 +9,7 @@ _tofi()
 		--help
 		--config
 		--output
+		--scale
 		--anchor
 		--background-color
 		--corner-radius
