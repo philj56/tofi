@@ -177,9 +177,26 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 				string_vec_destroy(&tmp);
 			}
 		}
-	} else if (entry->input_length > 0 && sym == XKB_KEY_BackSpace) {
-		entry->input_length--;
-		entry->input[entry->input_length] = L'\0';
+	} else if (entry->input_length > 0
+			&& (sym == XKB_KEY_BackSpace
+				|| (sym == XKB_KEY_w
+					&& xkb_state_mod_name_is_active(
+						tofi->xkb_state,
+						XKB_MOD_NAME_CTRL,
+						XKB_STATE_MODS_EFFECTIVE))))
+	{
+		if (sym == XKB_KEY_BackSpace) {
+			entry->input_length--;
+			entry->input[entry->input_length] = L'\0';
+		} else {
+			while (entry->input_length > 0 && iswspace(entry->input[entry->input_length - 1])) {
+				entry->input_length--;
+			}
+			while (entry->input_length > 0 && !iswspace(entry->input[entry->input_length - 1])) {
+				entry->input_length--;
+			}
+			entry->input[entry->input_length] = L'\0';
+		}
 		const wchar_t *src = entry->input;
 		size_t siz = wcsrtombs(
 				entry->input_mb,
@@ -187,6 +204,23 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 				N_ELEM(entry->input_mb),
 				NULL);
 		entry->input_mb_length = siz;
+		string_vec_destroy(&entry->results);
+		if (entry->drun) {
+			entry->results = desktop_vec_filter(&entry->apps, entry->input_mb, tofi->fuzzy_match);
+		} else {
+			entry->results = string_vec_filter(&entry->commands, entry->input_mb, tofi->fuzzy_match);
+		}
+	} else if (sym == XKB_KEY_u
+			&& xkb_state_mod_name_is_active(
+				tofi->xkb_state,
+				XKB_MOD_NAME_CTRL,
+				XKB_STATE_MODS_EFFECTIVE)
+		  )
+	{
+		entry->input_length = 0;
+		entry->input[0] = L'\0';
+		entry->input_mb_length = 0;
+		entry->input_mb[0] = '\0';
 		string_vec_destroy(&entry->results);
 		if (entry->drun) {
 			entry->results = desktop_vec_filter(&entry->apps, entry->input_mb, tofi->fuzzy_match);

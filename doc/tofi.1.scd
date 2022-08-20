@@ -50,6 +50,12 @@ All config file options described in *tofi*(5) are also accepted, in the form
 <Down> | <Right> | <Ctrl>-j | <Tab>
 	Move the selection forward one entry.
 
+<Ctrl>-u
+	Delete line.
+
+<Ctrl>-w
+	Delete word.
+
 <Enter>
 	Confirm the current selection and quit.
 

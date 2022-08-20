@@ -19,7 +19,7 @@ displays a graphical selection menu. When a selection is made, it is
 printed to stdout.
 
 When invoked via the name **tofi-run**, **tofi** will not accept items
-on stdin, instead presenting a list of executables in the user's $PATH.
+on stdin, instead presenting a list of executables in the user's \$PATH.
 
 When invoked via the name **tofi-drun**, **tofi** will not accept items
 on stdin, and will generate a list of applications from desktop files as
@@ -55,6 +55,14 @@ the form **--key=value**.
 
 > Move the selection forward one entry.
 
+\<Ctrl\>-u
+
+> Delete line.
+
+\<Ctrl\>-w
+
+> Delete word.
+
 \<Enter\>
 
 > Confirm the current selection and quit.
@@ -69,24 +77,24 @@ the form **--key=value**.
 
 > Example configuration file.
 
-*$XDG_CONFIG_HOME/tofi/config*
+*\$XDG_CONFIG_HOME/tofi/config*
 
 > The default configuration file location.
 
-*$XDG_CACHE_HOME/tofi-compgen*
+*\$XDG_CACHE_HOME/tofi-compgen*
 
-> Cached list of executables under $PATH, regenerated as necessary.
+> Cached list of executables under \$PATH, regenerated as necessary.
 
-*$XDG_CACHE_HOME/tofi-drun*
+*\$XDG_CACHE_HOME/tofi-drun*
 
 > Cached list of desktop applications, regenerated as necessary.
 
-*$XDG_STATE_HOME/tofi-history*
+*\$XDG_STATE_HOME/tofi-history*
 
 > Numeric count of commands selected in **tofi-run**, to enable sorting
 > results by run count.
 
-*$XDG_STATE_HOME/tofi-drun-history*
+*\$XDG_STATE_HOME/tofi-drun-history*
 
 > Numeric count of commands selected in **tofi-drun**, to enable sorting
 > results by run count.
