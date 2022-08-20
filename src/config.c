@@ -382,7 +382,6 @@ void config_fixup_values(struct tofi *tofi)
 		entry->input_width *= scale;
 		entry->outline_width *= scale;
 		entry->border_width *= scale;
-		entry->input_width *= scale;
 	}
 
 	/* These values should only be scaled if they're not percentages. */
