@@ -42,6 +42,7 @@ _tofi()
 		--hide-cursor
 		--history
 		--fuzzy-match
+		--require-match
 		--drun-launch
 		--hint-font
 		--late-keyboard-init

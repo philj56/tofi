@@ -324,6 +324,8 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->use_history = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "fuzzy-match") == 0) {
 		tofi->fuzzy_match = parse_bool(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "require-match") == 0) {
+		tofi->require_match = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "drun-launch") == 0) {
 		tofi->drun_launch = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "drun-print-exec") == 0) {

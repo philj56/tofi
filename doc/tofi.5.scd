@@ -226,6 +226,13 @@ options.
 
 	Default: false
 
+*require-match*=_true|false_
+	If true, require a match to allow a selection to be made. If false,
+	making a selection with no matches will print input to stdout.
+	In drun mode, this is always true.
+
+	Default: true
+
 *drun-launch*=_true|false_
 	If true, directly launch applications on selection when in drun mode.
 	Otherwise, just print the path of the .desktop file to stdout.

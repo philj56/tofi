@@ -811,6 +811,7 @@ static void usage()
 "      --horizontal <true|false>        List results horizontally.\n"
 "      --history <true|false>           Sort results by number of usages.\n"
 "      --fuzzy-match <true|false>       Use fuzzy matching for searching.\n"
+"      --require-match <true|false>     Require a match for selection.\n"
 "      --drun-launch <true|false>       Launch apps directly in drun mode.\n"
 "      --drun-print-exec <true|false>   Print a command line in drun mode.\n"
 "                                       This is now always the case,\n"
@@ -858,6 +859,7 @@ const struct option long_options[] = {
 	{"hide-cursor", required_argument, NULL, 0},
 	{"history", required_argument, NULL, 0},
 	{"fuzzy-match", required_argument, NULL, 0},
+	{"require-match", required_argument, NULL, 0},
 	{"drun-launch", required_argument, NULL, 0},
 	{"drun-print-exec", required_argument, NULL, 0},
 	{"hint-font", required_argument, NULL, 0},
@@ -933,11 +935,22 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 	}
 }
 
-static void do_submit(struct tofi *tofi)
+static bool do_submit(struct tofi *tofi)
 {
 	struct entry *entry = &tofi->window.entry;
 	uint32_t selection = entry->selection + entry->first_result;
 	char *res = entry->results.buf[selection].string;
+
+	if (tofi->window.entry.results.count == 0) {
+		/* Always require a match in drun mode. */
+		if (tofi->require_match || entry->drun) {
+			return false;
+		} else {
+			printf("%ls\n", entry->input);
+			return true;
+		}
+	}
+
 	if (entry->drun) {
 		/*
 		 * TODO: This is ugly. The list of apps needs to be sorted
@@ -948,7 +961,7 @@ static void do_submit(struct tofi *tofi)
 		struct desktop_entry *app = desktop_vec_find(&entry->apps, res);
 		if (app == NULL) {
 			log_error("Couldn't find application file! This shouldn't happen.\n");
-			return;
+			return false;
 		} else {
 			res = app->path;
 		}
@@ -966,6 +979,7 @@ static void do_submit(struct tofi *tofi)
 				entry->results.buf[selection].string);
 		history_save(&entry->history, entry->drun);
 	}
+	return true;
 }
 
 int main(int argc, char *argv[])
@@ -1007,6 +1021,7 @@ int main(int argc, char *argv[])
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
 		.use_history = true,
+		.require_match = true,
 	};
 	wl_list_init(&tofi.output_list);
 
@@ -1432,8 +1447,7 @@ int main(int argc, char *argv[])
 		}
 		if (tofi.submit) {
 			tofi.submit = false;
-			if (tofi.window.entry.results.count > 0) {
-				do_submit(&tofi);
+			if (do_submit(&tofi)) {
 				break;
 			}
 		}
