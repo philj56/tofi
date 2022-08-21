@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.5.0] - 2022-08-21
+### Warning - HiDPI config change
+In previous versions of tofi, pixel values were always treated as device
+pixels, ignoring the display's scale factor. This allows pixel-perfect sizes,
+but means you have to make different configs for differently scaled displays,
+and isn't how e.g. Sway does things. Additionally, fonts currently *are* scaled
+by the scale factor, making things a little complex.
+
+This release adds a `scale` boolean option, which currently defaults to
+`false`. Setting this to `true` will make pixel values scale with the display's
+scale factor.
+
+In the next version of tofi, `scale` will default to `true` (but still be
+around if you want the old behaviour). Setting `scale` to `false` will also
+start causing fonts to not be scaled by the scale factor.
+
+If you use tofi on a HiDPI display, you should explicitly set `scale` to your
+desired setting now (or at least be aware that you'll need to change some theme
+dimensions in the next version).
+
+### Added
+- Fuzzy matching can now be enabled with the `fuzzy_match` option.
+- Added `scale` option, as described above.
+- Added Ctrl-u and Ctrl-w readline keybindings.
+- Added this changelog.
+
+### Changed
+- Improved performance when neither `selection-match-color` or
+  `selection-background-color` are specified.
+- Improved performance on systems with Transparent HugePages enabled for shared
+  memory (none that I know of for now, but may be relevant in the future).
+
+
 ## [0.4.0] - 2022-08-07
 ### Deprecated
 In the [0.3.0] release, the `drun-print-exec` option was added to enable fixed
@@ -95,6 +128,7 @@ is how it should have been done from the start.
 ## [0.1.0] - 2022-06-27
 Initial release. Good enough to use, but still some jank.
 
+[0.5.0]: https://github.com/philj56/tofi/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/philj56/tofi/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/philj56/tofi/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/philj56/tofi/compare/v0.2.0...v0.3.0

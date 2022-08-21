@@ -1,7 +1,7 @@
 project(
   'tofi',
   'c',
-  version: '0.4.0',
+  version: '0.5.0',
   license: 'MIT',
   default_options: [
     'c_std=c2x',

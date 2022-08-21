@@ -58,16 +58,6 @@ executables under the user's `$PATH`.
 list of applications found in desktop files as described by the [Desktop Entry
 Specification](https://specifications.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html).
 
-**WARNING**: In the latest version of tofi, the default behaviour of drun mode
-has changed. Previously, when a selection was made in drun mode, the filename
-of the selected desktop file was printed to stdout. This couldn't be passed
-directly to swaymsg exec however, so applications launched in drun mode
-wouldn't always stay in the correct workspace. In the current version of tofi,
-this has changed to an executable command line, to be passed to swaymsg exec or
-similar. The drun-print-exec option is therefore useless and deprecated, and
-may be removed from a future version of tofi, so you should remove it from your
-configs.
-
 To use as a launcher for Sway, add something similar to the following to your
 Sway config file:
 ```
