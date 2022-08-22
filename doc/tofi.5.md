@@ -20,7 +20,61 @@ case-insensitive, except where not possible (e.g. paths). Later options
 override earlier options, and command line options override config file
 options.
 
-# OPTIONS
+# BEHAVIOUR OPTIONS
+
+**hide-cursor**=*true\|false*
+
+> Hide the cursor.
+>
+> Default: false
+
+**history**=*true\|false*
+
+> Sort results by number of usages in run and drun modes.
+>
+> Default: true
+
+**fuzzy-match**=*true\|false*
+
+> If true, searching is performed via a simple fuzzy matching algorithm.
+> If false, substring matching is used, weighted to favour matches
+> closer to the beginning of the string.
+>
+> Default: false
+
+**require-match**=*true\|false*
+
+> If true, require a match to allow a selection to be made. If false,
+> making a selection with no matches will print input to stdout. In drun
+> mode, this is always true.
+>
+> Default: true
+
+**drun-launch**=*true\|false*
+
+> If true, directly launch applications on selection when in drun mode.
+> Otherwise, just print the path of the .desktop file to stdout.
+>
+> Default: false
+
+**drun-print-exec**=*true\|false*
+
+> **WARNING**: In the current version of tofi, this option has changed
+> to always be true and has no effect, as it should have been from the
+> start. It may be removed in a future version of tofi.
+>
+> Default: true.
+
+**late-keyboard-init**=*true\|false*
+
+> Delay keyboard initialisation until after the first draw to screen.
+> This option is experimental, and will cause tofi to miss keypresses
+> for a short time after launch. The only reason to use this option is
+> performance on slow systems.
+>
+> Default: false
+
+# STYLE OPTIONS
 
 **font**=*font*
 
@@ -240,54 +294,11 @@ options.
 >
 > Default: 8
 
-**hide-cursor**=*true\|false*
-
-> Hide the cursor.
->
-> Default: false
-
 **horizontal**=*true\|false*
 
 > List results horizontally.
 >
 > Default: false
-
-**history**=*true\|false*
-
-> Sort results by number of usages in run and drun modes.
->
-> Default: true
-
-**fuzzy-match**=*true\|false*
-
-> If true, searching is performed via a simple fuzzy matching algorithm.
-> If false, substring matching is used, weighted to favour matches
-> closer to the beginning of the string.
->
-> Default: false
-
-**require-match**=*true\|false*
-
-> If true, require a match to allow a selection to be made. If false,
-> making a selection with no matches will print input to stdout. In drun
-> mode, this is always true.
->
-> Default: true
-
-**drun-launch**=*true\|false*
-
-> If true, directly launch applications on selection when in drun mode.
-> Otherwise, just print the path of the .desktop file to stdout.
->
-> Default: false
-
-**drun-print-exec**=*true\|false*
-
-> **WARNING**: In the current version of tofi, this option has changed
-> to always be true and has no effect, as it should have been from the
-> start. It may be removed in a future version of tofi.
->
-> Default: true.
 
 **hint-font**=*true\|false*
 
@@ -297,15 +308,6 @@ options.
 > sizes.
 >
 > Default: true
-
-**late-keyboard-init**=*true\|false*
-
-> Delay keyboard initialisation until after the first draw to screen.
-> This option is experimental, and will cause tofi to miss keypresses
-> for a short time after launch. The only reason to use this option is
-> performance on slow systems.
->
-> Default: false
 
 # COLORS
 
