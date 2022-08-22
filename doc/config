@@ -54,6 +54,9 @@
 	# Prompt to display.
 	prompt-text = "run: "
 
+	# Extra horizontal padding between prompt and input.
+	prompt-padding = 0
+
 	# Maximum number of results to display.
 	# If 0, tofi will draw as many results as it can fit in the window.
 	num-results = 0

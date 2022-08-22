@@ -784,6 +784,7 @@ static void usage()
 "      --border-color <color>           Color of the border.\n"
 "      --text-color <color>             Color of text.\n"
 "      --prompt-text <string>           Prompt text.\n"
+"      --prompt-padding <px>            Padding between prompt and input.\n"
 "      --num-results <n>                Maximum number of results to display.\n"
 "      --selection-color <color>        Color of selected result.\n"
 "      --selection-match-color <color>  Color of the matching portion of the\n"
@@ -840,6 +841,7 @@ const struct option long_options[] = {
 	{"outline-width", required_argument, NULL, 0},
 	{"outline-color", required_argument, NULL, 0},
 	{"prompt-text", required_argument, NULL, 0},
+	{"prompt-padding", required_argument, NULL, 0},
 	{"result-spacing", required_argument, NULL, 0},
 	{"min-input-width", required_argument, NULL, 0},
 	{"border-width", required_argument, NULL, 0},

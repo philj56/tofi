@@ -74,6 +74,11 @@ options.
 
 	Default: "run: "
 
+*prompt-padding*=_px_
+	Extra horizontal padding between prompt and input.
+
+	Default: 0
+
 *num-results*=_n_
 	Maximum number of results to display. If _n_ = 0, tofi will draw as
 	many results as it can fit in the window.

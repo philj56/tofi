@@ -82,6 +82,7 @@ void entry_backend_pango_update(struct entry *entry)
 	pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
 	cairo_translate(cr, logical_rect.width + logical_rect.x, 0);
 
+	cairo_translate(cr, entry->prompt_padding, 0);
 
 	/* Render the entry text */
 	pango_layout_set_text(layout, entry->input_mb, -1);

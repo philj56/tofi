@@ -258,6 +258,8 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->window.entry.outline_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "prompt-text") == 0) {
 		snprintf(tofi->window.entry.prompt_text, N_ELEM(tofi->window.entry.prompt_text), "%s", value);
+	} else if (strcasecmp(option, "prompt-padding") == 0) {
+		tofi->window.entry.prompt_padding = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "min-input-width") == 0) {
 		tofi->window.entry.input_width = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "result-spacing") == 0) {
@@ -378,6 +380,7 @@ void config_fixup_values(struct tofi *tofi)
 	if (tofi->use_scale) {
 		struct entry *entry = &tofi->window.entry;
 
+		entry->prompt_padding *= scale;
 		entry->corner_radius *= scale;
 		entry->selection_background_padding *= scale;
 		entry->result_spacing *= scale;

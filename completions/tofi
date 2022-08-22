@@ -23,6 +23,7 @@ _tofi()
 		--outline-width
 		--outline-color
 		--prompt-text
+		--prompt-padding
 		--result-spacing
 		--min-input-width
 		--border-width

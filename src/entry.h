@@ -56,6 +56,7 @@ struct entry {
 	uint32_t font_size;
 	char font_name[MAX_FONT_NAME_LENGTH];
 	char prompt_text[MAX_PROMPT_LENGTH];
+	uint32_t prompt_padding;
 	uint32_t corner_radius;
 	uint32_t padding_top;
 	uint32_t padding_bottom;

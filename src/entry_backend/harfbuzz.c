@@ -225,6 +225,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	extents = render_hb_buffer(cr, buffer);
 
 	cairo_translate(cr, extents.x_advance, 0);
+	cairo_translate(cr, entry->prompt_padding, 0);
 
 	/* Render the entry text */
 	hb_buffer_clear_contents(buffer);
