@@ -114,6 +114,7 @@ tofi_sources = files(
 compgen_sources = files(
   'src/main_compgen.c',
   'src/compgen.c',
+  'src/fuzzy_match.c',
   'src/log.c',
   'src/mkdirp.c',
   'src/string_vec.c',
