@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "fuzzy_match.h"
+#include "xmalloc.h"
 
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -19,6 +20,56 @@ static int32_t fuzzy_match_recurse(
 		const char *restrict str,
 		int32_t score,
 		bool first_char);
+
+/*
+ * Split patterns into words, and perform simple matching against str for each.
+ * Returns the sum of substring distances from the start of str.
+ * If a word is not found, returns INT32_MIN.
+ */
+int32_t fuzzy_match_simple_words(const char *restrict patterns, const char *restrict str)
+{
+	int32_t score = 0;
+	char *saveptr = NULL;
+	char *tmp = xstrdup(patterns);
+	char *pattern = strtok_r(tmp, " ", &saveptr);
+	while (pattern != NULL) {
+		char *c = strcasestr(str, pattern);
+		if (c == NULL) {
+			score = INT32_MIN;
+			break;
+		} else {
+			score += str - c;
+		}
+		pattern = strtok_r(NULL, " ", &saveptr);
+	}
+	free(tmp);
+	return score;
+}
+
+
+/*
+ * Split patterns into words, and return the sum of fuzzy_match(word, str).
+ * If a word is not found, returns INT32_MIN.
+ */
+int32_t fuzzy_match_words(const char *restrict patterns, const char *restrict str)
+{
+	int32_t score = 0;
+	char *saveptr = NULL;
+	char *tmp = xstrdup(patterns);
+	char *pattern = strtok_r(tmp, " ", &saveptr);
+	while (pattern != NULL) {
+		int32_t word_score = fuzzy_match(pattern, str);
+		if (word_score == INT32_MIN) {
+			score = INT32_MIN;
+			break;
+		} else {
+			score += word_score;
+		}
+		pattern = strtok_r(NULL, " ", &saveptr);
+	}
+	free(tmp);
+	return score;
+}
 
 /*
  * Returns score if each character in pattern is found sequentially within str.

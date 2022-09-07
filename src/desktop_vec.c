@@ -150,14 +150,9 @@ struct string_vec desktop_vec_filter(
 	for (size_t i = 0; i < vec->count; i++) {
 		int32_t search_score;
 		if (fuzzy) {
-			search_score = fuzzy_match(substr, vec->buf[i].name);
+			search_score = fuzzy_match_words(substr, vec->buf[i].name);
 		} else {
-			char *c = strcasestr(vec->buf[i].name, substr);
-			if (c == NULL) {
-				search_score = INT32_MIN;
-			} else {
-				search_score = vec->buf[i].name - c;
-			}
+			search_score = fuzzy_match_simple_words(substr, vec->buf[i].name);
 		}
 		if (search_score != INT32_MIN) {
 			string_vec_add(&filt, vec->buf[i].name);
@@ -170,14 +165,9 @@ struct string_vec desktop_vec_filter(
 		} else {
 			/* If we didn't match the name, check the keywords. */
 			if (fuzzy) {
-				search_score = fuzzy_match(substr, vec->buf[i].keywords);
+				search_score = fuzzy_match_words(substr, vec->buf[i].keywords);
 			} else {
-				char *c = strcasestr(vec->buf[i].keywords, substr);
-				if (c == NULL) {
-					search_score = INT32_MIN;
-				} else {
-					search_score = vec->buf[i].keywords - c;
-				}
+				search_score = fuzzy_match_simple_words(substr, vec->buf[i].keywords);
 			}
 			if (search_score != INT32_MIN) {
 				string_vec_add(&filt, vec->buf[i].name);

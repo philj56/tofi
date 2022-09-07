@@ -158,7 +158,7 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 			sizeof(buf));
 	wchar_t ch;
 	mbtowc(&ch, buf, sizeof(buf));
-	if (len > 0 && iswprint(ch) && (entry->drun || !iswblank(ch))) {
+	if (len > 0 && iswprint(ch)) {
 		if (entry->input_length < N_ELEM(entry->input) - 1) {
 			entry->input[entry->input_length] = ch;
 			entry->input_length++;

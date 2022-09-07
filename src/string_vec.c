@@ -122,14 +122,9 @@ struct string_vec string_vec_filter(
 	for (size_t i = 0; i < vec->count; i++) {
 		int32_t search_score;
 		if (fuzzy) {
-			search_score = fuzzy_match(substr, vec->buf[i].string);
+			search_score = fuzzy_match_words(substr, vec->buf[i].string);
 		} else {
-			char *c = strcasestr(vec->buf[i].string, substr);
-			if (c == NULL) {
-				search_score = INT32_MIN;
-			} else {
-				search_score = vec->buf[i].string - c;
-			}
+			search_score = fuzzy_match_simple_words(substr, vec->buf[i].string);
 		}
 		if (search_score != INT32_MIN) {
 			string_vec_add(&filt, vec->buf[i].string);
