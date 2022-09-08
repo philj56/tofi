@@ -227,12 +227,11 @@ options.
 
 > Scale the window by the output's scale factor.
 >
-> **WARNING**: In the next version of tofi, this will default to true,
-> so set this to false now if you don't want that behaviour. Note that
-> currently, font scaling will still occur when this is set to *false* -
-> that will change when *true* becomes the default.
+> **WARNING**: In the current version of tofi, the default value has
+> changed to true, so you may need to update your config. Additionally,
+> font scaling will no longer occur when this is set to *false*.
 >
-> Default: false
+> Default: true
 
 **margin-top**=*px\|%*
 

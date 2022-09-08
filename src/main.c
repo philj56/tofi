@@ -1024,6 +1024,7 @@ int main(int argc, char *argv[])
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
 		.use_history = true,
 		.require_match = true,
+		.use_scale = true,
 	};
 	wl_list_init(&tofi.output_list);
 

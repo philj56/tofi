@@ -369,17 +369,10 @@ void config_fixup_values(struct tofi *tofi)
 {
 	uint32_t scale = tofi->window.scale;
 
-	/*
-	 * Scale fonts to the correct size.
-	 *
-	 * TODO: In the next release (0.6.0), this should be moved within
-	 * the use_scale conditional.
-	 */
-	tofi->window.entry.font_size *= scale;
-
 	if (tofi->use_scale) {
 		struct entry *entry = &tofi->window.entry;
 
+		tofi->window.entry.font_size *= scale;
 		entry->prompt_padding *= scale;
 		entry->corner_radius *= scale;
 		entry->selection_background_padding *= scale;
