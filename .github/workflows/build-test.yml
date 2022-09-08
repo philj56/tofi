@@ -1,0 +1,104 @@
+name: Test build process
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+      - 'doc'
+      - 'themes'
+
+    branches:
+      - master
+      - github-actions
+
+jobs:
+  ubuntu-20_04:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential llvm clang meson scdoc \
+          ninja-build libfreetype-dev libharfbuzz-dev libcairo-dev \
+          libpango1.0-dev libwayland-dev wayland-protocols libxkbcommon-dev \
+          python3-pip
+
+          sudo pip3 install --upgrade meson
+
+      # The version of GCC on Ubuntu 20.04 is too old to recognise
+      # [[attribute]] syntax, so skip the build there.
+      #
+      # Additionally, clang will raise unknown attribute errors, so don't
+      # enable werror.
+
+      - name: Set clang as default compiler
+        run: sudo update-alternatives --set cc $(which clang)
+
+      - name: Clang LTO build
+        run: |
+          meson build
+          ninja -C build
+          rm -rf build
+
+      - name: Clang non-LTO build
+        run: |
+          meson build
+          meson configure build -Db_lto=false
+          ninja -C build
+          rm -rf build
+
+  ubuntu-22_04:
+
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential llvm clang meson scdoc \
+          ninja-build libfreetype-dev libharfbuzz-dev libcairo-dev \
+          libpango1.0-dev libwayland-dev wayland-protocols libxkbcommon-dev \
+          python3-pip
+
+          sudo pip3 install --upgrade meson
+
+      - name: GCC LTO build
+        run: |
+          meson build
+          meson configure build -Dwerror=true
+          ninja -C build
+          rm -rf build
+
+      - name: GCC non-LTO build
+        run: |
+          meson build
+          meson configure build -Dwerror=true
+          meson configure build -Db_lto=false
+          ninja -C build
+          rm -rf build
+
+      - name: Set clang as default compiler
+        run: sudo update-alternatives --set cc $(which clang)
+
+      - name: Clang LTO build
+        run: |
+          meson build
+          meson configure build -Dwerror=true
+          ninja -C build
+          rm -rf build
+
+      - name: Clang non-LTO build
+        run: |
+          meson build
+          meson configure build -Dwerror=true
+          meson configure build -Db_lto=false
+          ninja -C build
+          rm -rf build
