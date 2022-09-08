@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include "shm.h"
 
+/* These two functions aren't used on linux. */
+#ifndef __linux__
 static void randname(char *buf)
 {
 	struct timespec ts;
@@ -31,6 +33,7 @@ static int create_shm_file(void)
 	} while (retries > 0 && errno == EEXIST);
 	return -1;
 }
+#endif
 
 int shm_allocate_file(size_t size)
 {
