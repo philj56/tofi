@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.6.0] - 2022-09-08
+### Warning - HiDPI config change
+In the [0.5.0] release, the `scale` option was added to enable scaling of pixel
+values by the display's scale factor. In this release, the default value of
+`scale` has changed to be `true`, and fonts are no longer scaled if `scale` is
+set to `false`. This makes tofi's behaviour match that of e.g. Sway, and makes
+configs work more reliably on monitors with different scale factors.
+
+If you use tofi on a HiDPI display, you may need to change your config's pixel
+values to make things look right again.
+
+### Added
+- Added `require-match` option, to allow printing of input even when there are
+	no matching results.
+- Added `prompt-padding` option for more flexible spacing between the prompt
+	and other text.
+- Added a new example theme, dark-paper.
+
+### Changed
+- The `scale` option now defaults to `true`, as noted above. The example themes
+	have been updated to account for this change.
+- Spaces are now allowed as part of normal input. Similarly to dmenu, tofi will
+	split the input into words, and only show results for which every word
+	matches individually.
+- Split `tofi(5)` manpage into behaviour and style options to make finding
+	options easier.
+
+### Fixed
+- Fixed build failure when link-time optimisation is disabled.
+
 ## [0.5.0] - 2022-08-21
 ### Warning - HiDPI config change
 In previous versions of tofi, pixel values were always treated as device
@@ -128,6 +158,7 @@ is how it should have been done from the start.
 ## [0.1.0] - 2022-06-27
 Initial release. Good enough to use, but still some jank.
 
+[0.6.0]: https://github.com/philj56/tofi/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/philj56/tofi/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/philj56/tofi/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/philj56/tofi/compare/v0.3.0...v0.3.1
