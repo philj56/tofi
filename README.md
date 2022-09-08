@@ -113,6 +113,9 @@ tweak them to look correct on your display.
 [`themes/dos`](themes/dos)
 ![DOS theme screenshot](screenshot_dos.png)
 
+[`themes/dark-paper`](themes/dark-paper)
+![Dark paper theme screenshot](screenshot_dark_paper.png)
+
 ## Performance
 
 By default, tofi isn't really any faster than its alternatives. However, when
