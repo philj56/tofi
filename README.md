@@ -41,7 +41,7 @@ meson build && ninja -C build install
 ```
 
 ### Arch
-Tofi is available in the [AUR](https://aur.archlinux.org/packages/tofi-git):
+Tofi is available in the [AUR](https://aur.archlinux.org/packages/tofi):
 ```sh
 paru -S tofi
 ```
