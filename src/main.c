@@ -775,6 +775,7 @@ static void usage()
 "\n"
 "  -h, --help                           Print this message and exit.\n"
 "  -c, --config <path>                  Specify a config file.\n"
+"      --include <path>                 Include an additional config file.\n"
 "      --font <name|path>               Font to use.\n"
 "      --font-size <pt>                 Point size of text.\n"
 "      --background-color <color>       Color of the background.\n"
@@ -828,6 +829,7 @@ static void usage()
 const struct option long_options[] = {
 	{"help", no_argument, NULL, 'h'},
 	{"config", required_argument, NULL, 'c'},
+	{"include", required_argument, NULL, 0},
 	{"anchor", required_argument, NULL, 0},
 	{"background-color", required_argument, NULL, 0},
 	{"corner-radius", required_argument, NULL, 0},

@@ -144,3 +144,10 @@
 	# for a short time after launch. The only reason to use this option is
 	# performance on slow systems.
 	late-keyboard-init = false
+
+#
+### Inclusion
+#
+	# Configs can be split between multiple files, and then included
+	# within each other.
+	# include = /path/to/config

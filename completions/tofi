@@ -8,6 +8,7 @@ _tofi()
 	words=(
 		--help
 		--config
+		--include
 		--output
 		--scale
 		--anchor
@@ -51,6 +52,8 @@ _tofi()
 
 	case "${prev}" in
 		--font)
+			;&
+		--include)
 			;&
 		--config|-c)
 			_filedir

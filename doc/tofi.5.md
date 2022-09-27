@@ -20,6 +20,16 @@ case-insensitive, except where not possible (e.g. paths). Later options
 override earlier options, and command line options override config file
 options.
 
+# SPECIAL OPTIONS
+
+**include**=*path*
+
+> Include the contents of another config file. If *path* is a relative
+> path, it is interpreted as relative to this config file's path (or the
+> current directory if **--include** is passed on the command line).
+> Inclusion happens immediately, before the rest of the current file's
+> contents are parsed.
+
 # BEHAVIOUR OPTIONS
 
 **hide-cursor**=*true\|false*

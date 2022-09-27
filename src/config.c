@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <errno.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,9 @@
 
 /* Maximum number of config file errors before we give up */
 #define MAX_ERRORS 5
+
+/* Maximum inclusion recursion depth before we give up */
+#define MAX_RECURSION 32
 
 /* Anyone with a 10M config file is doing something very wrong */
 #define MAX_CONFIG_SIZE (10*1024*1024)
@@ -62,6 +66,17 @@ void config_load(struct tofi *tofi, const char *filename)
 			return;
 		}
 		filename = default_filename;
+	}
+	/*
+	 * Track and limit recursion depth, so we don't overflow the stack if
+	 * a config file loop is created.
+	 */
+	static uint8_t recursion_depth = 0;
+	recursion_depth++;
+	if (recursion_depth > MAX_RECURSION) {
+		log_error("Refusing to load %s, recursion too deep (>%u layers).\n", filename, MAX_RECURSION);
+		recursion_depth--;
+		return;
 	}
 	char *config;
 	FILE *fp = fopen(filename, "rb");
@@ -205,6 +220,7 @@ CLEANUP_FILENAME:
 	if (default_filename) {
 		free(default_filename);
 	}
+	recursion_depth--;
 }
 
 char *strip(const char *str)
@@ -238,7 +254,20 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 {
 	bool err = false;
 	struct uint32_percent percent;
-	if (strcasecmp(option, "anchor") == 0) {
+	if (strcasecmp(option, "include") == 0) {
+		if (value[0] == '/') {
+			config_load(tofi, value);
+		} else {
+			char *tmp = xstrdup(filename);
+			char *dir = dirname(tmp);
+			size_t len = strlen(dir) + 1 + strlen(value) + 1;
+			char *config = xcalloc(len, 1);
+			snprintf(config, len, "%s/%s", dir, value);
+			config_load(tofi, config);
+			free(config);
+			free(tmp);
+		}
+	} else if (strcasecmp(option, "anchor") == 0) {
 		tofi->anchor = parse_anchor(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "background-color") == 0) {
 		tofi->window.entry.background_color = parse_color(filename, lineno, value, &err);
