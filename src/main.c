@@ -1109,6 +1109,14 @@ int main(int argc, char *argv[])
 					NULL,
 					ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND,
 					"dummy");
+		/*
+		 * Workaround for Hyprland, where if this is not set the dummy
+		 * surface never enters an output for some reason.
+		 */
+		zwlr_layer_surface_v1_set_keyboard_interactivity(
+				zwlr_layer_surface,
+				ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE
+				);
 		zwlr_layer_surface_v1_add_listener(
 				zwlr_layer_surface,
 				&dummy_layer_surface_listener,
