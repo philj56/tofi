@@ -45,6 +45,8 @@ _tofi()
 		--history
 		--fuzzy-match
 		--require-match
+		--hide-input
+		--hidden-character
 		--drun-launch
 		--hint-font
 		--late-keyboard-init

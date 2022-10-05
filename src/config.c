@@ -33,6 +33,7 @@ static uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent,
 
 static uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err);
 static bool parse_bool(const char *filename, size_t lineno, const char *str, bool *err);
+static wchar_t parse_wchar(const char *filename, size_t lineno, const char *str, bool *err);
 static struct color parse_color(const char *filename, size_t lineno, const char *str, bool *err);
 static uint32_t parse_uint32(const char *filename, size_t lineno, const char *str, bool *err);
 static int32_t parse_int32(const char *filename, size_t lineno, const char *str, bool *err);
@@ -357,6 +358,22 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->fuzzy_match = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "require-match") == 0) {
 		tofi->require_match = parse_bool(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "hide-input") == 0) {
+		tofi->window.entry.hide_input = parse_bool(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "hidden-character") == 0) {
+		/* Unicode handling is ugly. */
+		wchar_t wc = parse_wchar(filename, lineno, value, &err);
+		size_t buf_len = N_ELEM(tofi->window.entry.hidden_character_mb) + 1;
+		char *buf = xmalloc(buf_len);
+		size_t char_len = snprintf(buf, buf_len, "%lc", wc);
+		if (char_len >= buf_len) {
+			PARSE_ERROR(filename, lineno, "Character \"%lc\" is too large.\n", value);
+			err = true;
+		} else {
+			memcpy(tofi->window.entry.hidden_character_mb, buf, char_len);
+			tofi->window.entry.hidden_character_mb_length = char_len;
+		}
+		free(buf);
 	} else if (strcasecmp(option, "drun-launch") == 0) {
 		tofi->drun_launch = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "drun-print-exec") == 0) {
@@ -505,6 +522,23 @@ bool parse_bool(const char *filename, size_t lineno, const char *str, bool *err)
 		*err = true;
 	}
 	return false;
+}
+
+wchar_t parse_wchar(const char *filename, size_t lineno, const char *str, bool *err)
+{
+	size_t len = strlen(str);
+	wchar_t ch;
+	size_t ret = mbrtowc(&ch, str, len, NULL);
+	if (ret == (size_t)-2) {
+		return 0;
+	} else if (ret != len) {
+		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as a character.\n", str);
+		if (err) {
+			*err = true;
+		}
+		return 0;
+	}
+	return ch;
 }
 
 uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err)

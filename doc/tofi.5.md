@@ -60,6 +60,21 @@ options.
 >
 > Default: true
 
+**hide-input**=*true\|false*
+
+> If true, typed input will be hidden, and what is displayed (if
+> anything) is determined by the **hidden-character** option.
+>
+> Default: false
+
+**hidden-character**=*char*
+
+> Replace displayed input characters with *char*. If *char* is set to
+> the empty string, input will be completely hidden. This option only
+> has an effect when **hide-input** is set to true.
+>
+> Default: \*
+
 **drun-launch**=*true\|false*
 
 > If true, directly launch applications on selection when in drun mode.

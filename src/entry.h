@@ -49,6 +49,9 @@ struct entry {
 	/* Options */
 	bool drun;
 	bool horizontal;
+	bool hide_input;
+	char hidden_character_mb[4];
+	uint32_t hidden_character_mb_length;
 	uint32_t num_results;
 	uint32_t num_results_drawn;
 	uint32_t last_num_results_drawn;

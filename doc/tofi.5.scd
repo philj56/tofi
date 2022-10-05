@@ -25,10 +25,11 @@ options.
 # SPECIAL OPTIONS
 
 *include*=_path_
-	Include the contents of another config file. If _path_ is a relative path,
-	it is interpreted as relative to this config file's path (or the current
-	directory if *--include* is passed on the command line). Inclusion happens
-	immediately, before the rest of the current file's contents are parsed.
+	Include the contents of another config file. If _path_ is a relative
+	path, it is interpreted as relative to this config file's path (or the
+	current directory if *--include* is passed on the command line).
+	Inclusion happens immediately, before the rest of the current file's
+	contents are parsed.
 
 # BEHAVIOUR OPTIONS
 
@@ -55,6 +56,19 @@ options.
 	In drun mode, this is always true.
 
 	Default: true
+
+*hide-input*=_true|false_
+	If true, typed input will be hidden, and what is displayed (if
+	anything) is determined by the *hidden-character* option.
+
+	Default: false
+
+*hidden-character*=_char_
+	Replace displayed input characters with _char_. If _char_ is set to the
+	empty string, input will be completely hidden.
+	This option only has an effect when *hide-input* is set to true.
+
+	Default: \*
 
 *drun-launch*=_true|false_
 	If true, directly launch applications on selection when in drun mode.
@@ -206,9 +220,9 @@ options.
 *scale*=_true|false_
 	Scale the window by the output's scale factor.
 
-	*WARNING*: In the current version of tofi, the default value has changed to
-	true, so you may need to update your config. Additionally, font scaling will
-	no longer occur when this is set to _false_.
+	*WARNING*: In the current version of tofi, the default value has
+	changed to true, so you may need to update your config. Additionally,
+	font scaling will no longer occur when this is set to _false_.
 
 	Default: true
 

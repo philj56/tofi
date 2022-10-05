@@ -814,6 +814,8 @@ static void usage()
 "      --history <true|false>           Sort results by number of usages.\n"
 "      --fuzzy-match <true|false>       Use fuzzy matching for searching.\n"
 "      --require-match <true|false>     Require a match for selection.\n"
+"      --hide-input <true|false>        Hide sensitive input such as passwords.\n"
+"      --hidden-character <char>        Replacement character for hidden input.\n"
 "      --drun-launch <true|false>       Launch apps directly in drun mode.\n"
 "      --drun-print-exec <true|false>   Print a command line in drun mode.\n"
 "                                       This is now always the case,\n"
@@ -864,6 +866,8 @@ const struct option long_options[] = {
 	{"history", required_argument, NULL, 0},
 	{"fuzzy-match", required_argument, NULL, 0},
 	{"require-match", required_argument, NULL, 0},
+	{"hide-input", required_argument, NULL, 0},
+	{"hidden-character", required_argument, NULL, 0},
 	{"drun-launch", required_argument, NULL, 0},
 	{"drun-print-exec", required_argument, NULL, 0},
 	{"hint-font", required_argument, NULL, 0},
@@ -1007,6 +1011,7 @@ int main(int argc, char *argv[])
 				.font_name = "Sans",
 				.font_size = 24,
 				.prompt_text = "run: ",
+				.hidden_character_mb = "*",
 				.padding_top = 8,
 				.padding_bottom = 8,
 				.padding_left = 8,

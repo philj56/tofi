@@ -230,7 +230,14 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	/* Render the entry text */
 	hb_buffer_clear_contents(buffer);
 	setup_hb_buffer(buffer);
-	hb_buffer_add_utf8(buffer, entry->input_mb, -1, 0, -1);
+	if (entry->hide_input) {
+		size_t char_len = N_ELEM(entry->hidden_character_mb);
+		for (size_t i = 0; i < entry->input_length; i++) {
+			hb_buffer_add_utf8(buffer, entry->hidden_character_mb, char_len, 0, char_len);
+		}
+	} else {
+		hb_buffer_add_utf8(buffer, entry->input_mb, -1, 0, -1);
+	}
 	hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
 	extents = render_hb_buffer(cr, buffer);
 	extents.x_advance = MAX(extents.x_advance, entry->input_width);
