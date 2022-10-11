@@ -97,7 +97,7 @@ void entry_backend_pango_update(struct entry *entry)
 				buf[i * char_len + j] = entry->hidden_character_mb[j];
 			}
 		}
-		pango_layout_set_text(layout, buf, -1);
+		pango_layout_set_text(layout, buf, char_len * entry->input_length);
 	} else {
 		pango_layout_set_text(layout, entry->input_mb, -1);
 	}
