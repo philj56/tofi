@@ -149,6 +149,7 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	}
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(tofi->xkb_state, keycode);
 
+	bool reset_selection = false;
 	struct entry *entry = &tofi->window.entry;
 	char buf[5]; /* 4 UTF-8 bytes plus null terminator. */
 	int len = xkb_state_key_get_utf8(
@@ -160,6 +161,7 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	mbtowc(&ch, buf, sizeof(buf));
 	if (len > 0 && iswprint(ch)) {
 		if (entry->input_length < N_ELEM(entry->input) - 1) {
+			reset_selection = true;
 			entry->input[entry->input_length] = ch;
 			entry->input_length++;
 			entry->input[entry->input_length] = L'\0';
@@ -185,6 +187,7 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 						XKB_MOD_NAME_CTRL,
 						XKB_STATE_MODS_EFFECTIVE))))
 	{
+		reset_selection = true;
 		if (sym == XKB_KEY_BackSpace) {
 			entry->input_length--;
 			entry->input[entry->input_length] = L'\0';
@@ -217,6 +220,7 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 				XKB_STATE_MODS_EFFECTIVE)
 		  )
 	{
+		reset_selection = true;
 		entry->input_length = 0;
 		entry->input[0] = L'\0';
 		entry->input_mb_length = 0;
@@ -244,7 +248,7 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	}
 
 	uint32_t nsel = MAX(MIN(entry->num_results_drawn, entry->results.count), 1);
-	if (sym == XKB_KEY_Up || sym == XKB_KEY_Left
+	if (sym == XKB_KEY_Up || sym == XKB_KEY_Left || sym == XKB_KEY_ISO_Left_Tab
 			|| (sym == XKB_KEY_k
 				&& xkb_state_mod_name_is_active(
 					tofi->xkb_state,
@@ -252,6 +256,7 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 					XKB_STATE_MODS_EFFECTIVE)
 			   )
 			) {
+		reset_selection = false;
 		if (entry->selection > 0) {
 			entry->selection--;
 		} else {
@@ -271,11 +276,10 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 					XKB_STATE_MODS_EFFECTIVE)
 			   )
 			) {
+		reset_selection = false;
 		entry->selection++;
 		if (entry->selection >= nsel) {
 			entry->selection -= nsel;
-			entry->first_result += nsel;
-			entry->first_result %= entry->results.count;
 			if (entry->results.count > 0) {
 				entry->first_result += nsel;
 				entry->first_result %= entry->results.count;
@@ -284,10 +288,15 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 			}
 			entry->last_num_results_drawn = entry->num_results_drawn;
 		}
-	} else {
+	} else if (sym == XKB_KEY_Home) {
+		reset_selection = true;
+	}
+
+	if (reset_selection) {
 		entry->selection = 0;
 		entry->first_result = 0;
 	}
+
 	entry_update(&tofi->window.entry);
 	tofi->window.surface.redraw = true;
 	
