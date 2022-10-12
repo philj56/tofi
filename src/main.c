@@ -276,6 +276,12 @@ static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 			entry->selection -= nsel;
 			entry->first_result += nsel;
 			entry->first_result %= entry->results.count;
+			if (entry->results.count > 0) {
+				entry->first_result += nsel;
+				entry->first_result %= entry->results.count;
+			} else {
+				entry->first_result = 0;
+			}
 			entry->last_num_results_drawn = entry->num_results_drawn;
 		}
 	} else {
