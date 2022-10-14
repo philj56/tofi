@@ -21,6 +21,50 @@
 /* Anyone with a 10M config file is doing something very wrong */
 #define MAX_CONFIG_SIZE (10*1024*1024)
 
+/* Convenience macros for anchor combinations */
+#define ANCHOR_TOP_LEFT (\
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT \
+		)
+#define ANCHOR_TOP (\
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT \
+		)
+#define ANCHOR_TOP_RIGHT (\
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT \
+		)
+#define ANCHOR_RIGHT (\
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM \
+		)
+#define ANCHOR_BOTTOM_RIGHT (\
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT \
+		)
+#define ANCHOR_BOTTOM (\
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT \
+		)
+#define ANCHOR_BOTTOM_LEFT (\
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT \
+		)
+#define ANCHOR_LEFT (\
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM \
+		)
+#define ANCHOR_CENTER (\
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT \
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT \
+		)
+
 struct uint32_percent {
 	uint32_t value;
 	bool percent;
@@ -308,6 +352,14 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->window.entry.selection_background_padding = parse_int32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "selection-background") == 0) {
 		tofi->window.entry.selection_background_color = parse_color(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "exclusive-zone") == 0) {
+		if (strcmp(value, "-1") == 0) {
+			tofi->window.exclusive_zone = -1;
+		} else {
+			percent = parse_uint32_percent(filename, lineno, value, &err);
+			tofi->window.exclusive_zone = percent.value;
+			tofi->window.exclusive_zone_is_percent = percent.percent;
+		}
 	} else if (strcasecmp(option, "width") == 0) {
 		percent = parse_uint32_percent(filename, lineno, value, &err);
 		tofi->window.width = percent.value;
@@ -489,6 +541,36 @@ void config_fixup_values(struct tofi *tofi)
 			tofi->window.entry.padding_right_is_percent,
 			tofi->window.scale,
 			tofi->use_scale);
+
+	/* Exclusive zone base depends on anchor. */
+	switch (tofi->anchor) {
+		case ANCHOR_TOP:
+		case ANCHOR_BOTTOM:
+			tofi->window.exclusive_zone = fixup_percentage(
+					tofi->window.exclusive_zone,
+					tofi->output_height,
+					tofi->window.exclusive_zone_is_percent,
+					tofi->window.scale,
+					tofi->use_scale);
+			break;
+		case ANCHOR_LEFT:
+		case ANCHOR_RIGHT:
+			tofi->window.exclusive_zone = fixup_percentage(
+					tofi->window.exclusive_zone,
+					tofi->output_width,
+					tofi->window.exclusive_zone_is_percent,
+					tofi->window.scale,
+					tofi->use_scale);
+			break;
+		default:
+			/*
+			 * Exclusive zone >0 is meaningless for other anchor
+			 * positions.
+			 */
+                        tofi->window.exclusive_zone =
+                            MIN(tofi->window.exclusive_zone, 0);
+                        break;
+	}
 }
 
 char *get_config_path()
@@ -544,46 +626,31 @@ wchar_t parse_wchar(const char *filename, size_t lineno, const char *str, bool *
 uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err)
 {
 	if(strcasecmp(str, "top-left") == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
+		return ANCHOR_TOP_LEFT;
 	}
 	if (strcasecmp(str, "top") == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		return ANCHOR_TOP;
 	}
 	if (strcasecmp(str, "top-right") == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		return ANCHOR_TOP_RIGHT;
 	}
 	if (strcasecmp(str, "right") == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
+		return ANCHOR_RIGHT;
 	}
 	if (strcasecmp(str, "bottom-right") == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		return ANCHOR_BOTTOM_RIGHT;
 	}
 	if (strcasecmp(str, "bottom") == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		return ANCHOR_BOTTOM;
 	}
 	if (strcasecmp(str, "bottom-left") == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
+		return ANCHOR_BOTTOM_LEFT;
 	}
 	if (strcasecmp(str, "left") == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
+		return ANCHOR_LEFT;
 	}
 	if (strcasecmp(str, "center") == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		return ANCHOR_CENTER;
 	}
 	PARSE_ERROR(filename, lineno, "Invalid anchor \"%s\".\n", str);
 	*err = true;

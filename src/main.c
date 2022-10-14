@@ -816,6 +816,7 @@ static void usage()
 "      --output <name>                  Name of output to display window on.\n"
 "      --scale <true|false>             Follow the output's scale factor.\n"
 "      --anchor <position>              Location on screen to anchor window.\n"
+"      --exclusive-zone <-1|px|%>       Exclusive zone size, or -1 for none.\n"
 "      --margin-top <px|%>              Offset from top of screen.\n"
 "      --margin-bottom <px|%>           Offset from bottom of screen.\n"
 "      --margin-left <px|%>             Offset from left of screen.\n"
@@ -848,6 +849,7 @@ const struct option long_options[] = {
 	{"config", required_argument, NULL, 'c'},
 	{"include", required_argument, NULL, 0},
 	{"anchor", required_argument, NULL, 0},
+	{"exclusive-zone", required_argument, NULL, 0},
 	{"background-color", required_argument, NULL, 0},
 	{"corner-radius", required_argument, NULL, 0},
 	{"font", required_argument, NULL, 0},
@@ -1022,6 +1024,7 @@ int main(int argc, char *argv[])
 			.scale = 1,
 			.width = 1280,
 			.height = 720,
+			.exclusive_zone = -1,
 			.entry = {
 				.font_name = "Sans",
 				.font_size = 24,
@@ -1321,7 +1324,7 @@ int main(int argc, char *argv[])
 			tofi.anchor);
 	zwlr_layer_surface_v1_set_exclusive_zone(
 			tofi.window.zwlr_layer_surface,
-			-1);
+			tofi.window.exclusive_zone);
 	zwlr_layer_surface_v1_set_size(
 			tofi.window.zwlr_layer_surface,
 			tofi.window.width / tofi.window.scale,

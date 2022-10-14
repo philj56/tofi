@@ -32,6 +32,7 @@ _tofi()
 		--text-color
 		--width
 		--height
+		--exclusive-zone
 		--margin-top
 		--margin-bottom
 		--margin-left

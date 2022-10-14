@@ -56,12 +56,14 @@ struct tofi {
 		uint32_t height;
 		uint32_t scale;
 		int32_t transform;
+		int32_t exclusive_zone;
 		int32_t margin_top;
 		int32_t margin_bottom;
 		int32_t margin_left;
 		int32_t margin_right;
 		bool width_is_percent;
 		bool height_is_percent;
+		bool exclusive_zone_is_percent;
 		bool margin_top_is_percent;
 		bool margin_bottom_is_percent;
 		bool margin_left_is_percent;

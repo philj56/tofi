@@ -240,6 +240,16 @@ options.
 >
 > Default: center
 
+**exclusive-zone**=*-1\|px\|%*
+
+> Set the size of the exclusive zone. A value of -1 means ignore
+> exclusive zones completely. A value of 0 will move tofi out of the way
+> of other windows' exclusive zones. A value greater than 0 will set
+> that much space as an exclusive zone. Values greater than 0 are only
+> meaningful when tofi is anchored to a single edge.
+>
+> Default: -1
+
 **output**=*name*
 
 > The name of the output to appear on, if multiple outputs are present.
