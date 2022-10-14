@@ -1306,7 +1306,7 @@ int main(int argc, char *argv[])
 			tofi.zwlr_layer_shell,
 			tofi.window.surface.wl_surface,
 			wl_output,
-			ZWLR_LAYER_SHELL_V1_LAYER_TOP,
+			ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
 			"launcher");
 	zwlr_layer_surface_v1_set_keyboard_interactivity(
 			tofi.window.zwlr_layer_surface,
