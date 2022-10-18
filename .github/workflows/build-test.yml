@@ -7,10 +7,6 @@ on:
       - 'doc'
       - 'themes'
 
-    branches:
-      - master
-      - github-actions
-
 jobs:
   ubuntu-20_04:
 
