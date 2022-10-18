@@ -542,34 +542,37 @@ void config_fixup_values(struct tofi *tofi)
 			tofi->window.scale,
 			tofi->use_scale);
 
-	/* Exclusive zone base depends on anchor. */
-	switch (tofi->anchor) {
-		case ANCHOR_TOP:
-		case ANCHOR_BOTTOM:
-			tofi->window.exclusive_zone = fixup_percentage(
-					tofi->window.exclusive_zone,
-					tofi->output_height,
-					tofi->window.exclusive_zone_is_percent,
-					tofi->window.scale,
-					tofi->use_scale);
-			break;
-		case ANCHOR_LEFT:
-		case ANCHOR_RIGHT:
-			tofi->window.exclusive_zone = fixup_percentage(
-					tofi->window.exclusive_zone,
-					tofi->output_width,
-					tofi->window.exclusive_zone_is_percent,
-					tofi->window.scale,
-					tofi->use_scale);
-			break;
-		default:
-			/*
-			 * Exclusive zone >0 is meaningless for other anchor
-			 * positions.
-			 */
-                        tofi->window.exclusive_zone =
-                            MIN(tofi->window.exclusive_zone, 0);
-                        break;
+	/* Don't attempt percentage handling if exclusive_zone is set to -1. */
+	if (tofi->window.exclusive_zone > 0) {
+		/* Exclusive zone base depends on anchor. */
+		switch (tofi->anchor) {
+			case ANCHOR_TOP:
+			case ANCHOR_BOTTOM:
+				tofi->window.exclusive_zone = fixup_percentage(
+						tofi->window.exclusive_zone,
+						tofi->output_height,
+						tofi->window.exclusive_zone_is_percent,
+						tofi->window.scale,
+						tofi->use_scale);
+				break;
+			case ANCHOR_LEFT:
+			case ANCHOR_RIGHT:
+				tofi->window.exclusive_zone = fixup_percentage(
+						tofi->window.exclusive_zone,
+						tofi->output_width,
+						tofi->window.exclusive_zone_is_percent,
+						tofi->window.scale,
+						tofi->use_scale);
+				break;
+			default:
+				/*
+				 * Exclusive zone >0 is meaningless for other anchor
+				 * positions.
+				 */
+				tofi->window.exclusive_zone =
+					MIN(tofi->window.exclusive_zone, 0);
+				break;
+		}
 	}
 }
 
