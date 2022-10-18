@@ -25,6 +25,7 @@
 #include "nelem.h"
 #include "shm.h"
 #include "string_vec.h"
+#include "string_vec.h"
 #include "xmalloc.h"
 
 #undef MAX

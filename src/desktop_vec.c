@@ -4,6 +4,7 @@
 #include "fuzzy_match.h"
 #include "log.h"
 #include "string_vec.h"
+#include "utf8.h"
 #include "xmalloc.h"
 
 static bool match_current_desktop(char * const *desktop_list, gsize length);
@@ -42,7 +43,10 @@ void desktop_vec_add(
 		vec->buf = xrealloc(vec->buf, vec->size * sizeof(vec->buf[0]));
 	}
 	vec->buf[vec->count].id = xstrdup(id);
-	vec->buf[vec->count].name = xstrdup(name);
+	vec->buf[vec->count].name = utf8_normalize(name);
+	if (vec->buf[vec->count].name == NULL) {
+		vec->buf[vec->count].name = xstrdup(name);
+	}
 	vec->buf[vec->count].path = xstrdup(path);
 	vec->buf[vec->count].keywords = xstrdup(keywords);
 	vec->buf[vec->count].search_score = 0;

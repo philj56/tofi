@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "fuzzy_match.h"
+#include "utf8.h"
 #include "xmalloc.h"
 
 #undef MAX
@@ -30,10 +31,10 @@ int32_t fuzzy_match_simple_words(const char *restrict patterns, const char *rest
 {
 	int32_t score = 0;
 	char *saveptr = NULL;
-	char *tmp = xstrdup(patterns);
+	char *tmp = utf8_normalize(patterns);
 	char *pattern = strtok_r(tmp, " ", &saveptr);
 	while (pattern != NULL) {
-		char *c = strcasestr(str, pattern);
+		char *c = utf8_strcasestr(str, pattern);
 		if (c == NULL) {
 			score = INT32_MIN;
 			break;
@@ -55,7 +56,7 @@ int32_t fuzzy_match_words(const char *restrict patterns, const char *restrict st
 {
 	int32_t score = 0;
 	char *saveptr = NULL;
-	char *tmp = xstrdup(patterns);
+	char *tmp = utf8_normalize(patterns);
 	char *pattern = strtok_r(tmp, " ", &saveptr);
 	while (pattern != NULL) {
 		int32_t word_score = fuzzy_match(pattern, str);
@@ -78,8 +79,8 @@ int32_t fuzzy_match_words(const char *restrict patterns, const char *restrict st
 int32_t fuzzy_match(const char *restrict pattern, const char *restrict str)
 {
 	const int unmatched_letter_penalty = -1;
-	const size_t slen = strlen(str);
-	const size_t plen = strlen(pattern);
+	const size_t slen = utf8_strlen(str);
+	const size_t plen = utf8_strlen(pattern);
 	int32_t score = 0;
 
 	if (*pattern == '\0') {
@@ -119,7 +120,7 @@ int32_t fuzzy_match_recurse(
 	}
 
 	const char *match = str;
-	const char search[2] = { *pattern, '\0' };
+	uint32_t search = utf8_get_char(pattern);
 
 	int32_t best_score = INT32_MIN;
 
@@ -127,11 +128,15 @@ int32_t fuzzy_match_recurse(
 	 * Find all occurrences of the next pattern character in str, and
 	 * recurse on them.
 	 */
-	while ((match = strcasestr(match, search)) != NULL) {
+	while ((match = utf8_strcasechr(match, search)) != NULL) {
+		int32_t jump = 0;
+		for (const char *tmp = str; tmp != match; tmp = utf8_next_char(tmp)) {
+			jump++;
+		}
 		int32_t subscore = fuzzy_match_recurse(
-				pattern + 1,
-				match + 1,
-				compute_score(match - str, first_char, match),
+				utf8_next_char(pattern),
+				utf8_next_char(match),
+				compute_score(jump, first_char, match),
 				false);
 		best_score = MAX(best_score, subscore);
 		match++;
@@ -172,15 +177,18 @@ int32_t compute_score(int32_t jump, bool first_char, const char *restrict match)
 
 	int32_t score = 0;
 
+	const uint32_t cur = utf8_get_char(match);
+
 	/* Apply bonuses. */
 	if (!first_char && jump == 0) {
 		score += adjacency_bonus;
 	}
 	if (!first_char || jump > 0) {
-		if (isupper(*match) && islower(*(match - 1))) {
+		const uint32_t prev = utf8_get_char(utf8_prev_char(match));
+		if (utf8_isupper(cur) && utf8_islower(prev)) {
 			score += camel_bonus;
 		}
-		if (isalnum(*match) && !isalnum(*(match - 1))) {
+		if (utf8_isalnum(cur) && !utf8_isalnum(prev)) {
 			score += separator_bonus;
 		}
 	}

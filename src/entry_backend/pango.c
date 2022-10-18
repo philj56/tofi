@@ -4,6 +4,7 @@
 #include "../entry.h"
 #include "../log.h"
 #include "../nelem.h"
+#include "../utf8.h"
 #include "../xmalloc.h"
 
 #undef MAX
@@ -181,7 +182,7 @@ void entry_backend_pango_update(struct entry *entry)
 			PangoRectangle ink_subrect;
 			PangoRectangle logical_subrect;
 			if (entry->input_mb_length > 0 && entry->selection_highlight_color.a != 0) {
-				char *match_pos = strcasestr(str, entry->input_mb);
+				char *match_pos = utf8_strcasestr(str, entry->input_mb);
 				if (match_pos != NULL) {
 					prematch_len = (match_pos - str);
 					postmatch_len = strlen(str) - prematch_len - match_len;

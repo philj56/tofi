@@ -5,6 +5,7 @@
 #include "../entry.h"
 #include "../log.h"
 #include "../nelem.h"
+#include "../utf8.h"
 #include "../xmalloc.h"
 
 /*
@@ -368,7 +369,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			char *postmatch = NULL;
 			cairo_text_extents_t subextents;
 			if (entry->input_mb_length > 0 && entry->selection_highlight_color.a != 0) {
-				char *match_pos = strcasestr(prematch, entry->input_mb);
+				char *match_pos = utf8_strcasestr(prematch, entry->input_mb);
 				if (match_pos != NULL) {
 					match = xstrdup(result);
 					prematch_len = (match_pos - prematch);

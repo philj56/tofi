@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include "fuzzy_match.h"
 #include "string_vec.h"
+#include "utf8.h"
 #include "xmalloc.h"
 
 static int cmpstringp(const void *restrict a, const void *restrict b)
@@ -80,7 +81,10 @@ void string_vec_add(struct string_vec *restrict vec, const char *restrict str)
 		vec->size *= 2;
 		vec->buf = xrealloc(vec->buf, vec->size * sizeof(vec->buf[0]));
 	}
-	vec->buf[vec->count].string = xstrdup(str);
+	vec->buf[vec->count].string = utf8_normalize(str);
+	if (vec->buf[vec->count].string == NULL) {
+		vec->buf[vec->count].string = xstrdup(str);
+	}
 	vec->buf[vec->count].search_score = 0;
 	vec->buf[vec->count].history_score = 0;
 	vec->count++;
