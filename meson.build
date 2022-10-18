@@ -91,8 +91,7 @@ add_project_arguments(
   language: 'c'
 )
 
-tofi_sources = files(
-  'src/main.c',
+common_sources = files(
   'src/color.c',
   'src/compgen.c',
   'src/config.c',
@@ -175,9 +174,11 @@ foreach proto : wl_proto_xml
     command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'])
 endforeach
 
+subdir('test')
+
 executable(
   'tofi',
-  tofi_sources, wl_proto_src, wl_proto_headers,
+  files('src/main.c'), common_sources, wl_proto_src, wl_proto_headers,
   dependencies: [librt, libm, freetype, harfbuzz, cairo, pangocairo, wayland_client, xkbcommon, glib, gio_unix],
   install: true
 )
