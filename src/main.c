@@ -21,6 +21,7 @@
 #include "config.h"
 #include "entry.h"
 #include "image.h"
+#include "input.h"
 #include "log.h"
 #include "nelem.h"
 #include "shm.h"
@@ -143,166 +144,6 @@ static void wl_keyboard_leave(
 	/* Deliberately left blank */
 }
 
-static void handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
-{
-	if (tofi->xkb_state == NULL) {
-		return;
-	}
-	xkb_keysym_t sym = xkb_state_key_get_one_sym(tofi->xkb_state, keycode);
-
-	bool reset_selection = false;
-	struct entry *entry = &tofi->window.entry;
-	char buf[5]; /* 4 UTF-8 bytes plus null terminator. */
-	int len = xkb_state_key_get_utf8(
-			tofi->xkb_state,
-			keycode,
-			buf,
-			sizeof(buf));
-	wchar_t ch;
-	mbtowc(&ch, buf, sizeof(buf));
-	if (len > 0 && iswprint(ch)) {
-		if (entry->input_length < N_ELEM(entry->input) - 1) {
-			reset_selection = true;
-			entry->input[entry->input_length] = ch;
-			entry->input_length++;
-			entry->input[entry->input_length] = L'\0';
-			memcpy(&entry->input_mb[entry->input_mb_length],
-					buf,
-					N_ELEM(buf));
-			entry->input_mb_length += len;
-			if (entry->drun) {
-				struct string_vec results = desktop_vec_filter(&entry->apps, entry->input_mb, tofi->fuzzy_match);
-				string_vec_destroy(&entry->results);
-				entry->results = results;
-			} else {
-				struct string_vec tmp = entry->results;
-				entry->results = string_vec_filter(&entry->results, entry->input_mb, tofi->fuzzy_match);
-				string_vec_destroy(&tmp);
-			}
-		}
-	} else if (entry->input_length > 0
-			&& (sym == XKB_KEY_BackSpace
-				|| (sym == XKB_KEY_w
-					&& xkb_state_mod_name_is_active(
-						tofi->xkb_state,
-						XKB_MOD_NAME_CTRL,
-						XKB_STATE_MODS_EFFECTIVE))))
-	{
-		reset_selection = true;
-		if (sym == XKB_KEY_BackSpace) {
-			entry->input_length--;
-			entry->input[entry->input_length] = L'\0';
-		} else {
-			while (entry->input_length > 0 && iswspace(entry->input[entry->input_length - 1])) {
-				entry->input_length--;
-			}
-			while (entry->input_length > 0 && !iswspace(entry->input[entry->input_length - 1])) {
-				entry->input_length--;
-			}
-			entry->input[entry->input_length] = L'\0';
-		}
-		const wchar_t *src = entry->input;
-		size_t siz = wcsrtombs(
-				entry->input_mb,
-				&src,
-				N_ELEM(entry->input_mb),
-				NULL);
-		entry->input_mb_length = siz;
-		string_vec_destroy(&entry->results);
-		if (entry->drun) {
-			entry->results = desktop_vec_filter(&entry->apps, entry->input_mb, tofi->fuzzy_match);
-		} else {
-			entry->results = string_vec_filter(&entry->commands, entry->input_mb, tofi->fuzzy_match);
-		}
-	} else if (sym == XKB_KEY_u
-			&& xkb_state_mod_name_is_active(
-				tofi->xkb_state,
-				XKB_MOD_NAME_CTRL,
-				XKB_STATE_MODS_EFFECTIVE)
-		  )
-	{
-		reset_selection = true;
-		entry->input_length = 0;
-		entry->input[0] = L'\0';
-		entry->input_mb_length = 0;
-		entry->input_mb[0] = '\0';
-		string_vec_destroy(&entry->results);
-		if (entry->drun) {
-			entry->results = desktop_vec_filter(&entry->apps, entry->input_mb, tofi->fuzzy_match);
-		} else {
-			entry->results = string_vec_filter(&entry->commands, entry->input_mb, tofi->fuzzy_match);
-		}
-	} else if (sym == XKB_KEY_Escape
-			|| (sym == XKB_KEY_c
-				&& xkb_state_mod_name_is_active(
-					tofi->xkb_state,
-					XKB_MOD_NAME_CTRL,
-					XKB_STATE_MODS_EFFECTIVE)
-			   )
-		  )
-	{
-		tofi->closed = true;
-		return;
-	} else if (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter) {
-		tofi->submit = true;
-		return;
-	}
-
-	uint32_t nsel = MAX(MIN(entry->num_results_drawn, entry->results.count), 1);
-	if (sym == XKB_KEY_Up || sym == XKB_KEY_Left || sym == XKB_KEY_ISO_Left_Tab
-			|| (sym == XKB_KEY_k
-				&& xkb_state_mod_name_is_active(
-					tofi->xkb_state,
-					XKB_MOD_NAME_CTRL,
-					XKB_STATE_MODS_EFFECTIVE)
-			   )
-			) {
-		reset_selection = false;
-		if (entry->selection > 0) {
-			entry->selection--;
-		} else {
-			if (entry->first_result > nsel) {
-				entry->first_result -= entry->last_num_results_drawn;
-				entry->selection = entry->last_num_results_drawn - 1;
-			} else if (entry->first_result > 0) {
-				entry->selection = entry->first_result - 1;
-				entry->first_result = 0;
-			}
-		}
-	} else if (sym == XKB_KEY_Down || sym == XKB_KEY_Right || sym == XKB_KEY_Tab
-			|| (sym == XKB_KEY_j
-				&& xkb_state_mod_name_is_active(
-					tofi->xkb_state,
-					XKB_MOD_NAME_CTRL,
-					XKB_STATE_MODS_EFFECTIVE)
-			   )
-			) {
-		reset_selection = false;
-		entry->selection++;
-		if (entry->selection >= nsel) {
-			entry->selection -= nsel;
-			if (entry->results.count > 0) {
-				entry->first_result += nsel;
-				entry->first_result %= entry->results.count;
-			} else {
-				entry->first_result = 0;
-			}
-			entry->last_num_results_drawn = entry->num_results_drawn;
-		}
-	} else if (sym == XKB_KEY_Home) {
-		reset_selection = true;
-	}
-
-	if (reset_selection) {
-		entry->selection = 0;
-		entry->first_result = 0;
-	}
-
-	entry_update(&tofi->window.entry);
-	tofi->window.surface.redraw = true;
-	
-}
-
 static void wl_keyboard_key(
 		void *data,
 		struct wl_keyboard *wl_keyboard,
@@ -333,7 +174,7 @@ static void wl_keyboard_key(
 		tofi->repeat.keycode = keycode;
 		tofi->repeat.next = gettime_ms() + tofi->repeat.delay;
 	}
-	handle_keypress(tofi, keycode);
+	input_handle_keypress(tofi, keycode);
 }
 
 static void wl_keyboard_modifiers(
@@ -1463,7 +1304,7 @@ int main(int argc, char *argv[])
 			if (tofi.repeat.active) {
 				int64_t wait = (int64_t)tofi.repeat.next - (int64_t)gettime_ms();
 				if (wait <= 0) {
-					handle_keypress(&tofi, tofi.repeat.keycode);
+					input_handle_keypress(&tofi, tofi.repeat.keycode);
 					tofi.repeat.next += 1000 / tofi.repeat.rate;
 				}
 			}

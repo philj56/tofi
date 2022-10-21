@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <stdint.h>
 
+uint32_t utf8_isprint(uint32_t c);
 uint32_t utf8_isupper(uint32_t c);
 uint32_t utf8_islower(uint32_t c);
 uint32_t utf8_isalnum(uint32_t c);

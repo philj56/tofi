@@ -2,6 +2,11 @@
 
 #include "utf8.h"
 
+uint32_t utf8_isprint(uint32_t c)
+{
+	return g_unichar_isprint(c);
+}
+
 uint32_t utf8_isupper(uint32_t c)
 {
 	return g_unichar_isupper(c);

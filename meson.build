@@ -102,6 +102,7 @@ common_sources = files(
   'src/entry_backend/harfbuzz.c',
   'src/fuzzy_match.c',
   'src/history.c',
+  'src/input.c',
   'src/log.c',
   'src/mkdirp.c',
   'src/shm.c',
