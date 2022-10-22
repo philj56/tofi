@@ -20,6 +20,7 @@ static int32_t fuzzy_match_recurse(
 		const char *restrict pattern,
 		const char *restrict str,
 		int32_t score,
+		bool first_match_only,
 		bool first_char);
 
 /*
@@ -93,8 +94,32 @@ int32_t fuzzy_match(const char *restrict pattern, const char *restrict str)
 	/* We can already penalise any unused letters. */
 	score += unmatched_letter_penalty * (int32_t)(slen - plen);
 
+        /*
+         * If the string is more than 100 characters, just find the first fuzzy
+         * match rather than the best.
+         *
+         * This is required as the number of possible matches (for patterns and
+         * strings all consisting of one letter) scales something like:
+         *
+         * slen! / (plen! (slen - plen)!)  ~  slen^plen for plen << slen
+         *
+         * This quickly grinds everything to a halt. 100 is chosen fairly
+         * arbitrarily from the following logic:
+         *
+         * - e is the most common character in English, at around 13% of
+         *   letters. Depending on the context, let's say this be up to 20%.
+         * - 100 * 0.20 = 20 repeats of the same character.
+         * - In the worst case here, 20! / (10! 10!) ~200,000 possible matches,
+         *   which is "slow but not frozen" for my machine.
+         *
+         * In reality, this worst case shouldn't be hit, and finding the "best"
+         * fuzzy match in lines of text > 100 characters isn't really in scope
+         * for a dmenu clone.
+         */
+        bool first_match_only = slen > 100;
+
 	/* Perform the match. */
-	score = fuzzy_match_recurse(pattern, str, score, true);
+	score = fuzzy_match_recurse(pattern, str, score, first_match_only, true);
 
 	return score;
 }
@@ -112,6 +137,7 @@ int32_t fuzzy_match_recurse(
 		const char *restrict pattern,
 		const char *restrict str,
 		int32_t score,
+		bool first_match_only,
 		bool first_char)
 {
 	if (*pattern == '\0') {
@@ -137,9 +163,14 @@ int32_t fuzzy_match_recurse(
 				utf8_next_char(pattern),
 				utf8_next_char(match),
 				compute_score(jump, first_char, match),
+				first_match_only,
 				false);
 		best_score = MAX(best_score, subscore);
-		match++;
+		match = utf8_next_char(match);
+
+		if (first_match_only) {
+			break;
+		}
 	}
 
 	if (best_score == INT32_MIN) {
