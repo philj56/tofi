@@ -49,6 +49,7 @@ _tofi()
 		--hide-input
 		--hidden-character
 		--drun-launch
+		--terminal
 		--hint-font
 		--late-keyboard-init
      )

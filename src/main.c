@@ -678,6 +678,8 @@ static void usage()
 "      --drun-print-exec <true|false>   Print a command line in drun mode.\n"
 "                                       This is now always the case,\n"
 "                                       and this option is deprecated.\n"
+"      --terminal <command>             Terminal to use for command line\n"
+"                                       programs in drun mode.\n"
 "      --hint-font <true|false>         Perform font hinting.\n"
 "      --late-keyboard-init             (EXPERIMENTAL) Delay keyboard\n"
 "                                       initialisation until after the first\n"
@@ -729,6 +731,7 @@ const struct option long_options[] = {
 	{"hidden-character", required_argument, NULL, 0},
 	{"drun-launch", required_argument, NULL, 0},
 	{"drun-print-exec", required_argument, NULL, 0},
+	{"terminal", required_argument, NULL, 0},
 	{"hint-font", required_argument, NULL, 0},
 	{"output", required_argument, NULL, 0},
 	{"scale", required_argument, NULL, 0},
@@ -835,7 +838,7 @@ static bool do_submit(struct tofi *tofi)
 		if (tofi->drun_launch) {
 			drun_launch(res);
 		} else {
-			drun_print(res);
+			drun_print(res, tofi->default_terminal);
 		}
 	} else {
 		printf("%s\n", res);
@@ -894,6 +897,13 @@ int main(int argc, char *argv[])
 		.use_scale = true,
 	};
 	wl_list_init(&tofi.output_list);
+	if (getenv("TERMINAL") != NULL) {
+		snprintf(
+				tofi.default_terminal,
+				N_ELEM(tofi.default_terminal),
+				"%s",
+				getenv("TERMINAL"));
+	}
 
 	parse_args(&tofi, argc, argv);
 

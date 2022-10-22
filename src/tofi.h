@@ -11,6 +11,7 @@
 #include "wlr-layer-shell-unstable-v1.h"
 
 #define MAX_OUTPUT_NAME_LEN 256
+#define MAX_TERMINAL_NAME_LEN 256
 
 struct output_list_element {
 	struct wl_list link;
@@ -88,6 +89,7 @@ struct tofi {
 	bool fuzzy_match;
 	bool require_match;
 	char target_output_name[MAX_OUTPUT_NAME_LEN];
+	char default_terminal[MAX_TERMINAL_NAME_LEN];
 };
 
 #endif /* TOFI_H */

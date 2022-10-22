@@ -278,7 +278,7 @@ struct desktop_vec drun_generate_cached()
 	return apps;
 }
 
-void drun_print(const char *filename)
+void drun_print(const char *filename, const char *terminal_command)
 {
 	GKeyFile *file = g_key_file_new();
 	if (!g_key_file_load_from_file(file, filename, G_KEY_FILE_NONE, NULL)) {
@@ -326,8 +326,18 @@ void drun_print(const char *filename)
 	}
 	string_vec_add(&pieces, last);
 
-	/* Build the command line from our vector. */
-	for (size_t i = 0; i < pieces.count; i++) {
+        /*
+         * If this is a terminal application, the command line needs to be
+         * preceded by the terminal command.
+         */
+	bool terminal = g_key_file_get_boolean(file, group, "Terminal", NULL);
+	if (terminal) {
+		fputs(terminal_command, stdout);
+		fputc(' ', stdout);
+	}
+
+        /* Build the command line from our vector. */
+        for (size_t i = 0; i < pieces.count; i++) {
 		fputs(pieces.buf[i].string, stdout);
 	}
 	fputc('\n', stdout);
@@ -341,11 +351,19 @@ void drun_launch(const char *filename)
 {
 	GDesktopAppInfo *info = g_desktop_app_info_new_from_filename(filename);
 	GAppLaunchContext *context = g_app_launch_context_new();
+	GError *err = NULL;
 
-	if (!g_app_info_launch((GAppInfo *)info, NULL, context, NULL)) {
+	if (!g_app_info_launch((GAppInfo *)info, NULL, context, &err)) {
 		log_error("Failed to launch %s.\n", filename);
+		log_error("%s.\n", err->message);
+		log_error(
+				"If this is a terminal issue, you can use `--drun-launch=false`,\n"
+				"         and pass your preferred terminal command to `--terminal`.\n"
+				"         For more information, see https://gitlab.gnome.org/GNOME/glib/-/issues/338\n"
+				"         and https://github.com/philj56/tofi/issues/46.\n");
 	}
 
+	g_clear_error(&err);
 	g_object_unref(context);
 	g_object_unref(info);
 }

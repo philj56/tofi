@@ -82,13 +82,21 @@ options.
 >
 > Default: false
 
+**terminal**=*command*
+
+> The terminal to run terminal programs in when in drun mode. *command*
+> will be prepended to the the application's command line. This option
+> has no effect if **drun-launch** is set to true.
+>
+> Default: the value of the TERMINAL environment variable
+
 **drun-print-exec**=*true\|false*
 
 > **WARNING**: In the current version of tofi, this option has changed
 > to always be true and has no effect, as it should have been from the
 > start. It may be removed in a future version of tofi.
 >
-> Default: true.
+> Default: true
 
 **late-keyboard-init**=*true\|false*
 
