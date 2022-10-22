@@ -332,8 +332,14 @@ void drun_print(const char *filename, const char *terminal_command)
          */
 	bool terminal = g_key_file_get_boolean(file, group, "Terminal", NULL);
 	if (terminal) {
-		fputs(terminal_command, stdout);
-		fputc(' ', stdout);
+		if (terminal_command[0] == '\0') {
+			log_warning("Terminal application launched, but no terminal is set.\n");
+			log_warning("This probably isn't what you want.\n");
+			log_warning("See the --terminal option documentation in the man page.\n");
+		} else {
+			fputs(terminal_command, stdout);
+			fputc(' ', stdout);
+		}
 	}
 
         /* Build the command line from our vector. */
