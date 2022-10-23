@@ -1328,6 +1328,7 @@ int main(int argc, char *argv[])
 		wl_display_dispatch_pending(tofi.wl_display);
 
 		if (tofi.window.surface.redraw) {
+			entry_update(&tofi.window.entry);
 			surface_draw(&tofi.window.surface);
 			tofi.window.surface.redraw = false;
 		}

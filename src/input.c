@@ -86,7 +86,6 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		return;
 	}
 
-	entry_update(&tofi->window.entry);
 	tofi->window.surface.redraw = true;
 }
 
