@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "fuzzy_match.h"
-#include "utf8.h"
+#include "unicode.h"
 #include "xmalloc.h"
 
 #undef MAX
@@ -146,7 +146,7 @@ int32_t fuzzy_match_recurse(
 	}
 
 	const char *match = str;
-	uint32_t search = utf8_get_char(pattern);
+	uint32_t search = utf8_to_utf32(pattern);
 
 	int32_t best_score = INT32_MIN;
 
@@ -208,18 +208,18 @@ int32_t compute_score(int32_t jump, bool first_char, const char *restrict match)
 
 	int32_t score = 0;
 
-	const uint32_t cur = utf8_get_char(match);
+	const uint32_t cur = utf8_to_utf32(match);
 
 	/* Apply bonuses. */
 	if (!first_char && jump == 0) {
 		score += adjacency_bonus;
 	}
 	if (!first_char || jump > 0) {
-		const uint32_t prev = utf8_get_char(utf8_prev_char(match));
-		if (utf8_isupper(cur) && utf8_islower(prev)) {
+		const uint32_t prev = utf8_to_utf32(utf8_prev_char(match));
+		if (utf32_isupper(cur) && utf32_islower(prev)) {
 			score += camel_bonus;
 		}
-		if (utf8_isalnum(cur) && !utf8_isalnum(prev)) {
+		if (utf32_isalnum(cur) && !utf32_isalnum(prev)) {
 			score += separator_bonus;
 		}
 	}

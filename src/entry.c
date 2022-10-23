@@ -1,6 +1,5 @@
 #include <cairo/cairo.h>
 #include <math.h>
-#include <wchar.h>
 #include <unistd.h>
 #include "entry.h"
 #include "log.h"

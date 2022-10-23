@@ -6,7 +6,7 @@
 #include <sys/mman.h>
 #include "fuzzy_match.h"
 #include "string_vec.h"
-#include "utf8.h"
+#include "unicode.h"
 #include "xmalloc.h"
 
 static int cmpstringp(const void *restrict a, const void *restrict b)

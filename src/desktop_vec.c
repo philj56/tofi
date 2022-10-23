@@ -4,7 +4,7 @@
 #include "fuzzy_match.h"
 #include "log.h"
 #include "string_vec.h"
-#include "utf8.h"
+#include "unicode.h"
 #include "xmalloc.h"
 
 static bool match_current_desktop(char * const *desktop_list, gsize length);

@@ -5,7 +5,6 @@
 #include <string.h>
 #include "fuzzy_match.h"
 #include "tap.h"
-#include "utf8.h"
 
 void is_simple_match(const char *pattern, const char *str, const char *message)
 {

@@ -1,9 +1,8 @@
 #include <linux/input-event-codes.h>
-#include <wctype.h>
 #include "input.h"
 #include "nelem.h"
 #include "tofi.h"
-#include "utf8.h"
+#include "unicode.h"
 
 
 static void add_character(struct tofi *tofi, xkb_keycode_t keycode);
@@ -32,7 +31,7 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	uint32_t ch = xkb_state_key_get_utf32(
 			tofi->xkb_state,
 			keycode);
-	if (utf8_isprint(ch)) {
+	if (utf32_isprint(ch)) {
 		add_character(tofi, keycode);
 	} else if (sym == XKB_KEY_BackSpace) {
 		delete_character(tofi);
@@ -101,7 +100,7 @@ void add_character(struct tofi *tofi, xkb_keycode_t keycode)
 {
 	struct entry *entry = &tofi->window.entry;
 
-	if (entry->input_length >= N_ELEM(entry->input) - 1) {
+	if (entry->input_utf32_length >= N_ELEM(entry->input_utf32) - 1) {
 		/* No more room for input */
 		return;
 	}
@@ -112,22 +111,20 @@ void add_character(struct tofi *tofi, xkb_keycode_t keycode)
 			keycode,
 			buf,
 			sizeof(buf));
-	wchar_t ch;
-	mbtowc(&ch, buf, sizeof(buf));
-	entry->input[entry->input_length] = ch;
-	entry->input_length++;
-	entry->input[entry->input_length] = L'\0';
-	memcpy(&entry->input_mb[entry->input_mb_length],
+	entry->input_utf32[entry->input_utf32_length] = utf8_to_utf32(buf);
+	entry->input_utf32_length++;
+	entry->input_utf32[entry->input_utf32_length] = U'\0';
+	memcpy(&entry->input_utf8[entry->input_utf8_length],
 			buf,
 			N_ELEM(buf));
-	entry->input_mb_length += len;
+	entry->input_utf8_length += len;
 	if (entry->drun) {
-		struct string_vec results = desktop_vec_filter(&entry->apps, entry->input_mb, tofi->fuzzy_match);
+		struct string_vec results = desktop_vec_filter(&entry->apps, entry->input_utf8, tofi->fuzzy_match);
 		string_vec_destroy(&entry->results);
 		entry->results = results;
 	} else {
 		struct string_vec tmp = entry->results;
-		entry->results = string_vec_filter(&entry->results, entry->input_mb, tofi->fuzzy_match);
+		entry->results = string_vec_filter(&entry->results, entry->input_utf8, tofi->fuzzy_match);
 		string_vec_destroy(&tmp);
 	}
 
@@ -138,18 +135,19 @@ void refresh_results(struct tofi *tofi)
 {
 	struct entry *entry = &tofi->window.entry;
 
-	const wchar_t *src = entry->input;
-	size_t siz = wcsrtombs(
-			entry->input_mb,
-			&src,
-			N_ELEM(entry->input_mb),
-			NULL);
-	entry->input_mb_length = siz;
+	size_t bytes_written = 0;
+	for (size_t i = 0; i < entry->input_utf32_length; i++) {
+		bytes_written += utf32_to_utf8(
+				entry->input_utf32[i],
+				&entry->input_utf8[bytes_written]);
+	}
+	entry->input_utf8[bytes_written] = '\0';
+	entry->input_utf8_length = bytes_written;
 	string_vec_destroy(&entry->results);
 	if (entry->drun) {
-		entry->results = desktop_vec_filter(&entry->apps, entry->input_mb, tofi->fuzzy_match);
+		entry->results = desktop_vec_filter(&entry->apps, entry->input_utf8, tofi->fuzzy_match);
 	} else {
-		entry->results = string_vec_filter(&entry->commands, entry->input_mb, tofi->fuzzy_match);
+		entry->results = string_vec_filter(&entry->commands, entry->input_utf8, tofi->fuzzy_match);
 	}
 
 	reset_selection(tofi);
@@ -159,13 +157,13 @@ void delete_character(struct tofi *tofi)
 {
 	struct entry *entry = &tofi->window.entry;
 
-	if (entry->input_length == 0) {
+	if (entry->input_utf32_length == 0) {
 		/* No input to delete. */
 		return;
 	}
 
-	entry->input_length--;
-	entry->input[entry->input_length] = L'\0';
+	entry->input_utf32_length--;
+	entry->input_utf32[entry->input_utf32_length] = U'\0';
 
 	refresh_results(tofi);
 }
@@ -174,18 +172,18 @@ void delete_word(struct tofi *tofi)
 {
 	struct entry *entry = &tofi->window.entry;
 
-	if (entry->input_length == 0) {
+	if (entry->input_utf32_length == 0) {
 		/* No input to delete. */
 		return;
 	}
 
-	while (entry->input_length > 0 && iswspace(entry->input[entry->input_length - 1])) {
-		entry->input_length--;
+	while (entry->input_utf32_length > 0 && utf32_isspace(entry->input_utf32[entry->input_utf32_length - 1])) {
+		entry->input_utf32_length--;
 	}
-	while (entry->input_length > 0 && !iswspace(entry->input[entry->input_length - 1])) {
-		entry->input_length--;
+	while (entry->input_utf32_length > 0 && !utf32_isspace(entry->input_utf32[entry->input_utf32_length - 1])) {
+		entry->input_utf32_length--;
 	}
-	entry->input[entry->input_length] = L'\0';
+	entry->input_utf32[entry->input_utf32_length] = U'\0';
 
 	refresh_results(tofi);
 }
@@ -194,8 +192,8 @@ void clear_input(struct tofi *tofi)
 {
 	struct entry *entry = &tofi->window.entry;
 
-	entry->input_length = 0;
-	entry->input[0] = L'\0';
+	entry->input_utf32_length = 0;
+	entry->input_utf32[0] = U'\0';
 
 	refresh_results(tofi);
 }

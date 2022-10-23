@@ -12,8 +12,6 @@
 #include <unistd.h>
 #include <wayland-client.h>
 #include <wayland-util.h>
-#include <wchar.h>
-#include <wctype.h>
 #include <xkbcommon/xkbcommon.h>
 #include "tofi.h"
 #include "compgen.h"
@@ -816,7 +814,7 @@ static bool do_submit(struct tofi *tofi)
 		if (tofi->require_match || entry->drun) {
 			return false;
 		} else {
-			printf("%ls\n", entry->input);
+			printf("%s\n", entry->input_utf8);
 			return true;
 		}
 	}
@@ -874,7 +872,7 @@ int main(int argc, char *argv[])
 				.font_name = "Sans",
 				.font_size = 24,
 				.prompt_text = "run: ",
-				.hidden_character_mb = "*",
+				.hidden_character_utf8 = u8"*",
 				.padding_top = 8,
 				.padding_bottom = 8,
 				.padding_left = 8,

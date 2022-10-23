@@ -5,7 +5,7 @@
 #include "../entry.h"
 #include "../log.h"
 #include "../nelem.h"
-#include "../utf8.h"
+#include "../unicode.h"
 #include "../xmalloc.h"
 
 /*
@@ -232,12 +232,12 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	hb_buffer_clear_contents(buffer);
 	setup_hb_buffer(buffer);
 	if (entry->hide_input) {
-		size_t char_len = N_ELEM(entry->hidden_character_mb);
-		for (size_t i = 0; i < entry->input_length; i++) {
-			hb_buffer_add_utf8(buffer, entry->hidden_character_mb, char_len, 0, char_len);
+		size_t char_len = N_ELEM(entry->hidden_character_utf8);
+		for (size_t i = 0; i < entry->input_utf32_length; i++) {
+			hb_buffer_add_utf8(buffer, entry->hidden_character_utf8, char_len, 0, char_len);
 		}
 	} else {
-		hb_buffer_add_utf8(buffer, entry->input_mb, -1, 0, -1);
+		hb_buffer_add_utf8(buffer, entry->input_utf8, -1, 0, -1);
 	}
 	hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
 	extents = render_hb_buffer(cr, buffer);
@@ -368,17 +368,17 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			char *match = NULL;
 			char *postmatch = NULL;
 			cairo_text_extents_t subextents;
-			if (entry->input_mb_length > 0 && entry->selection_highlight_color.a != 0) {
-				char *match_pos = utf8_strcasestr(prematch, entry->input_mb);
+			if (entry->input_utf8_length > 0 && entry->selection_highlight_color.a != 0) {
+				char *match_pos = utf8_strcasestr(prematch, entry->input_utf8);
 				if (match_pos != NULL) {
 					match = xstrdup(result);
 					prematch_len = (match_pos - prematch);
 					prematch[prematch_len] = '\0';
-					postmatch_len = strlen(result) - prematch_len - entry->input_mb_length;
+					postmatch_len = strlen(result) - prematch_len - entry->input_utf8_length;
 					if (postmatch_len > 0) {
 						postmatch = xstrdup(result);
 					}
-					match[entry->input_mb_length + prematch_len] = '\0';
+					match[entry->input_utf8_length + prematch_len] = '\0';
 				}
 			}
 
@@ -438,7 +438,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 				hb_buffer_clear_contents(buffer);
 				setup_hb_buffer(buffer);
-				hb_buffer_add_utf8(buffer, &postmatch[entry->input_mb_length + prematch_len], -1, 0, -1);
+				hb_buffer_add_utf8(buffer, &postmatch[entry->input_utf8_length + prematch_len], -1, 0, -1);
 				hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
 				subextents = render_hb_buffer(cr, buffer);
 

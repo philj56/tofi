@@ -5,7 +5,7 @@
 #include "entry_backend/harfbuzz.h"
 
 #include <cairo/cairo.h>
-#include <wchar.h>
+#include <uchar.h>
 #include "color.h"
 #include "desktop_vec.h"
 #include "history.h"
@@ -27,11 +27,10 @@ struct entry {
 	} cairo[2];
 	int index;
 
-	wchar_t input[MAX_INPUT_LENGTH];
-	/* Assume maximum of 4 bytes per wchar_t (for UTF-8) */
-	char input_mb[4*MAX_INPUT_LENGTH];
-	uint32_t input_length;
-	uint32_t input_mb_length;
+	uint32_t input_utf32[MAX_INPUT_LENGTH];
+	char input_utf8[4*MAX_INPUT_LENGTH];
+	uint32_t input_utf32_length;
+	uint32_t input_utf8_length;
 
 	uint32_t selection;
 	uint32_t first_result;
@@ -50,8 +49,8 @@ struct entry {
 	bool drun;
 	bool horizontal;
 	bool hide_input;
-	char hidden_character_mb[4];
-	uint32_t hidden_character_mb_length;
+	char hidden_character_utf8[6];
+	uint8_t hidden_character_utf8_length;
 	uint32_t num_results;
 	uint32_t num_results_drawn;
 	uint32_t last_num_results_drawn;

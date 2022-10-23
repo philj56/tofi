@@ -4,7 +4,7 @@
 #include "../entry.h"
 #include "../log.h"
 #include "../nelem.h"
-#include "../utf8.h"
+#include "../unicode.h"
 #include "../xmalloc.h"
 
 #undef MAX
@@ -91,16 +91,16 @@ void entry_backend_pango_update(struct entry *entry)
 		 * Pango needs to be passed the whole text at once, so we need
 		 * to manually replicate the replacement character in a buffer.
 		 */
-		static char buf[sizeof(entry->input_mb)];
-		uint32_t char_len = entry->hidden_character_mb_length;
-		for (size_t i = 0; i < entry->input_length; i++) {
+		static char buf[sizeof(entry->input_utf8)];
+		uint32_t char_len = entry->hidden_character_utf8_length;
+		for (size_t i = 0; i < entry->input_utf32_length; i++) {
 			for (size_t j = 0; j < char_len; j++) {
-				buf[i * char_len + j] = entry->hidden_character_mb[j];
+				buf[i * char_len + j] = entry->hidden_character_utf8[j];
 			}
 		}
-		pango_layout_set_text(layout, buf, char_len * entry->input_length);
+		pango_layout_set_text(layout, buf, char_len * entry->input_utf32_length);
 	} else {
-		pango_layout_set_text(layout, entry->input_mb, -1);
+		pango_layout_set_text(layout, entry->input_utf8, -1);
 	}
 	pango_cairo_update_layout(cr, layout);
 	pango_cairo_show_layout(cr, layout);
@@ -178,11 +178,11 @@ void entry_backend_pango_update(struct entry *entry)
 		} else {
 			ssize_t prematch_len = -1;
 			ssize_t postmatch_len = -1;
-			size_t match_len = entry->input_mb_length;
+			size_t match_len = entry->input_utf8_length;
 			PangoRectangle ink_subrect;
 			PangoRectangle logical_subrect;
-			if (entry->input_mb_length > 0 && entry->selection_highlight_color.a != 0) {
-				char *match_pos = utf8_strcasestr(str, entry->input_mb);
+			if (entry->input_utf8_length > 0 && entry->selection_highlight_color.a != 0) {
+				char *match_pos = utf8_strcasestr(str, entry->input_utf8);
 				if (match_pos != NULL) {
 					prematch_len = (match_pos - str);
 					postmatch_len = strlen(str) - prematch_len - match_len;

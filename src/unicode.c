@@ -1,40 +1,50 @@
 #include <string.h>
 
-#include "utf8.h"
+#include "unicode.h"
 
-uint32_t utf8_isprint(uint32_t c)
+uint8_t utf32_to_utf8(uint32_t c, char *buf)
+{
+	return g_unichar_to_utf8(c, buf);
+}
+
+uint32_t utf8_to_utf32(const char *s)
+{
+	return g_utf8_get_char(s);
+}
+
+uint32_t utf32_isprint(uint32_t c)
 {
 	return g_unichar_isprint(c);
 }
 
-uint32_t utf8_isupper(uint32_t c)
+uint32_t utf32_isspace(uint32_t c)
+{
+	return g_unichar_isspace(c);
+}
+
+uint32_t utf32_isupper(uint32_t c)
 {
 	return g_unichar_isupper(c);
 }
 
-uint32_t utf8_islower(uint32_t c)
+uint32_t utf32_islower(uint32_t c)
 {
 	return g_unichar_islower(c);
 }
 
-uint32_t utf8_isalnum(uint32_t c)
+uint32_t utf32_isalnum(uint32_t c)
 {
 	return g_unichar_isalnum(c);
 }
 
-uint32_t utf8_toupper(uint32_t c)
+uint32_t utf32_toupper(uint32_t c)
 {
 	return g_unichar_toupper(c);
 }
 
-uint32_t utf8_tolower(uint32_t c)
+uint32_t utf32_tolower(uint32_t c)
 {
 	return g_unichar_tolower(c);
-}
-
-uint32_t utf8_get_char(const char *s)
-{
-	return g_utf8_get_char(s);
 }
 
 char *utf8_next_char(const char *s)
@@ -94,4 +104,9 @@ char *utf8_strcasestr(const char * restrict haystack, const char * restrict need
 char *utf8_normalize(const char *s)
 {
 	return g_utf8_normalize(s, -1, G_NORMALIZE_DEFAULT);
+}
+
+char *utf8_compose(const char *s)
+{
+	return g_utf8_normalize(s, -1, G_NORMALIZE_DEFAULT_COMPOSE);
 }
