@@ -38,14 +38,14 @@ jobs:
       - name: Clang LTO build
         run: |
           meson build
-          ninja -C build
+          ninja -C build test
           rm -rf build
 
       - name: Clang non-LTO build
         run: |
           meson build
           meson configure build -Db_lto=false
-          ninja -C build
+          ninja -C build test
           rm -rf build
 
   ubuntu-22_04:
@@ -70,7 +70,7 @@ jobs:
         run: |
           meson build
           meson configure build -Dwerror=true
-          ninja -C build
+          ninja -C build test
           rm -rf build
 
       - name: GCC non-LTO build
@@ -78,7 +78,7 @@ jobs:
           meson build
           meson configure build -Dwerror=true
           meson configure build -Db_lto=false
-          ninja -C build
+          ninja -C build test
           rm -rf build
 
       - name: Set clang as default compiler
@@ -88,7 +88,7 @@ jobs:
         run: |
           meson build
           meson configure build -Dwerror=true
-          ninja -C build
+          ninja -C build test
           rm -rf build
 
       - name: Clang non-LTO build
@@ -96,5 +96,5 @@ jobs:
           meson build
           meson configure build -Dwerror=true
           meson configure build -Db_lto=false
-          ninja -C build
+          ninja -C build test
           rm -rf build
