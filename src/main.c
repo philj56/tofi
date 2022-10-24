@@ -680,6 +680,7 @@ static void usage()
 "      --terminal <command>             Terminal to use for command line\n"
 "                                       programs in drun mode.\n"
 "      --hint-font <true|false>         Perform font hinting.\n"
+"      --multi-instance <true|false>    Allow multiple tofi instances at once.\n"
 "      --late-keyboard-init             (EXPERIMENTAL) Delay keyboard\n"
 "                                       initialisation until after the first\n"
 "                                       draw to screen.\n"
@@ -732,6 +733,7 @@ const struct option long_options[] = {
 	{"drun-print-exec", required_argument, NULL, 0},
 	{"terminal", required_argument, NULL, 0},
 	{"hint-font", required_argument, NULL, 0},
+	{"multi-instance", required_argument, NULL, 0},
 	{"output", required_argument, NULL, 0},
 	{"scale", required_argument, NULL, 0},
 	{"late-keyboard-init", optional_argument, NULL, 'k'},
@@ -906,7 +908,7 @@ int main(int argc, char *argv[])
 
 	parse_args(&tofi, argc, argv);
 
-	if (lock_check()) {
+	if (!tofi.multiple_instance && lock_check()) {
 		log_error("Another instance of tofi is already running.\n");
 		exit(EXIT_FAILURE);
 	}

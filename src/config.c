@@ -414,7 +414,6 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 	} else if (strcasecmp(option, "hide-input") == 0) {
 		tofi->window.entry.hide_input = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "hidden-character") == 0) {
-		/* Unicode handling is ugly. */
 		uint32_t ch = parse_char(filename, lineno, value, &err);
 		if (!err) {
 			tofi->window.entry.hidden_character_utf8_length = 
@@ -429,6 +428,8 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		snprintf(tofi->default_terminal, N_ELEM(tofi->default_terminal), "%s", value);
 	} else if (strcasecmp(option, "hint-font") == 0) {
 		tofi->window.entry.harfbuzz.disable_hinting = !parse_bool(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "multi-instance") == 0) {
+		tofi->multiple_instance = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "late-keyboard-init") == 0) {
 		tofi->late_keyboard_init = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "output") == 0) {

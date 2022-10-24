@@ -52,6 +52,7 @@ _tofi()
 		--terminal
 		--hint-font
 		--late-keyboard-init
+		--multi-instance
      )
 
 	case "${prev}" in

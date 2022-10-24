@@ -88,6 +88,7 @@ struct tofi {
 	bool drun_print_exec;
 	bool fuzzy_match;
 	bool require_match;
+	bool multiple_instance;
 	char target_output_name[MAX_OUTPUT_NAME_LEN];
 	char default_terminal[MAX_TERMINAL_NAME_LEN];
 };

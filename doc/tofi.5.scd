@@ -98,6 +98,13 @@ options.
 
 	Default: false
 
+*multi-instance*=_true|false_
+	If true, allow multiple simultaneous processes.
+	If false, create a lock file on startup to prevent multiple instances
+	from running simultaneously.
+
+	Default: false
+
 # STYLE OPTIONS
 
 *font*=_font_
