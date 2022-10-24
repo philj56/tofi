@@ -103,6 +103,7 @@ common_sources = files(
   'src/fuzzy_match.c',
   'src/history.c',
   'src/input.c',
+  'src/lock.c',
   'src/log.c',
   'src/mkdirp.c',
   'src/shm.c',

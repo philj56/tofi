@@ -22,6 +22,7 @@
 #include "input.h"
 #include "log.h"
 #include "nelem.h"
+#include "lock.h"
 #include "shm.h"
 #include "string_vec.h"
 #include "string_vec.h"
@@ -904,6 +905,11 @@ int main(int argc, char *argv[])
 	}
 
 	parse_args(&tofi, argc, argv);
+
+	if (lock_check()) {
+		log_error("Another instance of tofi is already running.\n");
+		exit(EXIT_FAILURE);
+	}
 
 	/*
 	 * Initial Wayland & XKB setup.
