@@ -26,13 +26,24 @@ single frame.
 ## Install
 ### Building
 
-Install the necessary dependencies, e.g. for Arch:
+Install the necessary dependencies.
+
+#### For Arch:
 ```sh
 # Runtime dependencies
 sudo pacman -S freetype2 harfbuzz cairo pango wayland libxkbcommon
 
 # Build-time dependencies
 sudo pacman -S meson scdoc wayland-protocols
+```
+
+#### For Fedora
+```sh
+# Runtime dependencies
+sudo dnf install freetype-devel cairo-devel pango-devel wayland-devel libxkbcommon-devel harfbuzz
+
+# Build-time dependencies
+sudo pacman -S meson scdoc wayland-protocols-devel
 ```
 
 Then build:
