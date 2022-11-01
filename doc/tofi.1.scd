@@ -53,7 +53,7 @@ All config file options described in *tofi*(5) are also accepted, in the form
 <Ctrl>-u
 	Delete line.
 
-<Ctrl>-w
+<Ctrl>-w | <Ctrl>-<Backspace>
 	Delete word.
 
 <Enter>
