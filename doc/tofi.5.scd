@@ -84,9 +84,8 @@ options.
 	Default: the value of the TERMINAL environment variable
 
 *drun-print-exec*=_true|false_
-	*WARNING*: In the current version of tofi, this option has changed to
-	always be true and has no effect, as it should have been from the
-	start. It may be removed in a future version of tofi.
+	*WARNING*: This option does nothing, and may be removed in a future version
+	of tofi.
 
 	Default: true
 
@@ -242,10 +241,6 @@ options.
 
 *scale*=_true|false_
 	Scale the window by the output's scale factor.
-
-	*WARNING*: In the current version of tofi, the default value has
-	changed to true, so you may need to update your config. Additionally,
-	font scaling will no longer occur when this is set to _false_.
 
 	Default: true
 
