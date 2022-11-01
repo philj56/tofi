@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.7.0] - 2022-11-01
+### Added
+- Added `include` option, allowing config files to include other files.
+- Added `hide-input` and `hidden-character` options for sensitive input.
+- Added `exclusive-zone` option, to control interaction with menu bars etc.
+- Added `terminal` option to allow `tofi-drun` to launch terminal apps.
+- Added a couple of extra keybindings.
+
+### Changed
+- Searching is now Unicode aware, so case-insensitive matching of non-Latin
+	characters should work.
+- Fuzzy matching will now use a simpler algorithm when matching lines more than
+	100 characters in length to avoid slowdowns.
+- By default, tofi will now refuse to start if another instance is already
+	running, preventing accidental double launches. This can be changed with the
+	`multi-instance` option.
+- Tofi will now show up on top of fullscreen windows.
+
+### Fixed
+- Keyboard shortcuts are now bound to physical keys rather than characters, so
+	should not change places when changing keyboard layouts.
+- Fix crash when attempting to change the selection while no results are
+	displayed.
+- Fixed a rare issue where input could become out of sync with the display.
+
+
 ## [0.6.0] - 2022-09-08
 ### Warning - HiDPI config change
 In the [0.5.0] release, the `scale` option was added to enable scaling of pixel
@@ -158,6 +184,7 @@ is how it should have been done from the start.
 ## [0.1.0] - 2022-06-27
 Initial release. Good enough to use, but still some jank.
 
+[0.7.0]: https://github.com/philj56/tofi/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/philj56/tofi/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/philj56/tofi/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/philj56/tofi/compare/v0.3.1...v0.4.0
