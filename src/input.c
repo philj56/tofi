@@ -33,21 +33,21 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 			keycode);
 	if (utf32_isprint(ch)) {
 		add_character(tofi, keycode);
-	} else if (sym == XKB_KEY_BackSpace) {
-		delete_character(tofi);
-	} else if (key == KEY_W
+	} else if ((sym == XKB_KEY_BackSpace || key == KEY_W)
 			&& xkb_state_mod_name_is_active(
 				tofi->xkb_state,
 				XKB_MOD_NAME_CTRL,
 				XKB_STATE_MODS_EFFECTIVE))
 	{
 		delete_word(tofi);
+	} else if (sym == XKB_KEY_BackSpace) {
+		delete_character(tofi);
 	} else if (key == KEY_U
 			&& xkb_state_mod_name_is_active(
 				tofi->xkb_state,
 				XKB_MOD_NAME_CTRL,
 				XKB_STATE_MODS_EFFECTIVE)
-		  )
+		   )
 	{
 		clear_input(tofi);
 	} else if (sym == XKB_KEY_Up || sym == XKB_KEY_Left || sym == XKB_KEY_ISO_Left_Tab

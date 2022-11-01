@@ -59,7 +59,7 @@ the form **--key=value**.
 
 > Delete line.
 
-\<Ctrl\>-w
+\<Ctrl\>-w \| <Ctrl\>-\<Backspace\>
 
 > Delete word.
 
