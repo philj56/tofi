@@ -642,6 +642,8 @@ static void usage()
 "      --text-color <color>             Color of text.\n"
 "      --prompt-text <string>           Prompt text.\n"
 "      --prompt-padding <px>            Padding between prompt and input.\n"
+"      --placeholder-text <string>      Placeholder input text.\n"
+"      --placeholder-color <px>         Color of placeholder input text.\n"
 "      --num-results <n>                Maximum number of results to display.\n"
 "      --selection-color <color>        Color of selected result.\n"
 "      --selection-match-color <color>  Color of the matching portion of the\n"
@@ -707,6 +709,8 @@ const struct option long_options[] = {
 	{"outline-color", required_argument, NULL, 0},
 	{"prompt-text", required_argument, NULL, 0},
 	{"prompt-padding", required_argument, NULL, 0},
+	{"placeholder-text", required_argument, NULL, 0},
+	{"placeholder-color", required_argument, NULL, 0},
 	{"result-spacing", required_argument, NULL, 0},
 	{"min-input-width", required_argument, NULL, 0},
 	{"border-width", required_argument, NULL, 0},
@@ -884,6 +888,7 @@ int main(int argc, char *argv[])
 				.outline_width = 4,
 				.background_color = {0.106f, 0.114f, 0.118f, 1.0f},
 				.foreground_color = {1.0f, 1.0f, 1.0f, 1.0f},
+				.placeholder_color = {1.0f, 1.0f, 1.0f, 0.66f},
 				.selection_foreground_color = {0.976f, 0.149f, 0.447f, 1.0f},
 				.border_color = {0.976f, 0.149f, 0.447f, 1.0f},
 				.outline_color = {0.031f, 0.031f, 0.0f, 1.0f},

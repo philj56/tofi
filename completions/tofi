@@ -25,6 +25,8 @@ _tofi()
 		--outline-color
 		--prompt-text
 		--prompt-padding
+		--placeholder-text
+		--placeholder-color
 		--result-spacing
 		--min-input-width
 		--border-width

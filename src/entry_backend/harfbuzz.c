@@ -231,7 +231,11 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	/* Render the entry text */
 	hb_buffer_clear_contents(buffer);
 	setup_hb_buffer(buffer);
-	if (entry->hide_input) {
+	if (entry->input_utf8_length == 0) {
+		color = entry->placeholder_color;
+		cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+		hb_buffer_add_utf8(buffer, entry->placeholder_text, -1, 0, -1);
+	} else if (entry->hide_input) {
 		size_t char_len = N_ELEM(entry->hidden_character_utf8);
 		for (size_t i = 0; i < entry->input_utf32_length; i++) {
 			hb_buffer_add_utf8(buffer, entry->hidden_character_utf8, char_len, 0, char_len);
@@ -245,6 +249,9 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 
 	cairo_font_extents_t font_extents;
 	cairo_font_extents(cr, &font_extents);
+
+	color = entry->foreground_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
 	uint32_t num_results;
 	if (entry->num_results == 0) {

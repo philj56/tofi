@@ -58,6 +58,7 @@ struct entry {
 	uint32_t font_size;
 	char font_name[MAX_FONT_NAME_LENGTH];
 	char prompt_text[MAX_PROMPT_LENGTH];
+	char placeholder_text[MAX_PROMPT_LENGTH];
 	uint32_t prompt_padding;
 	uint32_t corner_radius;
 	uint32_t padding_top;
@@ -74,6 +75,7 @@ struct entry {
 	uint32_t outline_width;
 	struct color foreground_color;
 	struct color background_color;
+	struct color placeholder_color;
 	struct color selection_highlight_color;
 	struct color selection_foreground_color;
 	struct color selection_background_color;

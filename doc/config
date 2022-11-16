@@ -39,6 +39,9 @@
 	# Default text
 	text-color = #FFFFFF
 
+	# Placeholder input text
+	placeholder-color = #FFFFFFA8
+
 	# Selection text
 	selection-color = #F92672
 
@@ -56,6 +59,9 @@
 
 	# Extra horizontal padding between prompt and input.
 	prompt-padding = 0
+
+	# Placeholder input text.
+	placeholder-text = ""
 
 	# Maximum number of results to display.
 	# If 0, tofi will draw as many results as it can fit in the window.

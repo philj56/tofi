@@ -335,6 +335,10 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		snprintf(tofi->window.entry.prompt_text, N_ELEM(tofi->window.entry.prompt_text), "%s", value);
 	} else if (strcasecmp(option, "prompt-padding") == 0) {
 		tofi->window.entry.prompt_padding = parse_uint32(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "placeholder-text") == 0) {
+		snprintf(tofi->window.entry.placeholder_text, N_ELEM(tofi->window.entry.placeholder_text), "%s", value);
+	} else if (strcasecmp(option, "placeholder-color") == 0) {
+		tofi->window.entry.placeholder_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "min-input-width") == 0) {
 		tofi->window.entry.input_width = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "result-spacing") == 0) {

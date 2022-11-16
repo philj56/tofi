@@ -161,6 +161,16 @@ options.
 
 	Default: 0
 
+*placeholder-text*=_string_
+	Placeholder input text.
+
+	Default: ""
+
+*placeholder-color*=_string_
+	Color of placeholder input text. See *COLORS* for more information.
+
+	Default: #FFFFFFA8
+
 *num-results*=_n_
 	Maximum number of results to display. If _n_ = 0, tofi will draw as
 	many results as it can fit in the window.

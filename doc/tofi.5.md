@@ -181,6 +181,18 @@ options.
 >
 > Default: 0
 
+**placeholder-text**=*string*
+
+> Placeholder input text.
+>
+> Default: ""
+
+**placeholder-color**=*string*
+
+> Color of placeholder input text. See **COLORS** for more information.
+>
+> Default: \#FFFFFFA8
+
 **num-results**=*n*
 
 > Maximum number of results to display. If *n* = 0, tofi will draw as

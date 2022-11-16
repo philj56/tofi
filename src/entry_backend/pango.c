@@ -86,7 +86,11 @@ void entry_backend_pango_update(struct entry *entry)
 	cairo_translate(cr, entry->prompt_padding, 0);
 
 	/* Render the entry text */
-	if (entry->hide_input) {
+	if (entry->input_utf8_length == 0) {
+		color = entry->placeholder_color;
+		cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+		pango_layout_set_text(layout, entry->placeholder_text, -1);
+	} else if (entry->hide_input) {
 		/*
 		 * Pango needs to be passed the whole text at once, so we need
 		 * to manually replicate the replacement character in a buffer.
@@ -106,6 +110,9 @@ void entry_backend_pango_update(struct entry *entry)
 	pango_cairo_show_layout(cr, layout);
 	pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
 	logical_rect.width = MAX(logical_rect.width, (int)entry->input_width);
+
+	color = entry->foreground_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
 	uint32_t num_results;
 	if (entry->num_results == 0) {
