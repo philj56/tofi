@@ -1347,12 +1347,15 @@ int main(int argc, char *argv[])
 			string_vec_add(&tofi.window.entry.commands, line);
 		}
 		free(line);
-		if (tofi.history_file[0] == 0) {
-			tofi.use_history = false;
-		} else {
-			tofi.window.entry.history = history_load(tofi.history_file);
+		if (tofi.use_history) {
+			if (tofi.history_file[0] == 0) {
+				tofi.use_history = false;
+			} else {
+				string_vec_sort(&tofi.window.entry.commands);
+				tofi.window.entry.history = history_load(tofi.history_file);
+				compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
+			}
 		}
-		compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
 	}
 	tofi.window.entry.results = string_vec_copy(&tofi.window.entry.commands);
 
