@@ -411,6 +411,8 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		tofi->hide_cursor = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "history") == 0) {
 		tofi->use_history = parse_bool(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "history-file") == 0) {
+		snprintf(tofi->history_file, N_ELEM(tofi->history_file), "%s", value);
 	} else if (strcasecmp(option, "fuzzy-match") == 0) {
 		tofi->fuzzy_match = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "require-match") == 0) {

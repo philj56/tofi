@@ -46,6 +46,7 @@ _tofi()
 		--horizontal
 		--hide-cursor
 		--history
+		--history-file
 		--fuzzy-match
 		--require-match
 		--hide-input
@@ -59,6 +60,8 @@ _tofi()
 
 	case "${prev}" in
 		--font)
+			;&
+		--history-file)
 			;&
 		--include)
 			;&

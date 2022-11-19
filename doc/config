@@ -143,6 +143,11 @@
 	# Sort results by number of usages in run and drun modes.
 	history = true
 
+	# Specify an alternate file to read and store history information
+	# from / to. This shouldn't normally be needed, and is intended to
+	# facilitate the creation of custom modes.
+	# history-file = /path/to/histfile
+
 	# Use fuzzy matching for searches.
 	fuzzy-match = false
 

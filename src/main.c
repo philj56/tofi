@@ -799,6 +799,7 @@ static void usage()
 "      --hide-cursor <true|false>       Hide the cursor.\n"
 "      --horizontal <true|false>        List results horizontally.\n"
 "      --history <true|false>           Sort results by number of usages.\n"
+"      --history-file <path>            Location of history file.\n"
 "      --fuzzy-match <true|false>       Use fuzzy matching for searching.\n"
 "      --require-match <true|false>     Require a match for selection.\n"
 "      --hide-input <true|false>        Hide sensitive input such as passwords.\n"
@@ -857,6 +858,7 @@ const struct option long_options[] = {
 	{"horizontal", required_argument, NULL, 0},
 	{"hide-cursor", required_argument, NULL, 0},
 	{"history", required_argument, NULL, 0},
+	{"history-file", required_argument, NULL, 0},
 	{"fuzzy-match", required_argument, NULL, 0},
 	{"require-match", required_argument, NULL, 0},
 	{"hide-input", required_argument, NULL, 0},
@@ -980,7 +982,11 @@ static bool do_submit(struct tofi *tofi)
 		history_add(
 				&entry->history,
 				entry->results.buf[selection].string);
-		history_save(&entry->history, entry->drun);
+		if (tofi->history_file[0] == 0) {
+			history_save_default_file(&entry->history, entry->drun);
+		} else {
+			history_save(&entry->history, tofi->history_file);
+		}
 	}
 	return true;
 }
@@ -1297,7 +1303,11 @@ int main(int argc, char *argv[])
 		log_indent();
 		tofi.window.entry.commands = compgen_cached();
 		if (tofi.use_history) {
-			tofi.window.entry.history = history_load(tofi.window.entry.drun);
+			if (tofi.history_file[0] == 0) {
+				tofi.window.entry.history = history_load_default_file(tofi.window.entry.drun);
+			} else {
+				tofi.window.entry.history = history_load(tofi.history_file);
+			}
 			compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
 		}
 		log_unindent();
@@ -1308,7 +1318,11 @@ int main(int argc, char *argv[])
 		tofi.window.entry.drun = true;
 		struct desktop_vec apps = drun_generate_cached();
 		if (tofi.use_history) {
-			tofi.window.entry.history = history_load(tofi.window.entry.drun);
+			if (tofi.history_file[0] == 0) {
+				tofi.window.entry.history = history_load_default_file(tofi.window.entry.drun);
+			} else {
+				tofi.window.entry.history = history_load(tofi.history_file);
+			}
 			if (tofi.window.entry.drun) {
 				drun_history_sort(&apps, &tofi.window.entry.history);
 			}
@@ -1333,7 +1347,12 @@ int main(int argc, char *argv[])
 			string_vec_add(&tofi.window.entry.commands, line);
 		}
 		free(line);
-		tofi.use_history = false;
+		if (tofi.history_file[0] == 0) {
+			tofi.use_history = false;
+		} else {
+			tofi.window.entry.history = history_load(tofi.history_file);
+		}
+		compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
 	}
 	tofi.window.entry.results = string_vec_copy(&tofi.window.entry.commands);
 

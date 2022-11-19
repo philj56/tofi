@@ -40,9 +40,32 @@ options.
 
 **history**=*true\|false*
 
-> Sort results by number of usages in run and drun modes.
+> Sort results by number of usages. By default, this is only effective
+> in the run and drun modes - see the **history-file** option for more
+> information.
 >
 > Default: true
+
+**history-file**=*path*
+
+> Specify an alternate file to read and store history information from /
+> to. This shouldn't normally be needed, and is intended to facilitate
+> the creation of custom modes. The default value depends on the current
+> mode.
+>
+> Defaults:
+>
+> > > ·
+> > >
+> > > tofi: None (no history file)
+> >
+> > > ·
+> > >
+> > > tofi-run: *\$XDG_STATE_HOME/tofi-history*
+> >
+> > > ·
+> > >
+> > > tofi-drun: *\$XDG_STATE_HOME/tofi-drun-history*
 
 **fuzzy-match**=*true\|false*
 

@@ -11,6 +11,8 @@
 #include "mkdirp.h"
 #include "xmalloc.h"
 
+#define MAX_HISTFILE_SIZE (10*1024*1024)
+
 static const char *default_state_dir = ".local/state";
 static const char *histfile_basename = "tofi-history";
 static const char *drun_histfile_basename = "tofi-drun-history";
@@ -58,16 +60,11 @@ static char *get_histfile_path(bool drun) {
 	return histfile_name;
 }
 
-struct history history_load(bool drun)
+struct history history_load(const char *path)
 {
 	struct history vec = history_create();
-	char *histfile_name = get_histfile_path(drun);
-	if (histfile_name == NULL) {
-		return vec;
-	}
 
-	FILE *histfile = fopen(histfile_name, "rb");
-	free(histfile_name);
+	FILE *histfile = fopen(path, "rb");
 
 	if (histfile == NULL) {
 		return vec;
@@ -82,6 +79,13 @@ struct history history_load(bool drun)
 
 	errno = 0;
 	size_t len = ftell(histfile);
+	if (len > MAX_HISTFILE_SIZE) {
+		log_error("History file too big (> %d MiB)! Are you sure it's a file?\n", MAX_HISTFILE_SIZE / 1024 / 1024);
+		fclose(histfile);
+		return vec;
+	}
+
+	errno = 0;
 	if (fseek(histfile, 0, SEEK_SET) != 0) {
 		log_error("Error seeking in history file: %s.\n", strerror(errno));
 		fclose(histfile);
@@ -115,20 +119,15 @@ struct history history_load(bool drun)
 	return vec;
 }
 
-void history_save(struct history *history, bool drun)
+void history_save(const struct history *history, const char *path)
 {
-	char *histfile_name = get_histfile_path(drun);
-	if (histfile_name == NULL) {
-		return;
-	}
-
 	/* Create the path if necessary. */
-	if (!mkdirp(histfile_name)) {
+	if (!mkdirp(path)) {
 		return;
 	}
 
 	/* Use open rather than fopen to ensure the proper permissions. */
-	int histfd = open(histfile_name, O_WRONLY | O_CREAT, 0600);
+	int histfd = open(path, O_WRONLY | O_CREAT, 0600);
 	FILE *histfile = fdopen(histfd, "wb");
 	if (histfile == NULL) {
 		return;
@@ -139,6 +138,28 @@ void history_save(struct history *history, bool drun)
 	}
 
 	fclose(histfile);
+}
+
+struct history history_load_default_file(bool drun)
+{
+	char *histfile_name = get_histfile_path(drun);
+	if (histfile_name == NULL) {
+		return history_create();
+	}
+
+	struct history vec = history_load(histfile_name);
+	free(histfile_name);
+
+	return vec;
+}
+
+void history_save_default_file(const struct history *history, bool drun)
+{
+	char *histfile_name = get_histfile_path(drun);
+	if (histfile_name == NULL) {
+		return;
+	}
+	history_save(history, histfile_name);
 	free(histfile_name);
 }
 

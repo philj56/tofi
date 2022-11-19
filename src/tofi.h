@@ -14,6 +14,7 @@
 
 #define MAX_OUTPUT_NAME_LEN 256
 #define MAX_TERMINAL_NAME_LEN 256
+#define MAX_HISTORY_FILE_NAME_LEN 256
 
 struct output_list_element {
 	struct wl_list link;
@@ -96,6 +97,7 @@ struct tofi {
 	bool multiple_instance;
 	char target_output_name[MAX_OUTPUT_NAME_LEN];
 	char default_terminal[MAX_TERMINAL_NAME_LEN];
+	char history_file[MAX_HISTORY_FILE_NAME_LEN];
 };
 
 #endif /* TOFI_H */

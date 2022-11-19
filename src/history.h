@@ -25,8 +25,13 @@ void history_add(struct history *restrict vec, const char *restrict str);
 //void history_remove(struct history *restrict vec, const char *restrict str);
 
 [[nodiscard("memory leaked")]]
-struct history history_load(bool drun);
+struct history history_load(const char *path);
 
-void history_save(struct history *history, bool drun);
+void history_save(const struct history *history, const char *path);
+
+[[nodiscard("memory leaked")]]
+struct history history_load_default_file(bool drun);
+
+void history_save_default_file(const struct history *history, bool drun);
 
 #endif /* HISTORY_H */
