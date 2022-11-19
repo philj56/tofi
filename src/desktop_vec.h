@@ -33,7 +33,7 @@ void desktop_vec_add(
 void desktop_vec_add_file(struct desktop_vec *desktop, const char *id, const char *path);
 
 void desktop_vec_sort(struct desktop_vec *restrict vec);
-struct desktop_entry *desktop_vec_find(struct desktop_vec *restrict vec, const char *name);
+struct desktop_entry *desktop_vec_find_sorted(struct desktop_vec *restrict vec, const char *name);
 struct string_vec desktop_vec_filter(
 		const struct desktop_vec *restrict vec,
 		const char *restrict substr,

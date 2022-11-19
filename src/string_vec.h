@@ -35,7 +35,7 @@ void string_vec_history_sort(struct string_vec *restrict vec, struct history *hi
 
 void string_vec_uniq(struct string_vec *restrict vec);
 
-struct scored_string *string_vec_find(struct string_vec *restrict vec, const char *str);
+struct scored_string *string_vec_find_sorted(struct string_vec *restrict vec, const char *str);
 
 [[nodiscard("memory leaked")]]
 struct string_vec string_vec_filter(

@@ -385,7 +385,7 @@ void drun_history_sort(struct desktop_vec *apps, struct history *history)
 {
 	log_debug("Moving already known apps to the front.\n");
 	for (size_t i = 0; i < history->count; i++) {
-		struct desktop_entry *res = desktop_vec_find(apps, history->buf[i].name);
+		struct desktop_entry *res = desktop_vec_find_sorted(apps, history->buf[i].name);
 		if (res == NULL) {
 			continue;
 		}

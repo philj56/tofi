@@ -135,7 +135,7 @@ void desktop_vec_sort(struct desktop_vec *restrict vec)
 	qsort(vec->buf, vec->count, sizeof(vec->buf[0]), cmpdesktopp);
 }
 
-struct desktop_entry *desktop_vec_find(struct desktop_vec *restrict vec, const char *name)
+struct desktop_entry *desktop_vec_find_sorted(struct desktop_vec *restrict vec, const char *name)
 {
 	/*
 	 * Explicitly cast away const-ness, as even though we won't modify the
@@ -256,8 +256,9 @@ bool match_current_desktop(char * const *desktop_list, gsize length)
  	}
 	free(tmp);
 
+	string_vec_sort(&desktops);
 	for (gsize i = 0; i < length; i++) {
-		if (string_vec_find(&desktops, desktop_list[i])) {
+		if (string_vec_find_sorted(&desktops, desktop_list[i])) {
 			return true;
 		}
  	}
@@ -346,7 +347,7 @@ bool match_current_desktop(char * const *desktop_list, gsize length)
 // 	tmp = xstrdup(desktop_list);
 //  	desktop = strtok_r(tmp, ";", &saveptr);
 //  	while (desktop != NULL) {
-// 		if (string_vec_find(&desktops, desktop)) {
+// 		if (string_vec_find_sorted(&desktops, desktop)) {
 // 			return true;
 // 		}
 //  		desktop = strtok_r(NULL, ";", &saveptr);

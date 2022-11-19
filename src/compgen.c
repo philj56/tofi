@@ -181,7 +181,7 @@ void compgen_history_sort(struct string_vec *programs, struct history *history)
 {
 	log_debug("Moving already known programs to the front.\n");
 	for (size_t i = 0; i < history->count; i++) {
-		struct scored_string *res = string_vec_find(programs, history->buf[i].name);
+		struct scored_string *res = string_vec_find_sorted(programs, history->buf[i].name);
 		if (res == NULL) {
 			log_debug("History entry \"%s\" not found.\n", history->buf[i].name);
 			continue;

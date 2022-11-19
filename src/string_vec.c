@@ -138,7 +138,7 @@ void string_vec_uniq(struct string_vec *restrict vec)
 	vec->count = count;
 }
 
-struct scored_string *string_vec_find(struct string_vec *restrict vec, const char * str)
+struct scored_string *string_vec_find_sorted(struct string_vec *restrict vec, const char * str)
 {
 	return bsearch(&str, vec->buf, vec->count, sizeof(vec->buf[0]), cmpstringp);
 }

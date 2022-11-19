@@ -963,7 +963,7 @@ static bool do_submit(struct tofi *tofi)
 		 * we previously sorted by history count. This needs fixing.
 		 */
 		desktop_vec_sort(&entry->apps);
-		struct desktop_entry *app = desktop_vec_find(&entry->apps, res);
+		struct desktop_entry *app = desktop_vec_find_sorted(&entry->apps, res);
 		if (app == NULL) {
 			log_error("Couldn't find application file! This shouldn't happen.\n");
 			return false;
