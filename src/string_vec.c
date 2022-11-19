@@ -11,23 +11,19 @@
 
 static int cmpstringp(const void *restrict a, const void *restrict b)
 {
-	/*
-	 * For qsort we receive pointers to the array elements (which are
-	 * pointers to char), so convert and dereference them for comparison.
-	 */
-	const char *restrict str1 = *(const char **)a;
-	const char *restrict str2 = *(const char **)b;
+	struct scored_string *restrict str1 = (struct scored_string *)a;
+	struct scored_string *restrict str2 = (struct scored_string *)b;
 
 	/*
 	 * Ensure any NULL strings are shoved to the end.
 	 */
-	if (str1 == NULL) {
+	if (str1->string == NULL) {
 		return 1;
 	}
-	if (str2 == NULL) {
+	if (str2->string == NULL) {
 		return -1;
 	}
-	return strcmp(str1, str2);
+	return strcmp(str1->string, str2->string);
 }
 
 static int cmpscorep(const void *restrict a, const void *restrict b)
@@ -109,7 +105,7 @@ void string_vec_uniq(struct string_vec *restrict vec)
 	vec->count = count;
 }
 
-char **string_vec_find(struct string_vec *restrict vec, const char * str)
+struct scored_string *string_vec_find(struct string_vec *restrict vec, const char * str)
 {
 	return bsearch(&str, vec->buf, vec->count, sizeof(vec->buf[0]), cmpstringp);
 }

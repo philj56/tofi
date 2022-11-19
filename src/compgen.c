@@ -170,45 +170,24 @@ struct string_vec compgen()
 	return programs;
 }
 
+static int cmpscorep(const void *restrict a, const void *restrict b)
+{
+	struct scored_string *restrict str1 = (struct scored_string *)a;
+	struct scored_string *restrict str2 = (struct scored_string *)b;
+	return str2->history_score - str1->history_score;
+}
+
 void compgen_history_sort(struct string_vec *programs, struct history *history)
 {
 	log_debug("Moving already known programs to the front.\n");
-	/*
-	 * Remove any programs in our history from the generated list, and
-	 * store which ones we found in to_add.
-	 * Removal is done without changing the count, as we're about to re-add
-	 * them at the front.
-	 */
-	struct string_vec to_add = string_vec_create();
 	for (size_t i = 0; i < history->count; i++) {
-		char **res = string_vec_find(programs, history->buf[i].name);
+		struct scored_string *res = string_vec_find(programs, history->buf[i].name);
 		if (res == NULL) {
 			log_debug("History entry \"%s\" not found.\n", history->buf[i].name);
 			continue;
 		}
-		free(*res);
-		*res = NULL;
-		string_vec_add(&to_add, history->buf[i].name);
-		to_add.buf[to_add.count - 1].history_score = history->buf[i].run_count;
+		res->history_score = history->buf[i].run_count;
 	}
 
-	/* Sort the vector to push the removed entries to the end. */
-	string_vec_sort(programs);
-
-	/*
-	 * Move the results down by the number of items we want to add. There's
-	 * guaranteed to be enough space to do this, as we just removed that
-	 * many items.
-	 */
-	memmove(
-		&programs->buf[to_add.count],
-		programs->buf,
-		(programs->count - to_add.count) * sizeof(programs->buf[0]));
-
-	/* Add our history to the front in order. */
-	for (size_t i = 0; i < to_add.count; i++) {
-		programs->buf[i].string = xstrdup(to_add.buf[i].string);
-		programs->buf[i].history_score = to_add.buf[i].history_score;
-	}
-	string_vec_destroy(&to_add);
+	qsort(programs->buf, programs->count, sizeof(programs->buf[0]), cmpscorep);
 }
