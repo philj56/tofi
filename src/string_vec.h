@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include "history.h"
 
 struct scored_string {
 	char *string;
@@ -29,6 +30,8 @@ struct string_vec string_vec_copy(const struct string_vec *restrict vec);
 void string_vec_add(struct string_vec *restrict vec, const char *restrict str);
 
 void string_vec_sort(struct string_vec *restrict vec);
+
+void string_vec_history_sort(struct string_vec *restrict vec, struct history *history);
 
 void string_vec_uniq(struct string_vec *restrict vec);
 

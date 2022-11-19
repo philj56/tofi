@@ -1351,9 +1351,8 @@ int main(int argc, char *argv[])
 			if (tofi.history_file[0] == 0) {
 				tofi.use_history = false;
 			} else {
-				string_vec_sort(&tofi.window.entry.commands);
 				tofi.window.entry.history = history_load(tofi.history_file);
-				compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
+				string_vec_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
 			}
 		}
 	}
