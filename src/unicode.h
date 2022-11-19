@@ -6,6 +6,7 @@
 
 uint8_t utf32_to_utf8(uint32_t c, char *buf);
 uint32_t utf8_to_utf32(const char *s);
+uint32_t utf8_to_utf32_validate(const char *s);
 
 uint32_t utf32_isprint(uint32_t c);
 uint32_t utf32_isspace(uint32_t c);

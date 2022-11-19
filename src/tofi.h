@@ -3,7 +3,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <wayland-client.h>
 #include <xkbcommon/xkbcommon.h>
+#include "clipboard.h"
 #include "color.h"
 #include "entry.h"
 #include "image.h"
@@ -30,6 +32,8 @@ struct tofi {
 	struct wl_compositor *wl_compositor;
 	struct wl_seat *wl_seat;
 	struct wl_shm *wl_shm;
+	struct wl_data_device_manager *wl_data_device_manager;
+	struct wl_data_device *wl_data_device;
 	struct zwlr_layer_shell_v1 *zwlr_layer_shell;
 	struct wl_list output_list;
 	struct output_list_element *default_output;
@@ -49,6 +53,7 @@ struct tofi {
 	bool closed;
 	int32_t output_width;
 	int32_t output_height;
+	struct clipboard clipboard;
 	struct {
 		struct surface surface;
 		struct zwlr_layer_surface_v1 *zwlr_layer_surface;

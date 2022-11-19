@@ -92,6 +92,7 @@ add_project_arguments(
 )
 
 common_sources = files(
+  'src/clipboard.c',
   'src/color.c',
   'src/compgen.c',
   'src/config.c',

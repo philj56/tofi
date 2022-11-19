@@ -26,12 +26,16 @@
 #include "shm.h"
 #include "string_vec.h"
 #include "string_vec.h"
+#include "unicode.h"
 #include "xmalloc.h"
 
 #undef MAX
 #undef MIN
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+static const char *mime_type_text_plain = "text/plain";
+static const char *mime_type_text_plain_utf8 = "text/plain;charset=utf-8";
 
 static uint32_t gettime_ms() {
 	struct timespec t;
@@ -371,6 +375,123 @@ static const struct wl_seat_listener wl_seat_listener = {
 	.name = wl_seat_name,
 };
 
+static void wl_data_offer_offer(
+		void *data,
+		struct wl_data_offer *wl_data_offer,
+		const char *mime_type)
+{
+	struct clipboard *clipboard = data;
+
+	/* Only accept plain text, and prefer utf-8. */
+	if (!strcmp(mime_type, mime_type_text_plain)) {
+		if (clipboard->mime_type != NULL) {
+			clipboard->mime_type = mime_type_text_plain;
+		}
+	} else if (!strcmp(mime_type, mime_type_text_plain_utf8)) {
+		clipboard->mime_type = mime_type_text_plain_utf8;
+	}
+}
+
+static void wl_data_offer_source_actions(
+		void *data,
+		struct wl_data_offer *wl_data_offer,
+		uint32_t source_actions)
+{
+	/* Deliberately left blank */
+}
+
+static void wl_data_offer_action(
+		void *data,
+		struct wl_data_offer *wl_data_offer,
+		uint32_t action)
+{
+	/* Deliberately left blank */
+}
+
+static const struct wl_data_offer_listener wl_data_offer_listener = {
+	.offer = wl_data_offer_offer,
+	.source_actions = wl_data_offer_source_actions,
+	.action = wl_data_offer_action
+};
+
+static void wl_data_device_data_offer(
+		void *data,
+		struct wl_data_device *wl_data_device,
+		struct wl_data_offer *wl_data_offer)
+{
+	struct clipboard *clipboard = data;
+	clipboard_reset(clipboard);
+	clipboard->wl_data_offer = wl_data_offer;
+	wl_data_offer_add_listener(
+			wl_data_offer,
+			&wl_data_offer_listener,
+			clipboard);
+}
+
+static void wl_data_device_enter(
+		void *data,
+		struct wl_data_device *wl_data_device,
+		uint32_t serial,
+		struct wl_surface *wl_surface,
+		int32_t x,
+		int32_t y,
+		struct wl_data_offer *wl_data_offer)
+{
+	/* Drag-and-drop is just ignored for now. */
+	wl_data_offer_accept(
+			wl_data_offer,
+			serial,
+			NULL);
+	wl_data_offer_set_actions(
+			wl_data_offer,
+			WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE,
+			WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE);
+}
+
+static void wl_data_device_leave(
+		void *data,
+		struct wl_data_device *wl_data_device)
+{
+	/* Deliberately left blank */
+}
+
+static void wl_data_device_motion(
+		void *data,
+		struct wl_data_device *wl_data_device,
+		uint32_t time,
+		int32_t x,
+		int32_t y)
+{
+	/* Deliberately left blank */
+}
+
+static void wl_data_device_drop(
+		void *data,
+		struct wl_data_device *wl_data_device)
+{
+	/* Deliberately left blank */
+}
+
+static void wl_data_device_selection(
+		void *data,
+		struct wl_data_device *wl_data_device,
+		struct wl_data_offer *wl_data_offer)
+{
+	struct clipboard *clipboard = data;
+	if (wl_data_offer == NULL) {
+		clipboard_reset(clipboard);
+	}
+}
+
+static const struct wl_data_device_listener wl_data_device_listener = {
+	.data_offer = wl_data_device_data_offer,
+	.enter = wl_data_device_enter,
+	.leave = wl_data_device_leave,
+	.motion = wl_data_device_motion,
+	.drop = wl_data_device_drop,
+	.selection = wl_data_device_selection
+};
+
 static void output_geometry(
 		void *data,
 		struct wl_output *wl_output,
@@ -518,6 +639,13 @@ static void registry_global(
 				&wl_shm_interface,
 				1);
 		log_debug("Bound to shm %u.\n", name);
+	} else if (!strcmp(interface, wl_data_device_manager_interface.name)) {
+		tofi->wl_data_device_manager = wl_registry_bind(
+				wl_registry,
+				name,
+				&wl_data_device_manager_interface,
+				3);
+		log_debug("Bound to data device manager  %u.\n", name);
 	} else if (!strcmp(interface, zwlr_layer_shell_v1_interface.name)) {
 		if (version < 4) {
 			log_warning("Using an outdated compositor, "
@@ -855,6 +983,70 @@ static bool do_submit(struct tofi *tofi)
 		history_save(&entry->history, entry->drun);
 	}
 	return true;
+}
+
+static void read_clipboard(struct tofi *tofi)
+{
+	struct entry *entry = &tofi->window.entry;
+	/* Buffer for 4 UTF-8 bytes plus a null terminator. */
+	char buffer[5];
+	memset(buffer, 0, N_ELEM(buffer));
+	errno = 0;
+	bool eof = false;
+	while (entry->input_utf32_length < N_ELEM(entry->input_utf32)) {
+		for (size_t i = 0; i < 4; i++) {
+			/*
+			 * Read input 1 byte at a time. This is slow, but easy,
+			 * and speed of pasting shouldn't really matter.
+			 */
+			int res = read(tofi->clipboard.fd, &buffer[i], 1);
+			if (res == 0) {
+				eof = true;
+				break;
+			} else if (res == -1) {
+				if (errno == EAGAIN) {
+					/*
+					 * There was no more data to be read,
+					 * but EOF hasn't been reached yet.
+					 *
+					 * This could mean more than a pipe's
+					 * capacity (64k) of data was sent, in
+					 * which case we'd potentially skip
+					 * a character, but we should hit the
+					 * input length limit long before that.
+					 */
+					input_refresh_results(tofi);
+					tofi->window.surface.redraw = true;
+					return;
+				}
+				log_error("Failed to read clipboard: %s\n", strerror(errno));
+				clipboard_finish_paste(&tofi->clipboard);
+				return;
+			}
+			uint32_t unichar = utf8_to_utf32_validate(buffer);
+			if (unichar == (uint32_t)-2) {
+				/* The current character isn't complete yet. */
+				continue;
+			} else if (unichar == (uint32_t)-1) {
+				log_error("Invalid UTF-8 character in clipboard: %s\n", buffer);
+				break;
+			} else {
+				entry->input_utf32[entry->input_utf32_length] = unichar;
+				entry->input_utf32_length++;
+				break;
+			}
+		}
+		memset(buffer, 0, N_ELEM(buffer));
+		if (eof) {
+			break;
+		}
+	}
+	entry->input_utf32[MIN(entry->input_utf32_length, N_ELEM(entry->input_utf32) - 1)] = U'\0';
+
+	clipboard_finish_paste(&tofi->clipboard);
+
+	input_refresh_results(tofi);
+	tofi->window.surface.redraw = true;
 }
 
 int main(int argc, char *argv[])
@@ -1201,6 +1393,19 @@ int main(int argc, char *argv[])
 	wl_surface_commit(tofi.window.surface.wl_surface);
 
 	/*
+	 * Create a data device and setup a listener for data offers. This is
+	 * required for clipboard support.
+	 */
+	tofi.wl_data_device = wl_data_device_manager_get_data_device(
+			tofi.wl_data_device_manager,
+			tofi.wl_seat);
+	wl_data_device_add_listener(
+			tofi.wl_data_device,
+			&wl_data_device_listener,
+			&tofi.clipboard);
+
+
+	/*
 	 * Now that we've done all our Wayland-related setup, we do another
 	 * roundtrip. This should cause the layer surface window to be
 	 * configured, after which we're ready to start drawing to the screen.
@@ -1286,8 +1491,8 @@ int main(int argc, char *argv[])
 	 * order of the various functions called here.
 	 */
 	while (!tofi.closed) {
-		struct pollfd pollfd;
-		pollfd.fd = wl_display_get_fd(tofi.wl_display);
+		struct pollfd pollfds[2] = {{0}, {0}};
+		pollfds[0].fd = wl_display_get_fd(tofi.wl_display);
 
 		/* Make sure we're ready to receive events on the main queue. */
 		while (wl_display_prepare_read(tofi.wl_display) != 0) {
@@ -1296,8 +1501,8 @@ int main(int argc, char *argv[])
 
 		/* Make sure all our requests have been sent to the server. */
 		while (wl_display_flush(tofi.wl_display) != 0) {
-			pollfd.events = POLLOUT;
-			poll(&pollfd, 1, -1);
+			pollfds[0].events = POLLOUT;
+			poll(&pollfds[0], 1, -1);
 		}
 
 		/*
@@ -1314,8 +1519,20 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		pollfd.events = POLLIN | POLLPRI;
-		int res = poll(&pollfd, 1, timeout);
+		pollfds[0].events = POLLIN | POLLPRI;
+		int res;
+		if (tofi.clipboard.fd == 0) {
+			res = poll(&pollfds[0], 1, timeout);
+		} else {
+			/*
+			 * We're trying to paste from the clipboard, which is
+			 * done by reading from a pipe, so poll that file
+			 * descriptor as well.
+			 */
+			pollfds[1].fd = tofi.clipboard.fd;
+			pollfds[1].events = POLLIN | POLLPRI;
+			res = poll(pollfds, 2, timeout);
+		}
 		if (res == 0) {
 			/*
 			 * No events to process and no error - we presumably
@@ -1333,8 +1550,29 @@ int main(int argc, char *argv[])
 			/* There was an error polling the display. */
 			wl_display_cancel_read(tofi.wl_display);
 		} else {
-			/* Events to read, so put them on the queue. */
-			wl_display_read_events(tofi.wl_display);
+			if (pollfds[0].revents & (POLLIN | POLLPRI)) {
+				/* Events to read, so put them on the queue. */
+				wl_display_read_events(tofi.wl_display);
+			} else {
+				/*
+				 * No events to read - we were woken up to
+				 * handle clipboard data.
+				 */
+				wl_display_cancel_read(tofi.wl_display);
+			}
+			if (pollfds[1].revents & (POLLIN | POLLPRI)) {
+				/* Read clipboard data. */
+				if (tofi.clipboard.fd > 0) {
+					read_clipboard(&tofi);
+				}
+			}
+			if (pollfds[1].revents & POLLHUP) {
+				/*
+				 * The other end of the clipboard pipe has
+				 * closed, cleanup.
+				 */
+				clipboard_finish_paste(&tofi.clipboard);
+			}
 		}
 
 		/* Handle any events we read. */
@@ -1373,6 +1611,11 @@ int main(int argc, char *argv[])
 		wl_pointer_release(tofi.wl_pointer);
 	}
 	wl_compositor_destroy(tofi.wl_compositor);
+	if (tofi.clipboard.wl_data_offer != NULL) {
+		wl_data_offer_destroy(tofi.clipboard.wl_data_offer);
+	}
+	wl_data_device_release(tofi.wl_data_device);
+	wl_data_device_manager_destroy(tofi.wl_data_device_manager);
 	wl_seat_release(tofi.wl_seat);
 	{
 		struct output_list_element *el;

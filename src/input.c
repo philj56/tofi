@@ -1,5 +1,8 @@
+#include <fcntl.h>
 #include <linux/input-event-codes.h>
+#include <unistd.h>
 #include "input.h"
+#include "log.h"
 #include "nelem.h"
 #include "tofi.h"
 #include "unicode.h"
@@ -9,10 +12,10 @@ static void add_character(struct tofi *tofi, xkb_keycode_t keycode);
 static void delete_character(struct tofi *tofi);
 static void delete_word(struct tofi *tofi);
 static void clear_input(struct tofi *tofi);
+static void paste(struct tofi *tofi);
 static void select_previous_result(struct tofi *tofi);
 static void select_next_result(struct tofi *tofi);
 static void reset_selection(struct tofi *tofi);
-static void refresh_results(struct tofi *tofi);
 
 void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 {
@@ -50,6 +53,14 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		   )
 	{
 		clear_input(tofi);
+	} else if (key == KEY_V
+			&& xkb_state_mod_name_is_active(
+				tofi->xkb_state,
+				XKB_MOD_NAME_CTRL,
+				XKB_STATE_MODS_EFFECTIVE)
+		   )
+	{
+		paste(tofi);
 	} else if (sym == XKB_KEY_Up || sym == XKB_KEY_Left || sym == XKB_KEY_ISO_Left_Tab
 			|| (key == KEY_K
 				&& xkb_state_mod_name_is_active(
@@ -130,7 +141,7 @@ void add_character(struct tofi *tofi, xkb_keycode_t keycode)
 	reset_selection(tofi);
 }
 
-void refresh_results(struct tofi *tofi)
+void input_refresh_results(struct tofi *tofi)
 {
 	struct entry *entry = &tofi->window.entry;
 
@@ -164,7 +175,7 @@ void delete_character(struct tofi *tofi)
 	entry->input_utf32_length--;
 	entry->input_utf32[entry->input_utf32_length] = U'\0';
 
-	refresh_results(tofi);
+	input_refresh_results(tofi);
 }
 
 void delete_word(struct tofi *tofi)
@@ -184,7 +195,7 @@ void delete_word(struct tofi *tofi)
 	}
 	entry->input_utf32[entry->input_utf32_length] = U'\0';
 
-	refresh_results(tofi);
+	input_refresh_results(tofi);
 }
 
 void clear_input(struct tofi *tofi)
@@ -194,7 +205,30 @@ void clear_input(struct tofi *tofi)
 	entry->input_utf32_length = 0;
 	entry->input_utf32[0] = U'\0';
 
-	refresh_results(tofi);
+	input_refresh_results(tofi);
+}
+
+void paste(struct tofi *tofi)
+{
+	if (tofi->clipboard.wl_data_offer == NULL || tofi->clipboard.mime_type == NULL) {
+		return;
+	}
+
+	/*
+	 * Create a pipe, and give the write end to the compositor to give to
+	 * the clipboard manager.
+	 */
+	errno = 0;
+	int fildes[2];
+	if (pipe2(fildes, O_CLOEXEC | O_NONBLOCK) == -1) {
+		log_error("Failed to open pipe for clipboard: %s\n", strerror(errno));
+		return;
+	}
+	wl_data_offer_receive(tofi->clipboard.wl_data_offer, tofi->clipboard.mime_type, fildes[1]);
+	close(fildes[1]);
+
+	/* Keep the read end for reading in the main loop. */
+	tofi->clipboard.fd = fildes[0];
 }
 
 void select_previous_result(struct tofi *tofi)

@@ -12,6 +12,11 @@ uint32_t utf8_to_utf32(const char *s)
 	return g_utf8_get_char(s);
 }
 
+uint32_t utf8_to_utf32_validate(const char *s)
+{
+	return g_utf8_get_char_validated(s, -1);
+}
+
 uint32_t utf32_isprint(uint32_t c)
 {
 	return g_unichar_isprint(c);
