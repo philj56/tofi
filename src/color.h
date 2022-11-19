@@ -1,5 +1,5 @@
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef COLOR_H
+#define COLOR_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -13,4 +13,4 @@ struct color {
 
 struct color hex_to_color(const char *hex);
 
-#endif /* UTIL_H */
+#endif /* COLOR_H */
