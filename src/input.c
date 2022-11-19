@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <linux/input-event-codes.h>
 #include <unistd.h>
