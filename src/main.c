@@ -958,22 +958,26 @@ static bool do_submit(struct tofi *tofi)
 
 	if (entry->drun) {
 		/*
-		 * TODO: This is ugly. The list of apps needs to be sorted
-		 * alphabetically for bsearch to find the selected entry, but
-		 * we previously sorted by history count. This needs fixing.
+		 * At this point, the list of apps is history sorted rather
+		 * than alphabetically sorted, so we can't use
+		 * desktop_vec_find_sorted().
 		 */
-		desktop_vec_sort(&entry->apps);
-		struct desktop_entry *app = desktop_vec_find_sorted(&entry->apps, res);
+		struct desktop_entry *app = NULL;
+		for (size_t i = 0; i < entry->apps.count; i++) {
+			if (!strcmp(res, entry->apps.buf[i].name)) {
+				app = &entry->apps.buf[i];
+				break;
+			}
+		}
 		if (app == NULL) {
 			log_error("Couldn't find application file! This shouldn't happen.\n");
 			return false;
-		} else {
-			res = app->path;
 		}
+		char *path = app->path;
 		if (tofi->drun_launch) {
-			drun_launch(res);
+			drun_launch(path);
 		} else {
-			drun_print(res, tofi->default_terminal);
+			drun_print(path, tofi->default_terminal);
 		}
 	} else {
 		printf("%s\n", res);
