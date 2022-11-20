@@ -43,7 +43,7 @@ sudo pacman -S meson scdoc wayland-protocols
 sudo dnf install freetype-devel cairo-devel pango-devel wayland-devel libxkbcommon-devel harfbuzz
 
 # Build-time dependencies
-sudo pacman -S meson scdoc wayland-protocols-devel
+sudo dnf install meson scdoc wayland-protocols-devel
 ```
 
 Then build:
