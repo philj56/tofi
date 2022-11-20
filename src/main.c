@@ -754,6 +754,10 @@ static const struct wl_surface_listener dummy_surface_listener = {
 
 static void usage()
 {
+	/*
+	 * This string literal is more than 4095 characters, which is the
+	 * maximum size guaranteed to work in C, so we have to split it.
+	 */
 	fprintf(stderr, "%s",
 "Usage: tofi [options]\n"
 "\n"
@@ -763,6 +767,7 @@ static void usage()
 "      --font <name|path>               Font to use.\n"
 "      --font-size <pt>                 Point size of text.\n"
 "      --font-features <features>       Set OpenType font features.\n"
+"      --font-variations <variations>   Set OpenType font variations.\n"
 "      --background-color <color>       Color of the background.\n"
 "      --outline-width <px>             Width of the border outlines.\n"
 "      --outline-color <color>          Color of the border outlines.\n"
@@ -783,6 +788,8 @@ static void usage()
 "      --result-spacing <px>            Spacing between results.\n"
 "      --min-input-width <px>           Minimum input width in horizontal mode.\n"
 "      --width <px|%>                   Width of the window.\n"
+	);
+	fprintf(stderr, "%s",
 "      --height <px|%>                  Height of the window.\n"
 "      --corner-radius <px>             Radius of window corners.\n"
 "      --output <name>                  Name of output to display window on.\n"
@@ -831,6 +838,7 @@ const struct option long_options[] = {
 	{"font", required_argument, NULL, 0},
 	{"font-size", required_argument, NULL, 0},
 	{"font-features", required_argument, NULL, 0},
+	{"font-variations", required_argument, NULL, 0},
 	{"num-results", required_argument, NULL, 0},
 	{"selection-color", required_argument, NULL, 0},
 	{"selection-match-color", required_argument, NULL, 0},

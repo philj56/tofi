@@ -27,6 +27,11 @@ void entry_backend_pango_init(struct entry *entry, uint32_t *width, uint32_t *he
 	pango_font_description_set_size(
 			font_description,
 			entry->font_size * PANGO_SCALE);
+	if (entry->font_variations[0] != 0) {
+		pango_font_description_set_variations(
+				font_description,
+				entry->font_variations);
+	}
 	pango_context_set_font_description(context, font_description);
 	pango_font_description_free(font_description);
 

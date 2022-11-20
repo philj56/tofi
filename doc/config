@@ -25,8 +25,18 @@
 	# Examples:
 	#
 	# font-features = "smcp, c2sc" (all small caps)
-	# font-features = "liga 0" (disable ligatures
+	# font-features = "liga 0" (disable ligatures)
 	font-features = ""
+
+	# Comma separated list of OpenType font variation settings to apply
+	# to variable fonts. The format is similar to the CSS
+	# "font-variation-settings" property.
+	#
+	# Examples:
+	#
+	# font-variations = "wght 900" (Extra bold)
+	# font-variations = "wdth 25, slnt -10" (Narrow and slanted)
+	font-variations = ""
 
 	# Perform font hinting. Only applies when a path to a font has been
 	# specified via `font`. Disabling font hinting speeds up text

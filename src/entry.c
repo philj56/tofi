@@ -63,6 +63,7 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	entry->cairo[1].cr = cairo_create(entry->cairo[1].surface);
 
 
+	log_debug("Drawing window.\n");
 	/* Draw the background */
 	struct color color = entry->background_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);

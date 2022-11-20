@@ -16,6 +16,8 @@ _tofi()
 		--corner-radius
 		--font
 		--font-size
+		--font-features
+		--font-variations
 		--num-results
 		--selection-color
 		--selection-match-color
@@ -54,7 +56,6 @@ _tofi()
 		--drun-launch
 		--terminal
 		--hint-font
-		--font-features
 		--late-keyboard-init
 		--multi-instance
      )

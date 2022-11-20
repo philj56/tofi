@@ -143,6 +143,14 @@ options.
 
 	Default: ""
 
+*font-variations*=_variations_
+	Comma separated list of OpenType font variation settings to apply. The
+	format is similar to the CSS "font-variation-settings" property. For
+	example, "wght 900" will set the weight of a variable font to 900 (if
+	supported by the chosen font).
+
+	Default: ""
+
 *background-color*=_color_
 	Color of the background. See *COLORS* for more information.
 

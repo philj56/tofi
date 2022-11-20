@@ -147,6 +147,13 @@ if wayland_client.version().version_compare('<1.20.0')
     )
 endif
 
+if harfbuzz.version().version_compare('<4.4.0')
+  add_project_arguments(
+    ['-DNO_HARFBUZZ_FONT_CHANGED=1'],
+    language: 'c'
+    )
+endif
+
 
 
 # Generate the necessary Wayland headers / sources with wayland-scanner

@@ -147,6 +147,23 @@ void entry_backend_harfbuzz_init(
 	cairo_t *cr = entry->cairo[0].cr;
 	uint32_t font_size = floor(entry->font_size * PT_TO_DPI);
 
+	/*
+	 * Setting up our font has three main steps:
+	 *
+	 * 1. Load the font face with FreeType.
+	 * 2. Create a HarfBuzz font referencing the FreeType font.
+	 * 3. Create a Cairo font referencing the FreeType font.
+	 *
+	 * The simultaneous interaction of Cairo and HarfBuzz with FreeType is
+	 * a little finicky, so the order of the last two steps is important.
+	 * We use HarfBuzz to set font variation settings (such as weight), if
+	 * any. This modifies the underlying FreeType font, so we must create
+	 * the Cairo font *after* this point for the changes to take effect.
+	 *
+	 * This doesn't seem like it should be necessary, as both HarfBuzz and
+	 * Cairo reference the same FreeType font, but it is.
+	 */
+
 	/* Setup FreeType. */
 	log_debug("Creating FreeType library.\n");
 	int err;
@@ -167,6 +184,7 @@ void entry_backend_harfbuzz_init(
 		log_error("Error loading font: %s\n", get_ft_error_string(err));
 		exit(EXIT_FAILURE);
 	}
+
 	err = FT_Set_Char_Size(
 			hb->ft_face,
 			font_size * 64,
@@ -177,6 +195,49 @@ void entry_backend_harfbuzz_init(
 		log_error("Error setting font size: %s\n",
 				get_ft_error_string(err));
 	}
+
+	log_debug("Creating Harfbuzz font.\n");
+	hb->hb_font = hb_ft_font_create_referenced(hb->ft_face);
+
+	if (entry->font_variations[0] != 0) {
+		log_debug("Parsing font variations.\n");
+	}
+	char *saveptr = NULL;
+	char *variation = strtok_r(entry->font_variations, ",", &saveptr);
+	while (variation != NULL && hb->num_variations < N_ELEM(hb->hb_variations)) {
+		if (hb_variation_from_string(variation, -1, &hb->hb_variations[hb->num_variations])) {
+			hb->num_variations++;
+		} else {
+			log_error("Failed to parse font variation \"%s\".\n", variation);
+		}
+		variation = strtok_r(NULL, ",", &saveptr);
+	}
+
+	/*
+	 * We need to set variations now and update the underlying FreeType
+	 * font, as Cairo will then use the FreeType font for drawing.
+	 */
+	hb_font_set_variations(hb->hb_font, hb->hb_variations, hb->num_variations);
+#ifndef NO_HARFBUZZ_FONT_CHANGED
+	hb_ft_hb_font_changed(hb->hb_font);
+#endif
+
+	if (entry->font_features[0] != 0) {
+		log_debug("Parsing font features.\n");
+	}
+	saveptr = NULL;
+	char *feature = strtok_r(entry->font_features, ",", &saveptr);
+	while (feature != NULL && hb->num_features < N_ELEM(hb->hb_features)) {
+		if (hb_feature_from_string(feature, -1, &hb->hb_features[hb->num_features])) {
+			hb->num_features++;
+		} else {
+			log_error("Failed to parse font feature \"%s\".\n", feature);
+		}
+		feature = strtok_r(NULL, ",", &saveptr);
+	}
+
+	log_debug("Creating Harfbuzz buffer.\n");
+	hb->hb_buffer = hb_buffer_create();
 
 	log_debug("Creating Cairo font.\n");
 	hb->cairo_face = cairo_ft_font_face_create_for_ft_face(hb->ft_face, 0);
@@ -193,34 +254,12 @@ void entry_backend_harfbuzz_init(
 	}
 	cairo_set_font_options(cr, opts);
 
-
 	/* We also need to set up the font for our other Cairo context. */
 	cairo_set_font_face(entry->cairo[1].cr, hb->cairo_face);
 	cairo_set_font_size(entry->cairo[1].cr, font_size);
 	cairo_set_font_options(entry->cairo[1].cr, opts);
 
 	cairo_font_options_destroy(opts);
-
-	log_debug("Creating Harfbuzz font.\n");
-	hb->hb_font = hb_ft_font_create_referenced(hb->ft_face);
-
-	log_debug("Creating Harfbuzz buffer.\n");
-	hb_buffer_t *buffer = hb_buffer_create();
-	hb->hb_buffer = buffer;
-	setup_hb_buffer(buffer);
-
-
-	log_debug("Parsing font features.\n");
-	char *saveptr = NULL;
-	char *feature = strtok_r(entry->font_features, ",", &saveptr);
-	while (feature != NULL && hb->num_features < N_ELEM(hb->hb_features)) {
-		if (hb_feature_from_string(feature, -1, &hb->hb_features[hb->num_features])) {
-			hb->num_features++;
-		} else {
-			log_error("Failed to parse font feature \"%s\".\n", feature);
-		}
-		feature = strtok_r(NULL, ",", &saveptr);
-	}
 }
 
 void entry_backend_harfbuzz_destroy(struct entry *entry)
