@@ -54,6 +54,7 @@ _tofi()
 		--drun-launch
 		--terminal
 		--hint-font
+		--font-features
 		--late-keyboard-init
 		--multi-instance
      )

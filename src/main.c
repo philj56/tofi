@@ -762,6 +762,7 @@ static void usage()
 "      --include <path>                 Include an additional config file.\n"
 "      --font <name|path>               Font to use.\n"
 "      --font-size <pt>                 Point size of text.\n"
+"      --font-features <features>       Set OpenType font features.\n"
 "      --background-color <color>       Color of the background.\n"
 "      --outline-width <px>             Width of the border outlines.\n"
 "      --outline-color <color>          Color of the border outlines.\n"
@@ -771,7 +772,7 @@ static void usage()
 "      --prompt-text <string>           Prompt text.\n"
 "      --prompt-padding <px>            Padding between prompt and input.\n"
 "      --placeholder-text <string>      Placeholder input text.\n"
-"      --placeholder-color <px>         Color of placeholder input text.\n"
+"      --placeholder-color <color>      Color of placeholder input text.\n"
 "      --num-results <n>                Maximum number of results to display.\n"
 "      --selection-color <color>        Color of selected result.\n"
 "      --selection-match-color <color>  Color of the matching portion of the\n"
@@ -829,6 +830,7 @@ const struct option long_options[] = {
 	{"corner-radius", required_argument, NULL, 0},
 	{"font", required_argument, NULL, 0},
 	{"font-size", required_argument, NULL, 0},
+	{"font-features", required_argument, NULL, 0},
 	{"num-results", required_argument, NULL, 0},
 	{"selection-color", required_argument, NULL, 0},
 	{"selection-match-color", required_argument, NULL, 0},

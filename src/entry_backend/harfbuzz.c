@@ -109,6 +109,18 @@ static cairo_text_extents_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
 	return extents;
 }
 
+static cairo_text_extents_t render_text(
+		cairo_t *cr,
+		struct entry_backend_harfbuzz *hb,
+		const char *text)
+{
+	hb_buffer_clear_contents(hb->hb_buffer);
+	setup_hb_buffer(hb->hb_buffer);
+	hb_buffer_add_utf8(hb->hb_buffer, text, -1, 0, -1);
+	hb_shape(hb->hb_font, hb->hb_buffer, hb->hb_features, hb->num_features);
+	return render_hb_buffer(cr, hb->hb_buffer);
+}
+
 static bool size_overflows(struct entry *entry, uint32_t width, uint32_t height)
 {
 	cairo_t *cr = entry->cairo[entry->index].cr;
@@ -131,13 +143,14 @@ void entry_backend_harfbuzz_init(
 		uint32_t *width,
 		uint32_t *height)
 {
+	struct entry_backend_harfbuzz *hb = &entry->harfbuzz;
 	cairo_t *cr = entry->cairo[0].cr;
 	uint32_t font_size = floor(entry->font_size * PT_TO_DPI);
 
 	/* Setup FreeType. */
 	log_debug("Creating FreeType library.\n");
 	int err;
-	err = FT_Init_FreeType(&entry->harfbuzz.ft_library);
+	err = FT_Init_FreeType(&hb->ft_library);
 	if (err) {
 		log_error("Error initialising FreeType: %s\n",
 				get_ft_error_string(err));
@@ -146,16 +159,16 @@ void entry_backend_harfbuzz_init(
 
 	log_debug("Loading FreeType font.\n");
 	err = FT_New_Face(
-			entry->harfbuzz.ft_library,
+			hb->ft_library,
 			entry->font_name,
 			0,
-			&entry->harfbuzz.ft_face);
+			&hb->ft_face);
 	if (err) {
 		log_error("Error loading font: %s\n", get_ft_error_string(err));
 		exit(EXIT_FAILURE);
 	}
 	err = FT_Set_Char_Size(
-			entry->harfbuzz.ft_face,
+			hb->ft_face,
 			font_size * 64,
 			font_size * 64,
 			0,
@@ -166,15 +179,14 @@ void entry_backend_harfbuzz_init(
 	}
 
 	log_debug("Creating Cairo font.\n");
-	entry->harfbuzz.cairo_face =
-		cairo_ft_font_face_create_for_ft_face(entry->harfbuzz.ft_face, 0);
+	hb->cairo_face = cairo_ft_font_face_create_for_ft_face(hb->ft_face, 0);
 
 	struct color color = entry->foreground_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_set_font_face(cr, entry->harfbuzz.cairo_face);
+	cairo_set_font_face(cr, hb->cairo_face);
 	cairo_set_font_size(cr, font_size);
 	cairo_font_options_t *opts = cairo_font_options_create();
-	if (entry->harfbuzz.disable_hinting) {
+	if (hb->disable_hinting) {
 		cairo_font_options_set_hint_style(opts, CAIRO_HINT_STYLE_NONE);
 	} else {
 		cairo_font_options_set_hint_metrics(opts, CAIRO_HINT_METRICS_ON);
@@ -183,20 +195,32 @@ void entry_backend_harfbuzz_init(
 
 
 	/* We also need to set up the font for our other Cairo context. */
-	cairo_set_font_face(entry->cairo[1].cr, entry->harfbuzz.cairo_face);
+	cairo_set_font_face(entry->cairo[1].cr, hb->cairo_face);
 	cairo_set_font_size(entry->cairo[1].cr, font_size);
 	cairo_set_font_options(entry->cairo[1].cr, opts);
 
 	cairo_font_options_destroy(opts);
 
 	log_debug("Creating Harfbuzz font.\n");
-	entry->harfbuzz.hb_font =
-		hb_ft_font_create_referenced(entry->harfbuzz.ft_face);
+	hb->hb_font = hb_ft_font_create_referenced(hb->ft_face);
 
 	log_debug("Creating Harfbuzz buffer.\n");
 	hb_buffer_t *buffer = hb_buffer_create();
-	entry->harfbuzz.hb_buffer = buffer;
+	hb->hb_buffer = buffer;
 	setup_hb_buffer(buffer);
+
+
+	log_debug("Parsing font features.\n");
+	char *saveptr = NULL;
+	char *feature = strtok_r(entry->font_features, ",", &saveptr);
+	while (feature != NULL && hb->num_features < N_ELEM(hb->hb_features)) {
+		if (hb_feature_from_string(feature, -1, &hb->hb_features[hb->num_features])) {
+			hb->num_features++;
+		} else {
+			log_error("Failed to parse font feature \"%s\".\n", feature);
+		}
+		feature = strtok_r(NULL, ",", &saveptr);
+	}
 }
 
 void entry_backend_harfbuzz_destroy(struct entry *entry)
@@ -219,32 +243,28 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
 	/* Render the prompt */
-	hb_buffer_clear_contents(buffer);
-	setup_hb_buffer(buffer);
-	hb_buffer_add_utf8(entry->harfbuzz.hb_buffer, entry->prompt_text, -1, 0, -1);
-	hb_shape(entry->harfbuzz.hb_font, entry->harfbuzz.hb_buffer, NULL, 0);
-	extents = render_hb_buffer(cr, buffer);
+	extents = render_text(cr, &entry->harfbuzz, entry->prompt_text);
 
 	cairo_translate(cr, extents.x_advance, 0);
 	cairo_translate(cr, entry->prompt_padding, 0);
 
 	/* Render the entry text */
-	hb_buffer_clear_contents(buffer);
-	setup_hb_buffer(buffer);
 	if (entry->input_utf8_length == 0) {
 		color = entry->placeholder_color;
 		cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-		hb_buffer_add_utf8(buffer, entry->placeholder_text, -1, 0, -1);
+		extents = render_text(cr, &entry->harfbuzz, entry->placeholder_text);
 	} else if (entry->hide_input) {
+		hb_buffer_clear_contents(buffer);
+		setup_hb_buffer(buffer);
 		size_t char_len = N_ELEM(entry->hidden_character_utf8);
 		for (size_t i = 0; i < entry->input_utf32_length; i++) {
 			hb_buffer_add_utf8(buffer, entry->hidden_character_utf8, char_len, 0, char_len);
 		}
+		hb_shape(entry->harfbuzz.hb_font, buffer, entry->harfbuzz.hb_features, entry->harfbuzz.num_features);
+		extents = render_hb_buffer(cr, buffer);
 	} else {
-		hb_buffer_add_utf8(buffer, entry->input_utf8, -1, 0, -1);
+		extents = render_text(cr, &entry->harfbuzz, entry->input_utf8);
 	}
-	hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
-	extents = render_hb_buffer(cr, buffer);
 	extents.x_advance = MAX(extents.x_advance, entry->input_width);
 
 	cairo_font_extents_t font_extents;
@@ -301,17 +321,12 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			}
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
-			hb_buffer_clear_contents(buffer);
-			setup_hb_buffer(buffer);
-			hb_buffer_add_utf8(buffer, result, -1, 0, -1);
-			hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
-
 			if (entry->num_results > 0) {
 				/*
 				 * We're not auto-detecting how many results we
 				 * can fit, so just render the text.
 				 */
-				extents = render_hb_buffer(cr, buffer);
+				extents = render_text(cr, &entry->harfbuzz, result);
 			} else if (!entry->horizontal) {
 				/*
 				 * The height of the text doesn't change, so
@@ -321,7 +336,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 					entry->num_results_drawn = i;
 					break;
 				} else {
-					extents = render_hb_buffer(cr, buffer);
+					extents = render_text(cr, &entry->harfbuzz, result);
 				}
 			} else {
 				/*
@@ -333,7 +348,8 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				 * to the main canvas only if it will fit.
 				 */
 				cairo_push_group(cr);
-				extents = render_hb_buffer(cr, buffer);
+				extents = render_text(cr, &entry->harfbuzz, result);
+
 				cairo_pattern_t *group = cairo_pop_group(cr);
 				if (size_overflows(entry, extents.x_advance, 0)) {
 					entry->num_results_drawn = i;
@@ -393,11 +409,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			color = entry->selection_foreground_color;
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
-			hb_buffer_clear_contents(buffer);
-			setup_hb_buffer(buffer);
-			hb_buffer_add_utf8(buffer, prematch, -1, 0, -1);
-			hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
-			subextents = render_hb_buffer(cr, buffer);
+			subextents = render_text(cr, &entry->harfbuzz, prematch);
 			extents = subextents;
 
 			free(prematch);
@@ -407,11 +419,8 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				cairo_translate(cr, subextents.x_advance, 0);
 				color = entry->selection_highlight_color;
 				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-				hb_buffer_clear_contents(buffer);
-				setup_hb_buffer(buffer);
-				hb_buffer_add_utf8(buffer, &match[prematch_len], -1, 0, -1);
-				hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
-				subextents = render_hb_buffer(cr, buffer);
+
+				subextents = render_text(cr, &entry->harfbuzz, &match[prematch_len]);
 
 				if (prematch_len == 0) {
 					extents = subextents;
@@ -443,11 +452,10 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				cairo_translate(cr, subextents.x_advance, 0);
 				color = entry->selection_foreground_color;
 				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-				hb_buffer_clear_contents(buffer);
-				setup_hb_buffer(buffer);
-				hb_buffer_add_utf8(buffer, &postmatch[entry->input_utf8_length + prematch_len], -1, 0, -1);
-				hb_shape(entry->harfbuzz.hb_font, buffer, NULL, 0);
-				subextents = render_hb_buffer(cr, buffer);
+				subextents = render_text(
+						cr,
+						&entry->harfbuzz,
+						&postmatch[entry->input_utf8_length + prematch_len]);
 
 				extents.width = extents.x_advance
 					- extents.x_bearing

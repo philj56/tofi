@@ -32,6 +32,15 @@ void entry_backend_pango_init(struct entry *entry, uint32_t *width, uint32_t *he
 
 	entry->pango.layout = pango_layout_new(context);
 
+	if (entry->font_features[0] != 0) {
+		log_debug("Setting font features.\n");
+		PangoAttribute *attr = pango_attr_font_features_new(entry->font_features);
+		PangoAttrList *attr_list = pango_attr_list_new();
+		pango_attr_list_insert(attr_list, attr);
+		pango_layout_set_attributes(entry->pango.layout, attr_list);
+	}
+
+
 	entry->pango.context = context;
 }
 

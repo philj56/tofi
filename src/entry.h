@@ -16,6 +16,7 @@
 #define MAX_INPUT_LENGTH 256
 #define MAX_PROMPT_LENGTH 256
 #define MAX_FONT_NAME_LENGTH 256
+#define MAX_FONT_FEATURES_LENGTH 256
 
 struct entry {
 	struct image image;
@@ -57,6 +58,7 @@ struct entry {
 	int32_t result_spacing;
 	uint32_t font_size;
 	char font_name[MAX_FONT_NAME_LENGTH];
+	char font_features[MAX_FONT_FEATURES_LENGTH];
 	char prompt_text[MAX_PROMPT_LENGTH];
 	char placeholder_text[MAX_PROMPT_LENGTH];
 	uint32_t prompt_padding;

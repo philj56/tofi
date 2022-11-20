@@ -7,6 +7,8 @@
 #include FT_FREETYPE_H
 #include <harfbuzz/hb.h>
 
+#define MAX_FONT_FEATURES 16
+
 struct entry;
 
 struct entry_backend_harfbuzz {
@@ -17,6 +19,8 @@ struct entry_backend_harfbuzz {
 
 	hb_font_t *hb_font;
 	hb_buffer_t *hb_buffer;
+	hb_feature_t hb_features[MAX_FONT_FEATURES];
+	uint8_t num_features;
 
 	bool disable_hinting;
 };

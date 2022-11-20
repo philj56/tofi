@@ -156,6 +156,15 @@ options.
 >
 > Default: 24
 
+**font-features**=*features*
+
+> Comma separated list of OpenType font feature settings to apply. The
+> format is similar to the CSS "font-feature-settings" property. For
+> example, "smcp, c2sc" will turn all text into small caps (if supported
+> by the chosen font).
+>
+> Default: ""
+
 **background-color**=*color*
 
 > Color of the background. See **COLORS** for more information.
@@ -210,7 +219,7 @@ options.
 >
 > Default: ""
 
-**placeholder-color**=*string*
+**placeholder-color**=*color*
 
 > Color of placeholder input text. See **COLORS** for more information.
 >

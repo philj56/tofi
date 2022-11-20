@@ -18,6 +18,16 @@
 	# Point size of text.
 	font-size = 24
 
+	# Comma separated list of OpenType font feature settings to apply,
+	# if supported by the chosen font. The format is similar to the CSS
+	# "font-feature-settings" property.
+	#
+	# Examples:
+	#
+	# font-features = "smcp, c2sc" (all small caps)
+	# font-features = "liga 0" (disable ligatures
+	font-features = ""
+
 	# Perform font hinting. Only applies when a path to a font has been
 	# specified via `font`. Disabling font hinting speeds up text
 	# rendering appreciably, but will likely look poor at small font pixel
