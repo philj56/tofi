@@ -27,6 +27,38 @@ static void rounded_rectangle(cairo_t *cr, uint32_t width, uint32_t height, uint
 	cairo_close_path(cr);
 }
 
+static void apply_text_theme_fallback(struct text_theme *theme, const struct text_theme *fallback)
+{
+	if (!theme->foreground_specified) {
+		theme->foreground_color = fallback->foreground_color;
+	}
+	if (!theme->background_specified) {
+		theme->background_color = fallback->background_color;
+	}
+	if (!theme->padding_specified) {
+		theme->padding = fallback->padding;
+	}
+	if (!theme->radius_specified) {
+		theme->background_corner_radius = fallback->background_corner_radius;
+	}
+}
+
+static void fixup_padding_sizes(struct directional *padding, uint32_t clip_width, uint32_t clip_height)
+{
+	if (padding->top == -1) {
+		padding->top = clip_height;
+	}
+	if (padding->bottom == -1) {
+		padding->bottom = clip_height;
+	}
+	if (padding->left == -1) {
+		padding->left = clip_width;
+	}
+	if (padding->right == -1) {
+		padding->right = clip_width;
+	}
+}
+
 void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height)
 {
 	entry->image.width = width;
@@ -138,6 +170,31 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	entry->clip_y = mat.y0;
 	entry->clip_width = width;
 	entry->clip_height = height;
+
+        /*
+	 * Before we render any text, ensure all text themes are fully
+         * specified.
+	 */
+        const struct text_theme default_theme = {
+		.foreground_color = entry->foreground_color,
+		.background_color = (struct color) { .a = 0 },
+		.padding = (struct directional) {0},
+		.background_corner_radius = 0
+	};
+
+	apply_text_theme_fallback(&entry->prompt_theme, &default_theme);
+	apply_text_theme_fallback(&entry->input_theme, &default_theme);
+	apply_text_theme_fallback(&entry->placeholder_theme, &default_theme);
+	apply_text_theme_fallback(&entry->default_result_theme, &default_theme);
+	apply_text_theme_fallback(&entry->alternate_result_theme, &entry->default_result_theme);
+	apply_text_theme_fallback(&entry->selection_theme, &default_theme);
+
+	fixup_padding_sizes(&entry->prompt_theme.padding, width, height);
+	fixup_padding_sizes(&entry->input_theme.padding, width, height);
+	fixup_padding_sizes(&entry->placeholder_theme.padding, width, height);
+	fixup_padding_sizes(&entry->default_result_theme.padding, width, height);
+	fixup_padding_sizes(&entry->alternate_result_theme.padding, width, height);
+	fixup_padding_sizes(&entry->selection_theme.padding, width, height);
 
 	/*
 	 * Perform an initial render of the text.

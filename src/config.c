@@ -83,6 +83,7 @@ static struct color parse_color(const char *filename, size_t lineno, const char 
 static uint32_t parse_uint32(const char *filename, size_t lineno, const char *str, bool *err);
 static int32_t parse_int32(const char *filename, size_t lineno, const char *str, bool *err);
 static struct uint32_percent parse_uint32_percent(const char *filename, size_t lineno, const char *str, bool *err);
+static struct directional parse_directional(const char *filename, size_t lineno, const char *str, bool *err);
 
 /*
  * Function-like macro. Yuck.
@@ -339,10 +340,68 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		snprintf(tofi->window.entry.prompt_text, N_ELEM(tofi->window.entry.prompt_text), "%s", value);
 	} else if (strcasecmp(option, "prompt-padding") == 0) {
 		tofi->window.entry.prompt_padding = parse_uint32(filename, lineno, value, &err);
+	} else if (strcasecmp(option, "prompt-color") == 0) {
+		tofi->window.entry.prompt_theme.foreground_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.prompt_theme.foreground_specified = true;
+	} else if (strcasecmp(option, "prompt-background") == 0) {
+		tofi->window.entry.prompt_theme.background_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.prompt_theme.background_specified = true;
+	} else if (strcasecmp(option, "prompt-background-padding") == 0) {
+		tofi->window.entry.prompt_theme.padding = parse_directional(filename, lineno, value, &err);
+		tofi->window.entry.prompt_theme.padding_specified = true;
+	} else if (strcasecmp(option, "prompt-background-corner-radius") == 0) {
+		tofi->window.entry.prompt_theme.background_corner_radius = parse_uint32(filename, lineno, value, &err);
+		tofi->window.entry.prompt_theme.radius_specified = true;
 	} else if (strcasecmp(option, "placeholder-text") == 0) {
 		snprintf(tofi->window.entry.placeholder_text, N_ELEM(tofi->window.entry.placeholder_text), "%s", value);
 	} else if (strcasecmp(option, "placeholder-color") == 0) {
-		tofi->window.entry.placeholder_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.placeholder_theme.foreground_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.placeholder_theme.foreground_specified = true;
+	} else if (strcasecmp(option, "placeholder-background") == 0) {
+		tofi->window.entry.placeholder_theme.background_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.placeholder_theme.background_specified = true;
+	} else if (strcasecmp(option, "placeholder-background-padding") == 0) {
+		tofi->window.entry.placeholder_theme.padding = parse_directional(filename, lineno, value, &err);
+		tofi->window.entry.placeholder_theme.padding_specified = true;
+	} else if (strcasecmp(option, "placeholder-background-corner-radius") == 0) {
+		tofi->window.entry.placeholder_theme.background_corner_radius = parse_uint32(filename, lineno, value, &err);
+		tofi->window.entry.placeholder_theme.radius_specified = true;
+	} else if (strcasecmp(option, "input-color") == 0) {
+		tofi->window.entry.input_theme.foreground_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.input_theme.foreground_specified = true;
+	} else if (strcasecmp(option, "input-background") == 0) {
+		tofi->window.entry.input_theme.background_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.input_theme.background_specified = true;
+	} else if (strcasecmp(option, "input-background-padding") == 0) {
+		tofi->window.entry.input_theme.padding = parse_directional(filename, lineno, value, &err);
+		tofi->window.entry.input_theme.padding_specified = true;
+	} else if (strcasecmp(option, "input-background-corner-radius") == 0) {
+		tofi->window.entry.input_theme.background_corner_radius = parse_uint32(filename, lineno, value, &err);
+		tofi->window.entry.input_theme.radius_specified = true;
+	} else if (strcasecmp(option, "default-result-color") == 0) {
+		tofi->window.entry.default_result_theme.foreground_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.default_result_theme.foreground_specified = true;
+	} else if (strcasecmp(option, "default-result-background") == 0) {
+		tofi->window.entry.default_result_theme.background_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.default_result_theme.background_specified = true;
+	} else if (strcasecmp(option, "default-result-background-padding") == 0) {
+		tofi->window.entry.default_result_theme.padding = parse_directional(filename, lineno, value, &err);
+		tofi->window.entry.default_result_theme.padding_specified = true;
+	} else if (strcasecmp(option, "default-result-background-corner-radius") == 0) {
+		tofi->window.entry.default_result_theme.background_corner_radius = parse_uint32(filename, lineno, value, &err);
+		tofi->window.entry.default_result_theme.radius_specified = true;
+	} else if (strcasecmp(option, "alternate-result-color") == 0) {
+		tofi->window.entry.alternate_result_theme.foreground_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.alternate_result_theme.foreground_specified = true;
+	} else if (strcasecmp(option, "alternate-result-background") == 0) {
+		tofi->window.entry.alternate_result_theme.background_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.alternate_result_theme.background_specified = true;
+	} else if (strcasecmp(option, "alternate-result-background-padding") == 0) {
+		tofi->window.entry.alternate_result_theme.padding = parse_directional(filename, lineno, value, &err);
+		tofi->window.entry.alternate_result_theme.padding_specified = true;
+	} else if (strcasecmp(option, "alternate-result-background-corner-radius") == 0) {
+		tofi->window.entry.alternate_result_theme.background_corner_radius = parse_uint32(filename, lineno, value, &err);
+		tofi->window.entry.alternate_result_theme.radius_specified = true;
 	} else if (strcasecmp(option, "min-input-width") == 0) {
 		tofi->window.entry.input_width = parse_uint32(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "result-spacing") == 0) {
@@ -354,13 +413,25 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 	} else if (strcasecmp(option, "text-color") == 0) {
 		tofi->window.entry.foreground_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "selection-color") == 0) {
-		tofi->window.entry.selection_foreground_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.selection_theme.foreground_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.selection_theme.foreground_specified = true;
 	} else if (strcasecmp(option, "selection-match-color") == 0) {
 		tofi->window.entry.selection_highlight_color = parse_color(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "selection-padding") == 0) {
-		tofi->window.entry.selection_background_padding = parse_int32(filename, lineno, value, &err);
+		log_warning("The \"selection-padding\" option is deprecated, and will be removed in future. Please switch to \"selection-background-padding\".\n");
+		int32_t val = parse_int32(filename, lineno, value, &err);
+		tofi->window.entry.selection_theme.padding.left = val;
+		tofi->window.entry.selection_theme.padding.right = val;
+		tofi->window.entry.selection_theme.padding_specified = true;
 	} else if (strcasecmp(option, "selection-background") == 0) {
-		tofi->window.entry.selection_background_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.selection_theme.background_color = parse_color(filename, lineno, value, &err);
+		tofi->window.entry.selection_theme.background_specified = true;
+	} else if (strcasecmp(option, "selection-background-padding") == 0) {
+		tofi->window.entry.selection_theme.padding = parse_directional(filename, lineno, value, &err);
+		tofi->window.entry.selection_theme.padding_specified = true;
+	} else if (strcasecmp(option, "selection-background-corner-radius") == 0) {
+		tofi->window.entry.selection_theme.background_corner_radius = parse_uint32(filename, lineno, value, &err);
+		tofi->window.entry.selection_theme.radius_specified = true;
 	} else if (strcasecmp(option, "exclusive-zone") == 0) {
 		if (strcmp(value, "-1") == 0) {
 			tofi->window.exclusive_zone = -1;
@@ -734,4 +805,73 @@ struct uint32_percent parse_uint32_percent(const char *filename, size_t lineno, 
 		}
 	}
 	return (struct uint32_percent){ val, percent };
+}
+
+struct directional parse_directional(const char *filename, size_t lineno, const char *str, bool *err)
+{
+	int32_t values[4];
+	char *saveptr = NULL;
+	char *tmp = xstrdup(str);
+	char *val = strtok_r(tmp, ",", &saveptr);
+
+	size_t n;
+
+	for (n = 0; n < N_ELEM(values) && val != NULL; n++) {
+		values[n] = parse_int32(filename, lineno, val, err);
+		if (err && *err) {
+			break;
+		}
+		val = strtok_r(NULL, ",", &saveptr);
+	}
+	free(tmp);
+
+	struct directional ret = {0};
+	if (err && *err) {
+		return ret;
+	}
+
+	switch (n) {
+		case 0:
+			break;
+		case 1:
+			ret = (struct directional) {
+				.top = values[0],
+				.right = values[0],
+				.bottom = values[0],
+				.left = values[0],
+			};
+			break;
+		case 2:
+			ret = (struct directional) {
+				.top = values[0],
+				.right = values[1],
+				.bottom = values[0],
+				.left = values[1],
+			};
+			break;
+		case 3:
+			ret = (struct directional) {
+				.top = values[0],
+				.right = values[1],
+				.bottom = values[2],
+				.left = values[1],
+			};
+			break;
+		case 4:
+			ret = (struct directional) {
+				.top = values[0],
+				.right = values[1],
+				.bottom = values[2],
+				.left = values[3],
+			};
+			break;
+		default:
+			PARSE_ERROR(filename, lineno, "Too many values in \"%s\" for directional.\n", str);
+			if (err) {
+				*err = true;
+			}
+			break;
+	};
+
+	return ret;
 }

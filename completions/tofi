@@ -21,14 +21,34 @@ _tofi()
 		--num-results
 		--selection-color
 		--selection-match-color
-		--selection-padding
 		--selection-background
+		--selection-background-padding
+		--selection-background-corner-radius
 		--outline-width
 		--outline-color
 		--prompt-text
 		--prompt-padding
+		--prompt-color
+		--prompt-background
+		--prompt-background-padding
+		--prompt-background-corner-radius
 		--placeholder-text
 		--placeholder-color
+		--placeholder-background
+		--placeholder-background-padding
+		--placeholder-background-corner-radius
+		--input-color
+		--input-background
+		--input-background-padding
+		--input-background-corner-radius
+		--default-result-color
+		--default-result-background
+		--default-result-background-padding
+		--default-result-background-corner-radius
+		--alternate-result-color
+		--alternate-result-background
+		--alternate-result-background-padding
+		--alternate-result-background-corner-radius
 		--result-spacing
 		--min-input-width
 		--border-width

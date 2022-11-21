@@ -45,31 +45,70 @@
 	hint-font = true
 
 #
-### Colors
+### Text theming
 #
-	# Window background
-	background-color = #1B1D1E
-
-	# Border outlines
-	outline-color = #080800
-
-	# Border
-	border-color = #F92672
-
-	# Default text
+	# Default text color
+	#
+	# All text defaults to this color if not otherwise specified.
 	text-color = #FFFFFF
 
-	# Placeholder input text
+	# All pieces of text have the same theming attributes available:
+	#
+	# *-color
+	#     Foreground color
+	#
+	# *-background
+	#     Background color
+	#
+	# *-background-padding
+	#     Background padding in pixels (comma-delimited, CSS-style list).
+	#     See "DIRECTIONAL VALUES" under `man 5 tofi` for more info.
+	#
+	# *-background-corner-radius
+	#     Radius of background box corners in pixels
+
+	# Prompt text theme
+	# prompt-color = #FFFFFF
+	prompt-background = #00000000
+	prompt-background-padding = 0
+	prompt-background-corner-radius = 0
+
+	# Placeholder text theme
 	placeholder-color = #FFFFFFA8
+	placeholder-background = #00000000
+	placeholder-background-padding = 0
+	placeholder-background-corner-radius = 0
+
+	# Input text theme
+	# input-color = #FFFFFF
+	input-background = #00000000
+	input-background-padding = 0
+	input-background-corner-radius = 0
+
+	# Default result text theme
+	# default-result-color = #FFFFFF
+	default-result-background = #00000000
+	default-result-background-padding = 0
+	default-result-background-corner-radius = 0
+
+	# Alternate (even-numbered) result text theme
+	#
+	# If unspecified, these all default to the corresponding
+	# default-result-* attribute.
+	#
+	# alternate-result-color = #FFFFFF
+	# alternate-result-background = #00000000
+	# alternate-result-background-padding = 0
+	# alternate-result-background-corner-radius = 0
 
 	# Selection text
 	selection-color = #F92672
+	selection-background = #00000000
+	selection-background-padding = 0
+	selection-background-corner-radius = 0
 
 	# Matching portion of selection text
 	selection-match-color = #00000000
-
-	# Selection background
-	selection-background = #00000000
 
 #
 ### Text layout
@@ -96,21 +135,27 @@
 	# Minimum width of input in horizontal mode.
 	min-input-width = 0
 
-	# Extra horizontal padding of the selection background in pixels.
-	selection-padding = 0
-
 #
-### Window layout
+### Window theming
 #
 	# Width and height of the window. Can be pixels or a percentage.
 	width = 1280
 	height = 720
 
+	# Window background color
+	background-color = #1B1D1E
+
 	# Width of the border outlines in pixels.
 	outline-width = 4
 
+	# Border outline color
+	outline-color = #080800
+
 	# Width of the border in pixels.
 	border-width = 12
+
+	# Border color
+	border-color = #F92672
 
 	# Radius of window corners in pixels.
 	corner-radius = 0

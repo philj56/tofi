@@ -13,6 +13,70 @@
 #undef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
+static void rounded_rectangle(cairo_t *cr, uint32_t width, uint32_t height, uint32_t r)
+{
+	cairo_new_path(cr);
+
+	/* Top-left */
+	cairo_arc(cr, r, r, r, -M_PI, -M_PI_2);
+
+	/* Top-right */
+	cairo_arc(cr, width - r, r, r, -M_PI_2, 0);
+
+	/* Bottom-right */
+	cairo_arc(cr, width - r, height - r, r, 0, M_PI_2);
+
+	/* Bottom-left */
+	cairo_arc(cr, r, height - r, r, M_PI_2, M_PI);
+
+	cairo_close_path(cr);
+}
+
+static void render_text_themed(
+		cairo_t *cr,
+		PangoLayout *layout,
+		const char *text,
+		const struct text_theme *theme,
+		PangoRectangle *ink_rect,
+		PangoRectangle *logical_rect)
+{
+	struct color color = theme->foreground_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+
+	pango_layout_set_text(layout, text, -1);
+	pango_cairo_update_layout(cr, layout);
+	pango_cairo_show_layout(cr, layout);
+
+	pango_layout_get_pixel_extents(layout, ink_rect, logical_rect);
+
+	if (theme->background_color.a == 0) {
+		/* No background to draw, we're done. */
+		return;
+	}
+
+	struct directional padding = theme->padding;
+
+	cairo_save(cr);
+	color = theme->background_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	cairo_translate(
+			cr,
+			floor(-padding.left + ink_rect->x),
+			-padding.top);
+	rounded_rectangle(
+			cr,
+			ceil(ink_rect->width + padding.left + padding.right),
+			ceil(logical_rect->height + padding.top + padding.bottom),
+			theme->background_corner_radius
+			);
+	cairo_fill(cr);
+	cairo_restore(cr);
+
+	color = theme->foreground_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	pango_cairo_show_layout(cr, layout);
+}
+
 void entry_backend_pango_init(struct entry *entry, uint32_t *width, uint32_t *height)
 {
 	cairo_t *cr = entry->cairo[0].cr;
@@ -85,44 +149,34 @@ void entry_backend_pango_update(struct entry *entry)
 
 	cairo_save(cr);
 	struct color color = entry->foreground_color;
-	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
 	/* Render the prompt */
-	pango_layout_set_text(layout, entry->prompt_text, -1);
-	pango_cairo_update_layout(cr, layout);
-	pango_cairo_show_layout(cr, layout);
-
 	PangoRectangle ink_rect;
 	PangoRectangle logical_rect;
-	pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
-	cairo_translate(cr, logical_rect.width + logical_rect.x, 0);
+	render_text_themed(cr, layout, entry->prompt_text, &entry->prompt_theme, &ink_rect, &logical_rect);
 
+	cairo_translate(cr, logical_rect.width + logical_rect.x, 0);
 	cairo_translate(cr, entry->prompt_padding, 0);
 
 	/* Render the entry text */
 	if (entry->input_utf8_length == 0) {
-		color = entry->placeholder_color;
-		cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-		pango_layout_set_text(layout, entry->placeholder_text, -1);
+		render_text_themed(cr, layout, entry->placeholder_text, &entry->placeholder_theme, &ink_rect, &logical_rect);
 	} else if (entry->hide_input) {
-		/*
-		 * Pango needs to be passed the whole text at once, so we need
-		 * to manually replicate the replacement character in a buffer.
-		 */
-		static char buf[sizeof(entry->input_utf8)];
-		uint32_t char_len = entry->hidden_character_utf8_length;
-		for (size_t i = 0; i < entry->input_utf32_length; i++) {
-			for (size_t j = 0; j < char_len; j++) {
-				buf[i * char_len + j] = entry->hidden_character_utf8[j];
+		size_t nchars = entry->input_utf32_length;
+		size_t char_size = entry->hidden_character_utf8_length;
+		char *buf = xmalloc(1 + nchars * char_size);
+		for (size_t i = 0; i < nchars; i++) {
+			for (size_t j = 0; j < char_size; j++) {
+				buf[i * char_size + j] = entry->hidden_character_utf8[j];
 			}
 		}
-		pango_layout_set_text(layout, buf, char_len * entry->input_utf32_length);
+		buf[char_size * nchars] = '\0';
+
+		render_text_themed(cr, layout, buf, &entry->placeholder_theme, &ink_rect, &logical_rect);
+		free(buf);
 	} else {
-		pango_layout_set_text(layout, entry->input_utf8, -1);
+		render_text_themed(cr, layout, entry->input_utf8, &entry->input_theme, &ink_rect, &logical_rect);
 	}
-	pango_cairo_update_layout(cr, layout);
-	pango_cairo_show_layout(cr, layout);
-	pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
 	logical_rect.width = MAX(logical_rect.width, (int)entry->input_width);
 
 	color = entry->foreground_color;
@@ -164,25 +218,29 @@ void entry_backend_pango_update(struct entry *entry)
 		} else {
 			str = "";
 		}
-		if (i != entry->selection) {
-			pango_layout_set_text(layout, str, -1);
-			pango_cairo_update_layout(cr, layout);
+		if (i != entry->selection || (entry->selection_highlight_color.a == 0)) {
+			const struct text_theme *theme;
+			if (i == entry->selection) {
+				theme = &entry->selection_theme;
+			} else if (index % 2) {
+				theme = &entry->alternate_result_theme;;
+			} else {
+				theme = &entry->default_result_theme;;
+			}
 
 			if (entry->num_results > 0) {
-				pango_cairo_show_layout(cr, layout);
-				pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
+				render_text_themed(cr, layout, str, theme, &ink_rect, &logical_rect);
 			} else if (!entry->horizontal) {
 				if (size_overflows(entry, 0, logical_rect.height)) {
 					entry->num_results_drawn = i;
 					break;
 				} else {
-					pango_cairo_show_layout(cr, layout);
-					pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
+					render_text_themed(cr, layout, str, theme, &ink_rect, &logical_rect);
 				}
 			} else {
 				cairo_push_group(cr);
-				pango_cairo_show_layout(cr, layout);
-				pango_layout_get_pixel_extents(entry->pango.layout, &ink_rect, &logical_rect);
+				render_text_themed(cr, layout, str, theme, &ink_rect, &logical_rect);
+
 				cairo_pattern_t *group = cairo_pop_group(cr);
 				if (size_overflows(entry, logical_rect.width, 0)) {
 					entry->num_results_drawn = i;
@@ -213,68 +271,77 @@ void entry_backend_pango_update(struct entry *entry)
 				}
 			}
 
-			cairo_push_group(cr);
-			color = entry->selection_foreground_color;
-			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-
-			pango_layout_set_text(layout, str, prematch_len);
-			pango_cairo_update_layout(cr, layout);
-			pango_cairo_show_layout(cr, layout);
-			pango_layout_get_pixel_extents(entry->pango.layout, &ink_subrect, &logical_subrect);
-			ink_rect = ink_subrect;
-			logical_rect = logical_subrect;
-
-			if (prematch_len != -1) {
-				cairo_translate(cr, logical_subrect.x + logical_subrect.width, 0);
-				color = entry->selection_highlight_color;
+			for (int pass = 0; pass < 2; pass++) {
+				cairo_save(cr);
+				color = entry->selection_theme.foreground_color;
 				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-				pango_layout_set_text(layout, &str[prematch_len], match_len);
+
+				pango_layout_set_text(layout, str, prematch_len);
 				pango_cairo_update_layout(cr, layout);
 				pango_cairo_show_layout(cr, layout);
 				pango_layout_get_pixel_extents(entry->pango.layout, &ink_subrect, &logical_subrect);
-				if (prematch_len == 0) {
-					ink_rect = ink_subrect;
-					logical_rect = logical_subrect;
-				} else {
+				ink_rect = ink_subrect;
+				logical_rect = logical_subrect;
+
+				if (prematch_len != -1) {
+					cairo_translate(cr, logical_subrect.x + logical_subrect.width, 0);
+					color = entry->selection_highlight_color;
+					cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+					pango_layout_set_text(layout, &str[prematch_len], match_len);
+					pango_cairo_update_layout(cr, layout);
+					pango_cairo_show_layout(cr, layout);
+					pango_layout_get_pixel_extents(entry->pango.layout, &ink_subrect, &logical_subrect);
+					if (prematch_len == 0) {
+						ink_rect = ink_subrect;
+						logical_rect = logical_subrect;
+					} else {
+						ink_rect.width = logical_rect.width
+							- ink_rect.x
+							+ ink_subrect.x
+							+ ink_subrect.width;
+						logical_rect.width += logical_subrect.x + logical_subrect.width;
+					}
+				}
+
+				if (postmatch_len != -1) {
+					cairo_translate(cr, logical_subrect.x + logical_subrect.width, 0);
+					color = entry->selection_theme.foreground_color;
+					cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+					pango_layout_set_text(layout, &str[prematch_len + match_len], -1);
+					pango_cairo_update_layout(cr, layout);
+					pango_cairo_show_layout(cr, layout);
+					pango_layout_get_pixel_extents(entry->pango.layout, &ink_subrect, &logical_subrect);
 					ink_rect.width = logical_rect.width
 						- ink_rect.x
 						+ ink_subrect.x
 						+ ink_subrect.width;
 					logical_rect.width += logical_subrect.x + logical_subrect.width;
+
+				}
+
+				cairo_restore(cr);
+
+				if (entry->selection_theme.background_color.a == 0) {
+					break;
+				} else if (pass == 0) {
+					struct directional padding = entry->selection_theme.padding;
+					cairo_save(cr);
+					color = entry->selection_theme.background_color;
+					cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+					cairo_translate(
+							cr,
+							floor(-padding.left + ink_rect.x),
+							-padding.top);
+					rounded_rectangle(
+							cr,
+							ceil(ink_rect.width + padding.left + padding.right),
+							ceil(logical_rect.height + padding.top + padding.bottom),
+							entry->selection_theme.background_corner_radius
+							);
+					cairo_fill(cr);
+					cairo_restore(cr);
 				}
 			}
-
-			if (postmatch_len != -1) {
-				cairo_translate(cr, logical_subrect.x + logical_subrect.width, 0);
-				color = entry->selection_foreground_color;
-				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-				pango_layout_set_text(layout, &str[prematch_len + match_len], -1);
-				pango_cairo_update_layout(cr, layout);
-				pango_cairo_show_layout(cr, layout);
-				pango_layout_get_pixel_extents(entry->pango.layout, &ink_subrect, &logical_subrect);
-				ink_rect.width = logical_rect.width
-					- ink_rect.x
-					+ ink_subrect.x
-					+ ink_subrect.width;
-				logical_rect.width += logical_subrect.x + logical_subrect.width;
-
-			}
-
-			cairo_pop_group_to_source(cr);
-			cairo_save(cr);
-			color = entry->selection_background_color;
-			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-			int32_t pad = entry->selection_background_padding;
-			if (pad < 0) {
-				pad = entry->clip_width;
-			}
-			cairo_translate(cr, floor(-pad + ink_rect.x), 0);
-			cairo_rectangle(cr, 0, 0, ceil(ink_rect.width + pad * 2), ceil(logical_rect.height));
-			cairo_fill(cr);
-			cairo_restore(cr);
-			cairo_paint(cr);
-			color = entry->foreground_color;
-			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 		}
 	}
 	entry->num_results_drawn = i;

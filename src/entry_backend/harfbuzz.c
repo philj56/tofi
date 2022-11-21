@@ -30,6 +30,25 @@ const struct {
 #undef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
+static void rounded_rectangle(cairo_t *cr, uint32_t width, uint32_t height, uint32_t r)
+{
+	cairo_new_path(cr);
+
+	/* Top-left */
+	cairo_arc(cr, r, r, r, -M_PI, -M_PI_2);
+
+	/* Top-right */
+	cairo_arc(cr, width - r, r, r, -M_PI_2, 0);
+
+	/* Bottom-right */
+	cairo_arc(cr, width - r, height - r, r, 0, M_PI_2);
+
+	/* Bottom-left */
+	cairo_arc(cr, r, height - r, r, M_PI_2, M_PI);
+
+	cairo_close_path(cr);
+}
+
 static const char *get_ft_error_string(int err_code)
 {
 	for (size_t i = 0; i < N_ELEM(ft_errors); i++) {
@@ -60,8 +79,8 @@ static void setup_hb_buffer(hb_buffer_t *buffer)
 
 
 /*
- * Render a hb_buffer with Cairo, and return the width of the rendered area in
- * Cairo units.
+ * Render a hb_buffer with Cairo, and return the extents of the rendered text
+ * in Cairo units.
  */
 static cairo_text_extents_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
 {
@@ -109,6 +128,10 @@ static cairo_text_extents_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
 	return extents;
 }
 
+/*
+ * Clear the harfbuzz buffer, shape some text and render it with Cairo,
+ * returning the extents of the rendered text in Cairo units.
+ */
 static cairo_text_extents_t render_text(
 		cairo_t *cr,
 		struct entry_backend_harfbuzz *hb,
@@ -119,6 +142,62 @@ static cairo_text_extents_t render_text(
 	hb_buffer_add_utf8(hb->hb_buffer, text, -1, 0, -1);
 	hb_shape(hb->hb_font, hb->hb_buffer, hb->hb_features, hb->num_features);
 	return render_hb_buffer(cr, hb->hb_buffer);
+}
+
+
+/*
+ * Render some text with an optional background box, using settings from the
+ * given theme.
+ */
+static cairo_text_extents_t render_text_themed(
+		cairo_t *cr,
+		struct entry_backend_harfbuzz *hb,
+		const char *text,
+		const struct text_theme *theme)
+{
+	cairo_font_extents_t font_extents;
+	cairo_font_extents(cr, &font_extents);
+	struct directional padding = theme->padding;
+
+	/*
+	 * I previously thought rendering the text to a group, measuring it,
+	 * drawing the box on the main canvas and then drawing the group would
+	 * be the most efficient way of doing this. I was wrong.
+	 *
+	 * It turns out to be much quicker to just draw the text to the canvas,
+	 * paint over it with the box, and then draw the text again. This is
+	 * fine, as long as the box is always bigger than the text (which it is
+	 * unless the user sets some extreme values for the corner radius).
+	 */
+	struct color color = theme->foreground_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	cairo_text_extents_t extents = render_text(cr, hb, text);
+
+	if (theme->background_color.a == 0) {
+		/* No background to draw, we're done. */
+		return extents;
+	}
+
+	cairo_save(cr);
+	color = theme->background_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	cairo_translate(
+			cr,
+			floor(-padding.left + extents.x_bearing),
+			-padding.top);
+	rounded_rectangle(
+			cr,
+			ceil(extents.width + padding.left + padding.right),
+			ceil(font_extents.height + padding.top + padding.bottom),
+			theme->background_corner_radius
+			);
+	cairo_fill(cr);
+	cairo_restore(cr);
+
+	color = theme->foreground_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	render_text(cr, hb, text);
+	return extents;
 }
 
 static bool size_overflows(struct entry *entry, uint32_t width, uint32_t height)
@@ -274,43 +353,39 @@ void entry_backend_harfbuzz_destroy(struct entry *entry)
 void entry_backend_harfbuzz_update(struct entry *entry)
 {
 	cairo_t *cr = entry->cairo[entry->index].cr;
-	hb_buffer_t *buffer = entry->harfbuzz.hb_buffer;
 	cairo_text_extents_t extents;
 
 	cairo_save(cr);
-	struct color color = entry->foreground_color;
-	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
 	/* Render the prompt */
-	extents = render_text(cr, &entry->harfbuzz, entry->prompt_text);
+	extents = render_text_themed(cr, &entry->harfbuzz, entry->prompt_text, &entry->prompt_theme);
 
 	cairo_translate(cr, extents.x_advance, 0);
 	cairo_translate(cr, entry->prompt_padding, 0);
 
 	/* Render the entry text */
 	if (entry->input_utf8_length == 0) {
-		color = entry->placeholder_color;
-		cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-		extents = render_text(cr, &entry->harfbuzz, entry->placeholder_text);
+		extents = render_text_themed(cr, &entry->harfbuzz, entry->placeholder_text, &entry->placeholder_theme);
 	} else if (entry->hide_input) {
-		hb_buffer_clear_contents(buffer);
-		setup_hb_buffer(buffer);
-		size_t char_len = N_ELEM(entry->hidden_character_utf8);
-		for (size_t i = 0; i < entry->input_utf32_length; i++) {
-			hb_buffer_add_utf8(buffer, entry->hidden_character_utf8, char_len, 0, char_len);
+		size_t nchars = entry->input_utf32_length;
+		size_t char_size = entry->hidden_character_utf8_length;
+		char *buf = xmalloc(1 + nchars * char_size);
+		for (size_t i = 0; i < nchars; i++) {
+			for (size_t j = 0; j < char_size; j++) {
+				buf[i * char_size + j] = entry->hidden_character_utf8[j];
+			}
 		}
-		hb_shape(entry->harfbuzz.hb_font, buffer, entry->harfbuzz.hb_features, entry->harfbuzz.num_features);
-		extents = render_hb_buffer(cr, buffer);
+		buf[char_size * nchars] = '\0';
+
+		extents = render_text_themed(cr, &entry->harfbuzz, buf, &entry->input_theme);
+		free(buf);
 	} else {
-		extents = render_text(cr, &entry->harfbuzz, entry->input_utf8);
+		extents = render_text_themed(cr, &entry->harfbuzz, entry->input_utf8, &entry->input_theme);
 	}
 	extents.x_advance = MAX(extents.x_advance, entry->input_width);
 
 	cairo_font_extents_t font_extents;
 	cairo_font_extents(cr, &font_extents);
-
-	color = entry->foreground_color;
-	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
 	uint32_t num_results;
 	if (entry->num_results == 0) {
@@ -347,25 +422,24 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 		const char *result = entry->results.buf[index].string;
 		/*
 		 * If this isn't the selected result, or it is but we're not
-		 * doing any fancy match-highlighting or backgrounds, just
-		 * print as normal.
+		 * doing any fancy match-highlighting, just print as normal.
 		 */
-		if (i != entry->selection
-				|| (entry->selection_highlight_color.a == 0
-					&& entry->selection_background_color.a == 0)) {
+		if (i != entry->selection || (entry->selection_highlight_color.a == 0)) {
+			const struct text_theme *theme;
 			if (i == entry->selection) {
-				color = entry->selection_foreground_color;
+				theme = &entry->selection_theme;
+			} else if (index % 2) {
+				theme = &entry->alternate_result_theme;;
 			} else {
-				color = entry->foreground_color;
+				theme = &entry->default_result_theme;;
 			}
-			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
 			if (entry->num_results > 0) {
 				/*
 				 * We're not auto-detecting how many results we
 				 * can fit, so just render the text.
 				 */
-				extents = render_text(cr, &entry->harfbuzz, result);
+				extents = render_text_themed(cr, &entry->harfbuzz, result, theme);
 			} else if (!entry->horizontal) {
 				/*
 				 * The height of the text doesn't change, so
@@ -375,19 +449,19 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 					entry->num_results_drawn = i;
 					break;
 				} else {
-					extents = render_text(cr, &entry->harfbuzz, result);
+					extents = render_text_themed(cr, &entry->harfbuzz, result, theme);
 				}
 			} else {
 				/*
 				 * The difficult case: we're auto-detecting how
 				 * many results to draw, but we can't know
-				 * whether this results will fit without
+				 * whether this result will fit without
 				 * drawing it! To solve this, draw to a
 				 * temporary group, measure that, then copy it
 				 * to the main canvas only if it will fit.
 				 */
 				cairo_push_group(cr);
-				extents = render_text(cr, &entry->harfbuzz, result);
+				extents = render_text_themed(cr, &entry->harfbuzz, result, theme);
 
 				cairo_pattern_t *group = cairo_pop_group(cr);
 				if (size_overflows(entry, extents.x_advance, 0)) {
@@ -404,21 +478,18 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			}
 		} else {
 			/*
-			 * For the selected result, there's a bit more to do.
+			 * For match highlighting, there's a bit more to do.
 			 *
-			 * First, we need to use a different foreground color -
-			 * simple enough.
+			 * We need to split the text into prematch, match and
+			 * postmatch chunks, and draw each separately.
 			 *
-			 * Next, we may need to draw a background box - this
-			 * involves rendering to a cairo group, measuring the
-			 * size of the text, drawing the background on the main
-			 * canvas, then finally drawing the group on top of
-			 * that.
-			 *
-			 * Finally, we may need to highlight the matching
-			 * portion of text - this is achieved simply by
-			 * splitting the text into prematch, match and
-			 * postmatch chunks, and drawing each separately.
+			 * However, we only want one background box around them
+			 * all (if we're drawing one). To do this, we have to
+			 * do the rendering part of render_text_themed()
+			 * manually, with the same method of:
+			 * - Draw the text and measure it
+			 * - Draw the box
+			 * - Draw the text again
 			 *
 			 * N.B. The size_overflows check isn't necessary here,
 			 * as it's currently not possible for the selection to
@@ -429,7 +500,6 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 			char *prematch = xstrdup(result);
 			char *match = NULL;
 			char *postmatch = NULL;
-			cairo_text_extents_t subextents;
 			if (entry->input_utf8_length > 0 && entry->selection_highlight_color.a != 0) {
 				char *match_pos = utf8_strcasestr(prematch, entry->input_utf8);
 				if (match_pos != NULL) {
@@ -444,38 +514,53 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				}
 			}
 
-			cairo_push_group(cr);
-			color = entry->selection_foreground_color;
-			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-
-			subextents = render_text(cr, &entry->harfbuzz, prematch);
-			extents = subextents;
-
-			free(prematch);
-			prematch = NULL;
-
-			if (match != NULL) {
-				cairo_translate(cr, subextents.x_advance, 0);
-				color = entry->selection_highlight_color;
+			for (int pass = 0; pass < 2; pass++) {
+				cairo_save(cr);
+				struct color color = entry->selection_theme.foreground_color;
 				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
-				subextents = render_text(cr, &entry->harfbuzz, &match[prematch_len]);
+				cairo_text_extents_t subextents = render_text(cr, &entry->harfbuzz, prematch);
+				extents = subextents;
 
-				if (prematch_len == 0) {
-					extents = subextents;
-				} else {
-					/*
-					 * This calculation is a little
-					 * complex, but it's basically:
-					 *
-					 * (distance from leftmost pixel of
-					 * prematch to logical end of prematch)
-					 * 
-					 * +
-					 *
-					 * (distance from logical start of match
-					 * to rightmost pixel of match).
-					 */
+				if (match != NULL) {
+					cairo_translate(cr, subextents.x_advance, 0);
+					color = entry->selection_highlight_color;
+					cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+
+					subextents = render_text(cr, &entry->harfbuzz, &match[prematch_len]);
+
+					if (prematch_len == 0) {
+						extents = subextents;
+					} else {
+						/*
+						 * This calculation is a little
+						 * complex, but it's basically:
+						 *
+						 * (distance from leftmost pixel of
+						 * prematch to logical end of prematch)
+						 * 
+						 * +
+						 *
+						 * (distance from logical start of match
+						 * to rightmost pixel of match).
+						 */
+						extents.width = extents.x_advance
+							- extents.x_bearing
+							+ subextents.x_bearing
+							+ subextents.width;
+						extents.x_advance += subextents.x_advance;
+					}
+				}
+
+				if (postmatch != NULL) {
+					cairo_translate(cr, subextents.x_advance, 0);
+					color = entry->selection_theme.foreground_color;
+					cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+					subextents = render_text(
+							cr,
+							&entry->harfbuzz,
+							&postmatch[entry->input_utf8_length + prematch_len]);
+
 					extents.width = extents.x_advance
 						- extents.x_bearing
 						+ subextents.x_bearing
@@ -483,43 +568,42 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 					extents.x_advance += subextents.x_advance;
 				}
 
+				cairo_restore(cr);
+
+				if (entry->selection_theme.background_color.a == 0) {
+					/* No background box, we're done. */
+					break;
+				} else if (pass == 0) {
+					/* 
+					 * First pass, paint over the text with
+					 * our background box.
+					 */
+					struct directional padding = entry->selection_theme.padding;
+					cairo_save(cr);
+					color = entry->selection_theme.background_color;
+					cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+					cairo_translate(
+							cr,
+							floor(-padding.left + extents.x_bearing),
+							-padding.top);
+					rounded_rectangle(
+							cr,
+							ceil(extents.width + padding.left + padding.right),
+							ceil(font_extents.height + padding.top + padding.bottom),
+							entry->selection_theme.background_corner_radius
+							);
+					cairo_fill(cr);
+					cairo_restore(cr);
+				}
+			}
+
+			free(prematch);
+			if (match != NULL) {
 				free(match);
-				match = NULL;
 			}
-
 			if (postmatch != NULL) {
-				cairo_translate(cr, subextents.x_advance, 0);
-				color = entry->selection_foreground_color;
-				cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-				subextents = render_text(
-						cr,
-						&entry->harfbuzz,
-						&postmatch[entry->input_utf8_length + prematch_len]);
-
-				extents.width = extents.x_advance
-					- extents.x_bearing
-					+ subextents.x_bearing
-					+ subextents.width;
-				extents.x_advance += subextents.x_advance;
-
-
 				free(postmatch);
-				postmatch = NULL;
 			}
-
-			cairo_pop_group_to_source(cr);
-			cairo_save(cr);
-			color = entry->selection_background_color;
-			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-			int32_t pad = entry->selection_background_padding;
-			if (pad < 0) {
-				pad = entry->clip_width;
-			}
-			cairo_translate(cr, floor(-pad + extents.x_bearing), 0);
-			cairo_rectangle(cr, 0, 0, ceil(extents.width + pad * 2), ceil(font_extents.height));
-			cairo_fill(cr);
-			cairo_restore(cr);
-			cairo_paint(cr);
 		}
 	}
 	entry->num_results_drawn = i;

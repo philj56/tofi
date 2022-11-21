@@ -222,6 +222,31 @@ options.
 >
 > Default: 0
 
+**prompt-color**=*color*
+
+> Color of prompt text. See **COLORS** for more information.
+>
+> Default: Same as **text-color**
+
+**prompt-background**=*color*
+
+> Background color of prompt. See **COLORS** for more information.
+>
+> Default: \#00000000
+
+**prompt-background-padding**=*directional*
+
+> Extra padding of the prompt background. See **DIRECTIONAL VALUES** for
+> more information.
+>
+> Default: 0
+
+**prompt-background-corner-radius**=*px*
+
+> Corner radius of the prompt background.
+>
+> Default: 0
+
 **placeholder-text**=*string*
 
 > Placeholder input text.
@@ -233,6 +258,104 @@ options.
 > Color of placeholder input text. See **COLORS** for more information.
 >
 > Default: \#FFFFFFA8
+
+**placeholder-background**=*color*
+
+> Background color of placeholder input text. See **COLORS** for more
+> information.
+>
+> Default: \#00000000
+
+**placeholder-background-padding**=*directional*
+
+> Extra padding of the placeholder input text background. See
+> **DIRECTIONAL** VALUES for more information.
+>
+> Default: 0
+
+**placeholder-background-corner-radius**=*px*
+
+> Corner radius of the placeholder input text background.
+>
+> Default: 0
+
+**input-color**=*color*
+
+> Color of input text. See **COLORS** for more information.
+>
+> Default: Same as **text-color**
+
+**input-background**=*color*
+
+> Background color of input. See **COLORS** for more information.
+>
+> Default: \#00000000
+
+**input-background-padding**=*directional*
+
+> Extra padding of the input background. See **DIRECTIONAL VALUES** for
+> more information.
+>
+> Default: 0
+
+**input-background-corner-radius**=*px*
+
+> Corner radius of the input background.
+>
+> Default: 0
+
+**default-result-color**=*color*
+
+> Default color of result text. See **COLORS** for more information.
+>
+> Default: Same as **text-color**
+
+**default-result-background**=*color*
+
+> Default background color of results. See **COLORS** for more
+> information.
+>
+> Default: \#00000000
+
+**default-result-background-padding**=*directional*
+
+> Default extra padding of result backgrounds. See **DIRECTIONAL
+> VALUES** for more information.
+>
+> Default: 0
+
+**default-result-background-corner-radius**=*px*
+
+> Default corner radius of result backgrounds.
+>
+> Default: 0
+
+**alternate-result-color**=*color*
+
+> Color of alternate (even-numbered) result text. See **COLORS** for
+> more information.
+>
+> Default: same as **default-result-color**
+
+**alternate-result-background**=*color*
+
+> Background color of alternate (even-numbered) results. See **COLORS**
+> for more information.
+>
+> Default: same as **default-result-background**
+
+**alternate-result-background-padding**=*directional*
+
+> Extra padding of alternate (even-numbered) result backgrounds. See
+> **DIRECTIONAL VALUES** for more information.
+>
+> Default: same as **default-result-background-padding**
+
+**alternate-result-background-corner-radius**=*px*
+
+> Corner radius of alternate (even-numbered) result backgrounds.
+>
+> Default: same as **default-result-background-corner-radius**
 
 **num-results**=*n*
 
@@ -258,6 +381,10 @@ options.
 
 **selection-padding**=*px*
 
+> **WARNING**: This option is deprecated, and will be removed in a
+> future version of tofi. You should use the
+> **selection-background-padding** option instead.
+>
 > Extra horizontal padding of the selection background. If *px* = -1,
 > the padding will fill the whole window width.
 >
@@ -269,6 +396,17 @@ options.
 > information.
 >
 > Default: \#00000000
+
+**selection-background-padding**=*directional*
+
+> Extra padding of the selected result background. See **DIRECTIONAL
+> VALUES** for more information.
+>
+> Default: 0
+
+**selection-background-corner-radius**=*px*
+
+> Corner radius of the selected result background. Default: 0
 
 **result-spacing**=*px*
 
@@ -420,6 +558,31 @@ Some pixel values can optionally have a % suffix, like so:
 
 This will be interpreted as a percentage of the screen resolution in the
 relevant direction.
+
+# DIRECTIONAL VALUES
+
+The background box padding of a type of text can be specified by one to
+four comma separated values, with meanings similar to the CSS padding
+property:
+
+> ·
+>
+> One value sets all edges.
+
+> ·
+>
+> Two values set (top & bottom), (left & right) edges.
+
+> ·
+>
+> Three values set (top), (left & right), (bottom) edges.
+
+> ·
+>
+> Four values set (top), (right), (bottom), (left) edges.
+
+Specifying -1 for any of the values will pad as far as possible in that
+direction.
 
 # AUTHORS
 

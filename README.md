@@ -91,10 +91,12 @@ See the main [manpage](doc/tofi.1.md) for more info.
 
 ### Theming
 
-Tofi supports a fair number of theming options - see the config file
-[manpage](doc/tofi.5.md) for a complete description. Theming is based on the
-box model shown below:
+Tofi supports a fair number of theming options - see the default [config
+file](doc/config) config file or the config file [manpage](doc/tofi.5.md) for a
+complete description. Theming is based on the box model shown below:
+
 ![Default theme screenshot](screenshot_default.png)
+
 This consists of a box with a border, border outlines and optionally rounded
 corners. Text inside the box can either be laid out vertically:
 ```
@@ -111,6 +113,8 @@ or horizontally:
 ║ prompt   input    result 1  result 2  ... ║
 ╚═══════════════════════════════════════════╝
 ```
+Each piece of text can have its colour customised, and be surrounded by a box
+with optionally rounded corners,
 
 A few example themes are included and shown below. Note that you may need to
 tweak them to look correct on your display.
@@ -165,8 +169,8 @@ In roughly descending order, the most important options for performance are:
   results will speed this up, but since this likely only applies to dmenu-like
   themes (which are already very quick) it's probably not worth setting this.
 
-* `--selection-match-color`, `--selection-background` - Passing either of these
-  options causes some more complex rendering to take place, again leading to a
+* `--*-background` - Drawing background boxes around text effectively requires
+  drawing the text twice, so specifying a lot of these options can lead to a
   couple of ms slowdown.
 
 * `--hint-font` - Getting really into it now, one of the remaining slow points

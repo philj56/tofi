@@ -19,6 +19,25 @@
 #define MAX_FONT_FEATURES_LENGTH 128
 #define MAX_FONT_VARIATIONS_LENGTH 128
 
+struct directional {
+	int32_t top;
+	int32_t right;
+	int32_t bottom;
+	int32_t left;
+};
+
+struct text_theme {
+	struct color foreground_color;
+	struct color background_color;
+	struct directional padding;
+	uint32_t background_corner_radius;
+
+	bool foreground_specified;
+	bool background_specified;
+	bool padding_specified;
+	bool radius_specified;
+};
+
 struct entry {
 	struct image image;
 	struct entry_backend_harfbuzz harfbuzz;
@@ -79,12 +98,16 @@ struct entry {
 	uint32_t outline_width;
 	struct color foreground_color;
 	struct color background_color;
-	struct color placeholder_color;
 	struct color selection_highlight_color;
-	struct color selection_foreground_color;
-	struct color selection_background_color;
 	struct color border_color;
 	struct color outline_color;
+
+	struct text_theme prompt_theme;
+	struct text_theme input_theme;
+	struct text_theme placeholder_theme;
+	struct text_theme default_result_theme;
+	struct text_theme alternate_result_theme;
+	struct text_theme selection_theme;
 };
 
 void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height);
