@@ -647,11 +647,11 @@ static void registry_global(
 				3);
 		log_debug("Bound to data device manager  %u.\n", name);
 	} else if (!strcmp(interface, zwlr_layer_shell_v1_interface.name)) {
-		if (version < 4) {
+		if (version < 3) {
 			log_warning("Using an outdated compositor, "
 					"screen anchoring may not work.\n");
 		} else {
-			version = 4;
+			version = 3;
 		}
 		tofi->zwlr_layer_shell = wl_registry_bind(
 				wl_registry,
