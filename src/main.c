@@ -752,77 +752,23 @@ static const struct wl_surface_listener dummy_surface_listener = {
 };
 
 
-static void usage()
+static void usage(bool err)
 {
-	/*
-	 * This string literal is more than 4095 characters, which is the
-	 * maximum size guaranteed to work in C, so we have to split it.
-	 */
-	fprintf(stderr, "%s",
+	fprintf(err ? stderr : stdout, "%s",
 "Usage: tofi [options]\n"
 "\n"
+"Basic options:\n"
 "  -h, --help                           Print this message and exit.\n"
 "  -c, --config <path>                  Specify a config file.\n"
-"      --include <path>                 Include an additional config file.\n"
-"      --font <name|path>               Font to use.\n"
-"      --font-size <pt>                 Point size of text.\n"
-"      --font-features <features>       Set OpenType font features.\n"
-"      --font-variations <variations>   Set OpenType font variations.\n"
-"      --background-color <color>       Color of the background.\n"
-"      --outline-width <px>             Width of the border outlines.\n"
-"      --outline-color <color>          Color of the border outlines.\n"
-"      --border-width <px>              Width of the border.\n"
-"      --border-color <color>           Color of the border.\n"
-"      --text-color <color>             Color of text.\n"
 "      --prompt-text <string>           Prompt text.\n"
-"      --prompt-padding <px>            Padding between prompt and input.\n"
-"      --placeholder-text <string>      Placeholder input text.\n"
-"      --placeholder-color <color>      Color of placeholder input text.\n"
-"      --num-results <n>                Maximum number of results to display.\n"
-"      --selection-color <color>        Color of selected result.\n"
-"      --selection-match-color <color>  Color of the matching portion of the\n"
-"                                       selected result.\n"
-"      --selection-padding <px>         Extra horizontal padding for selected\n"
-"                                       result background.\n"
-"      --selection-background <color>   Color of selected result background.\n"
-"      --result-spacing <px>            Spacing between results.\n"
-"      --min-input-width <px>           Minimum input width in horizontal mode.\n"
 "      --width <px|%>                   Width of the window.\n"
-	);
-	fprintf(stderr, "%s",
 "      --height <px|%>                  Height of the window.\n"
-"      --corner-radius <px>             Radius of window corners.\n"
 "      --output <name>                  Name of output to display window on.\n"
-"      --scale <true|false>             Follow the output's scale factor.\n"
 "      --anchor <position>              Location on screen to anchor window.\n"
-"      --exclusive-zone <-1|px|%>       Exclusive zone size, or -1 for none.\n"
-"      --margin-top <px|%>              Offset from top of screen.\n"
-"      --margin-bottom <px|%>           Offset from bottom of screen.\n"
-"      --margin-left <px|%>             Offset from left of screen.\n"
-"      --margin-right <px|%>            Offset from right of screen.\n"
-"      --padding-top <px|%>             Padding between top border and text.\n"
-"      --padding-bottom <px|%>          Padding between bottom border and text.\n"
-"      --padding-left <px|%>            Padding between left border and text.\n"
-"      --padding-right <px|%>           Padding between right border and text.\n"
-"      --hide-cursor <true|false>       Hide the cursor.\n"
 "      --horizontal <true|false>        List results horizontally.\n"
-"      --history <true|false>           Sort results by number of usages.\n"
-"      --history-file <path>            Location of history file.\n"
 "      --fuzzy-match <true|false>       Use fuzzy matching for searching.\n"
-"      --require-match <true|false>     Require a match for selection.\n"
-"      --hide-input <true|false>        Hide sensitive input such as passwords.\n"
-"      --hidden-character <char>        Replacement character for hidden input.\n"
-"      --drun-launch <true|false>       Launch apps directly in drun mode.\n"
-"      --drun-print-exec <true|false>   Print a command line in drun mode.\n"
-"                                       This is now always the case,\n"
-"                                       and this option is deprecated.\n"
-"      --terminal <command>             Terminal to use for command line\n"
-"                                       programs in drun mode.\n"
-"      --hint-font <true|false>         Perform font hinting.\n"
-"      --multi-instance <true|false>    Allow multiple tofi instances at once.\n"
-"      --late-keyboard-init             (EXPERIMENTAL) Delay keyboard\n"
-"                                       initialisation until after the first\n"
-"                                       draw to screen.\n"
+"\n"
+"All options listed in \"man 5 tofi\" are also accpted in the form \"--key=value\".\n"
 	);
 }
 
@@ -899,14 +845,14 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 	int opt = getopt_long(argc, argv, short_options, long_options, &option_index);
 	while (opt != -1) {
 		if (opt == 'h') {
-			usage();
+			usage(false);
 			exit(EXIT_SUCCESS);
 		} else if (opt == 'c') {
 			config_load(tofi, optarg);
 			load_default_config = false;
 		} else if (opt == ':') {
 			log_error("Option %s requires an argument.\n", argv[optind - 1]);
-			usage();
+			usage(true);
 			exit(EXIT_FAILURE);
 		} else if (opt == '?') {
 			if (optopt) {
@@ -914,7 +860,7 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 			} else {
 				log_error("Unknown option %s.\n", argv[optind - 1]);
 			}
-			usage();
+			usage(true);
 			exit(EXIT_FAILURE);
 		}
 		opt = getopt_long(argc, argv, short_options, long_options, &option_index);
@@ -945,7 +891,7 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 
 	if (optind < argc) {
 		log_error("Unexpected non-option argument '%s'.\n", argv[optind]);
-		usage();
+		usage(true);
 		exit(EXIT_FAILURE);
 	}
 }
