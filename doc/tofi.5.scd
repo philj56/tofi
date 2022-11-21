@@ -451,6 +451,13 @@ options.
 
 	Default: 8
 
+*clip-to-padding*=_true|false_
+	Whether to clip text drawing to be within the specified padding. This
+	is mostly important for allowing text to be inset from the border,
+	while still allowing text backgrounds to reach right to the edge.
+
+	Default: true
+
 *horizontal*=_true|false_
 	List results horizontally.
 

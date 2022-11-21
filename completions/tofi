@@ -65,6 +65,7 @@ _tofi()
 		--padding-bottom
 		--padding-left
 		--padding-right
+		--clip-to-padding
 		--horizontal
 		--hide-cursor
 		--history

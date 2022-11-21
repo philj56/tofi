@@ -132,11 +132,18 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
 
-	/* Move and clip following draws to be within this outline + padding */
+	/* Move and clip following draws to be within this outline */
 	double dx = 2.0 * entry->outline_width + entry->border_width;
-	cairo_translate(cr, dx + entry->padding_left, dx + entry->padding_top);
-	width -= 2 * dx + entry->padding_left + entry->padding_right;
-	height -= 2 * dx + entry->padding_top + entry->padding_bottom;
+	cairo_translate(cr, dx, dx);
+	width -= 2 * dx;
+	height -= 2 * dx;
+
+	/* If we're clipping to the padding, account for that as well here */
+	if (entry->clip_to_padding) {
+		cairo_translate(cr, entry->padding_left, entry->padding_top);
+		width -= entry->padding_left + entry->padding_right;
+		height -= entry->padding_top + entry->padding_bottom;
+	}
 
 	/* Account for rounded corners */
 	double inner_radius = (double)entry->corner_radius - dx;
@@ -148,6 +155,22 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	height -= 2 * dx;
 	cairo_rectangle(cr, 0, 0, width, height);
 	cairo_clip(cr);
+
+	/* Store the clip rectangle width and height. */
+	cairo_matrix_t mat;
+	cairo_get_matrix(cr, &mat);
+	entry->clip_x = mat.x0;
+	entry->clip_y = mat.y0;
+	entry->clip_width = width;
+	entry->clip_height = height;
+
+	/*
+	 * If we're not clipping to the padding, we didn't account for it
+	 * before.
+	 */
+	if (!entry->clip_to_padding) {
+		cairo_translate(cr, entry->padding_left, entry->padding_top);
+	}
 
 	/* Setup the backend. */
 	if (access(entry->font_name, R_OK) != 0) {
@@ -163,17 +186,9 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 		entry_backend_harfbuzz_init(entry, &width, &height);
 	}
 
-	/* Store the clip rectangle width and height. */
-	cairo_matrix_t mat;
-	cairo_get_matrix(cr, &mat);
-	entry->clip_x = mat.x0;
-	entry->clip_y = mat.y0;
-	entry->clip_width = width;
-	entry->clip_height = height;
-
         /*
 	 * Before we render any text, ensure all text themes are fully
-         * specified.
+	 * specified.
 	 */
         const struct text_theme default_theme = {
 		.foreground_color = entry->foreground_color,
@@ -227,6 +242,14 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	cairo_set_matrix(entry->cairo[1].cr, &mat);
 	cairo_rectangle(entry->cairo[1].cr, 0, 0, width, height);
 	cairo_clip(entry->cairo[1].cr);
+
+	/*
+	 * If we're not clipping to the padding, the transformation matrix
+	 * didn't include it, so account for it here.
+	 */
+	if (!entry->clip_to_padding) {
+		cairo_translate(entry->cairo[1].cr, entry->padding_left, entry->padding_top);
+	}
 }
 
 void entry_destroy(struct entry *entry)

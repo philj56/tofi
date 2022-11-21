@@ -480,6 +480,8 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		percent = parse_uint32_percent(filename, lineno, value, &err);
 		tofi->window.entry.padding_right = percent.value;
 		tofi->window.entry.padding_right_is_percent = percent.percent;
+	} else if (strcasecmp(option, "clip-to-padding") == 0) {
+		tofi->window.entry.clip_to_padding = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "horizontal") == 0) {
 		tofi->window.entry.horizontal = parse_bool(filename, lineno, value, &err);
 	} else if (strcasecmp(option, "hide-cursor") == 0) {
