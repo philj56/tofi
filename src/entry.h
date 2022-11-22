@@ -93,7 +93,6 @@ struct entry {
 	bool padding_left_is_percent;
 	bool padding_right_is_percent;
 	bool clip_to_padding;
-	int32_t selection_background_padding;
 	uint32_t input_width;
 	uint32_t border_width;
 	uint32_t outline_width;

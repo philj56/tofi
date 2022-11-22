@@ -45,16 +45,16 @@ static void apply_text_theme_fallback(struct text_theme *theme, const struct tex
 
 static void fixup_padding_sizes(struct directional *padding, uint32_t clip_width, uint32_t clip_height)
 {
-	if (padding->top == -1) {
+	if (padding->top < 0) {
 		padding->top = clip_height;
 	}
-	if (padding->bottom == -1) {
+	if (padding->bottom < 0) {
 		padding->bottom = clip_height;
 	}
-	if (padding->left == -1) {
+	if (padding->left < 0) {
 		padding->left = clip_width;
 	}
-	if (padding->right == -1) {
+	if (padding->right < 0) {
 		padding->right = clip_width;
 	}
 }

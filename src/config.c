@@ -75,6 +75,7 @@ static char *strip(const char *str);
 static bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const char *option, const char *value);
 static char *get_config_path(void);
 static uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent, uint32_t scale, bool use_scale);
+static void fixup_text_theme(struct text_theme *theme, uint32_t scale);
 
 static uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err);
 static bool parse_bool(const char *filename, size_t lineno, const char *str, bool *err);
@@ -543,6 +544,15 @@ uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent, uint32
 	return value;
 }
 
+void fixup_text_theme(struct text_theme *theme, uint32_t scale)
+{
+	theme->background_corner_radius *= scale;
+	theme->padding.top *= scale;
+	theme->padding.bottom *= scale;
+	theme->padding.left *= scale;
+	theme->padding.right *= scale;
+}
+
 void config_fixup_values(struct tofi *tofi)
 {
 	uint32_t scale = tofi->window.scale;
@@ -550,14 +560,20 @@ void config_fixup_values(struct tofi *tofi)
 	if (tofi->use_scale) {
 		struct entry *entry = &tofi->window.entry;
 
-		tofi->window.entry.font_size *= scale;
+		entry->font_size *= scale;
 		entry->prompt_padding *= scale;
 		entry->corner_radius *= scale;
-		entry->selection_background_padding *= scale;
 		entry->result_spacing *= scale;
 		entry->input_width *= scale;
 		entry->outline_width *= scale;
 		entry->border_width *= scale;
+
+		fixup_text_theme(&entry->prompt_theme, scale);
+		fixup_text_theme(&entry->placeholder_theme, scale);
+		fixup_text_theme(&entry->input_theme, scale);
+		fixup_text_theme(&entry->default_result_theme, scale);
+		fixup_text_theme(&entry->alternate_result_theme, scale);
+		fixup_text_theme(&entry->selection_theme, scale);
 	}
 
 	/* These values should only be scaled if they're not percentages. */
