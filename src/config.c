@@ -200,18 +200,19 @@ void config_load(struct tofi *tofi, const char *filename)
 			copy_pos++;
 		}
 		{
-			char *line_stripped = strip(line);
-			if (!line_stripped) {
-				/* Skip blank lines */
-				continue;
+			/* Grab first non-space character on the line. */
+			char c;
+			for (char *tmp = line; *tmp != '\0'; tmp++) {
+				c = *tmp;
+				if (!isspace(c)) {
+					break;
+				}
 			}
-			char first_char = line_stripped[0];
-			free(line_stripped);
 			/*
 			 * Comment characters.
 			 * N.B. treating section headers as comments for now.
 			 */
-			switch (first_char) {
+			switch (c) {
 				case '#':
 				case ';':
 				case '[':
