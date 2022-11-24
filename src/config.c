@@ -885,16 +885,23 @@ bool parse_bool(const char *filename, size_t lineno, const char *str, bool *err)
 uint32_t parse_char(const char *filename, size_t lineno, const char *str, bool *err)
 {
 	uint32_t ch = U'\0';
-	char *tmp = utf8_compose(str);
-	if (tmp == NULL) {
-		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as a character.\n", str);
-	} else {
-		ch = utf8_to_utf32_validate(tmp);
-		if (ch == (uint32_t)-2 || ch == (uint32_t)-1 || *utf8_next_char(tmp) != '\0') {
-			PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as a character.\n", str);
-		}
-		free(tmp);
+	if (*str == '\0') {
+		return ch;
 	}
+	if (!utf8_validate(str)) {
+		PARSE_ERROR(filename, lineno, "Invalid UTF-8 string \"%s\".\n", str);
+		if (err) {
+			*err = true;
+		}
+		return ch;
+	}
+	char *tmp = utf8_compose(str);
+	ch = utf8_to_utf32_validate(tmp);
+	if (ch == (uint32_t)-2 || ch == (uint32_t)-1 || *utf8_next_char(tmp) != '\0') {
+		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as a character.\n", str);
+	}
+	free(tmp);
+
 	return ch;
 }
 
