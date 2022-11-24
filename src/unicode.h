@@ -2,6 +2,7 @@
 #define UNICODE_H
 
 #include <glib.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 uint8_t utf32_to_utf8(uint32_t c, char *buf);
@@ -24,5 +25,6 @@ size_t utf8_strlen(const char *s);
 char *utf8_strcasestr(const char * restrict haystack, const char * restrict needle);
 char *utf8_normalize(const char *s);
 char *utf8_compose(const char *s);
+bool utf8_validate(const char *s);
 
 #endif /* UNICODE_H */

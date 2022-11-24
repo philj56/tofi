@@ -83,6 +83,9 @@ struct string_vec string_vec_copy(const struct string_vec *restrict vec)
 
 void string_vec_add(struct string_vec *restrict vec, const char *restrict str)
 {
+	if (!utf8_validate(str)) {
+		return;
+	}
 	if (vec->count == vec->size) {
 		vec->size *= 2;
 		vec->buf = xrealloc(vec->buf, vec->size * sizeof(vec->buf[0]));
@@ -91,6 +94,19 @@ void string_vec_add(struct string_vec *restrict vec, const char *restrict str)
 	if (vec->buf[vec->count].string == NULL) {
 		vec->buf[vec->count].string = xstrdup(str);
 	}
+	vec->buf[vec->count].search_score = 0;
+	vec->buf[vec->count].history_score = 0;
+	vec->count++;
+}
+
+/* Same as string_vec_add(), but assume str is normalized for speed. */
+static void string_vec_add_normalized(struct string_vec *restrict vec, const char *restrict str)
+{
+	if (vec->count == vec->size) {
+		vec->size *= 2;
+		vec->buf = xrealloc(vec->buf, vec->size * sizeof(vec->buf[0]));
+	}
+	vec->buf[vec->count].string = xstrdup(str);
 	vec->buf[vec->count].search_score = 0;
 	vec->buf[vec->count].history_score = 0;
 	vec->count++;
@@ -160,7 +176,11 @@ struct string_vec string_vec_filter(
 			search_score = fuzzy_match_simple_words(substr, vec->buf[i].string);
 		}
 		if (search_score != INT32_MIN) {
-			string_vec_add(&filt, vec->buf[i].string);
+			/*
+			 * Assume that the vector we're filtering is already
+			 * normalized.
+			 */
+			string_vec_add_normalized(&filt, vec->buf[i].string);
 			/*
 			 * Store the position of the match in the string as
 			 * its search_score, for later sorting.
@@ -191,7 +211,10 @@ struct string_vec string_vec_load(FILE *file)
 		if (line[bytes_read - 1] == '\n') {
 			line[bytes_read - 1] = '\0';
 		}
-		string_vec_add(&vec, line);
+		/*
+		 * Assume that the vector we're loading is already normalized.
+		 */
+		string_vec_add_normalized(&vec, line);
 	}
 	free(line);
 

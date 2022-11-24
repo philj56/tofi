@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <string.h>
 
 #include "unicode.h"
@@ -114,4 +115,9 @@ char *utf8_normalize(const char *s)
 char *utf8_compose(const char *s)
 {
 	return g_utf8_normalize(s, -1, G_NORMALIZE_DEFAULT_COMPOSE);
+}
+
+bool utf8_validate(const char *s)
+{
+	return g_utf8_validate(s, -1, NULL);
 }
