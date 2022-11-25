@@ -201,7 +201,7 @@ void config_load(struct tofi *tofi, const char *filename)
 		}
 		{
 			/* Grab first non-space character on the line. */
-			char c;
+			char c = '\0';
 			for (char *tmp = line; *tmp != '\0'; tmp++) {
 				c = *tmp;
 				if (!isspace(c)) {
