@@ -56,6 +56,16 @@ struct string_vec string_vec_create(void)
 	return vec;
 }
 
+struct string_ref_vec string_ref_vec_create(void)
+{
+	struct string_ref_vec vec = {
+		.count = 0,
+		.size = 128,
+		.buf = xcalloc(128, sizeof(*vec.buf)),
+	};
+	return vec;
+}
+
 void string_vec_destroy(struct string_vec *restrict vec)
 {
 	for (size_t i = 0; i < vec->count; i++) {
@@ -64,16 +74,21 @@ void string_vec_destroy(struct string_vec *restrict vec)
 	free(vec->buf);
 }
 
-struct string_vec string_vec_copy(const struct string_vec *restrict vec)
+void string_ref_vec_destroy(struct string_ref_vec *restrict vec)
 {
-	struct string_vec copy = {
+	free(vec->buf);
+}
+
+struct string_ref_vec string_ref_vec_copy(const struct string_ref_vec *restrict vec)
+{
+	struct string_ref_vec copy = {
 		.count = vec->count,
 		.size = vec->size,
 		.buf = xcalloc(vec->size, sizeof(*copy.buf)),
 	};
 
 	for (size_t i = 0; i < vec->count; i++) {
-		copy.buf[i].string = xstrdup(vec->buf[i].string);
+		copy.buf[i].string = vec->buf[i].string;
 		copy.buf[i].search_score = vec->buf[i].search_score;
 		copy.buf[i].history_score = vec->buf[i].history_score;
 	}
@@ -99,14 +114,13 @@ void string_vec_add(struct string_vec *restrict vec, const char *restrict str)
 	vec->count++;
 }
 
-/* Same as string_vec_add(), but assume str is normalized for speed. */
-static void string_vec_add_normalized(struct string_vec *restrict vec, const char *restrict str)
+void string_ref_vec_add(struct string_ref_vec *restrict vec, char *restrict str)
 {
 	if (vec->count == vec->size) {
 		vec->size *= 2;
 		vec->buf = xrealloc(vec->buf, vec->size * sizeof(vec->buf[0]));
 	}
-	vec->buf[vec->count].string = xstrdup(str);
+	vec->buf[vec->count].string = str;
 	vec->buf[vec->count].search_score = 0;
 	vec->buf[vec->count].history_score = 0;
 	vec->count++;
@@ -117,7 +131,7 @@ void string_vec_sort(struct string_vec *restrict vec)
 	qsort(vec->buf, vec->count, sizeof(vec->buf[0]), cmpstringp);
 }
 
-void string_vec_history_sort(struct string_vec *restrict vec, struct history *history)
+void string_ref_vec_history_sort(struct string_ref_vec *restrict vec, struct history *history)
 {
 	/*
 	 * To find elements without assuming the vector is pre-sorted, we use a
@@ -129,7 +143,7 @@ void string_vec_history_sort(struct string_vec *restrict vec, struct history *hi
 		g_hash_table_insert(hash, vec->buf[i].string, &vec->buf[i]);
 	}
 	for (size_t i = 0; i < history->count; i++) {
-		struct scored_string *res = g_hash_table_lookup(hash, history->buf[i].name);
+		struct scored_string_ref *res = g_hash_table_lookup(hash, history->buf[i].name);
 		if (res == NULL) {
 			continue;
 		}
@@ -159,15 +173,20 @@ struct scored_string *string_vec_find_sorted(struct string_vec *restrict vec, co
 	return bsearch(&str, vec->buf, vec->count, sizeof(vec->buf[0]), cmpstringp);
 }
 
-struct string_vec string_vec_filter(
-		const struct string_vec *restrict vec,
+struct scored_string_ref *string_ref_vec_find_sorted(struct string_ref_vec *restrict vec, const char * str)
+{
+	return bsearch(&str, vec->buf, vec->count, sizeof(vec->buf[0]), cmpstringp);
+}
+
+struct string_ref_vec string_ref_vec_filter(
+		const struct string_ref_vec *restrict vec,
 		const char *restrict substr,
 		bool fuzzy)
 {
 	if (substr[0] == '\0') {
-		return string_vec_copy(vec);
+		return string_ref_vec_copy(vec);
 	}
-	struct string_vec filt = string_vec_create();
+	struct string_ref_vec filt = string_ref_vec_create();
 	for (size_t i = 0; i < vec->count; i++) {
 		int32_t search_score;
 		if (fuzzy) {
@@ -176,55 +195,25 @@ struct string_vec string_vec_filter(
 			search_score = fuzzy_match_simple_words(substr, vec->buf[i].string);
 		}
 		if (search_score != INT32_MIN) {
-			/*
-			 * Assume that the vector we're filtering is already
-			 * normalized.
-			 */
-			string_vec_add_normalized(&filt, vec->buf[i].string);
-			/*
-			 * Store the position of the match in the string as
-			 * its search_score, for later sorting.
-			 */
+			string_ref_vec_add(&filt, vec->buf[i].string);
 			filt.buf[filt.count - 1].search_score = search_score;
 			filt.buf[filt.count - 1].history_score = vec->buf[i].history_score;
 		}
 	}
-	/*
-	 * Sort the results by this search_score. This moves matches at the beginnings
-	 * of words to the front of the result list.
-	 */
+	/* Sort the results by their search score. */
 	qsort(filt.buf, filt.count, sizeof(filt.buf[0]), cmpscorep);
 	return filt;
 }
 
-struct string_vec string_vec_load(FILE *file)
+struct string_ref_vec string_ref_vec_from_buffer(char *buffer)
 {
-	struct string_vec vec = string_vec_create();
-	if (file == NULL) {
-		return vec;
-	}
+	struct string_ref_vec vec = string_ref_vec_create();
 
-	ssize_t bytes_read;
-	char *line = NULL;
-	size_t len;
-	while ((bytes_read = getline(&line, &len, file)) != -1) {
-		if (line[bytes_read - 1] == '\n') {
-			line[bytes_read - 1] = '\0';
-		}
-		/*
-		 * Assume that the vector we're loading is already normalized.
-		 */
-		string_vec_add_normalized(&vec, line);
+	char *saveptr = NULL;
+	char *line = strtok_r(buffer, "\n", &saveptr);
+	while (line != NULL) {
+		string_ref_vec_add(&vec, line);
+		line = strtok_r(NULL, "\n", &saveptr);
 	}
-	free(line);
-
 	return vec;
-}
-
-void string_vec_save(struct string_vec *restrict vec, FILE *restrict file)
-{
-	for (size_t i = 0; i < vec->count; i++) {
-		fputs(vec->buf[i].string, file);
-		fputc('\n', file);
-	}
 }

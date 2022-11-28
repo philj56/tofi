@@ -145,12 +145,12 @@ struct desktop_entry *desktop_vec_find_sorted(struct desktop_vec *restrict vec, 
 	return bsearch(&tmp, vec->buf, vec->count, sizeof(vec->buf[0]), cmpdesktopp);
 }
 
-struct string_vec desktop_vec_filter(
+struct string_ref_vec desktop_vec_filter(
 		const struct desktop_vec *restrict vec,
 		const char *restrict substr,
 		bool fuzzy)
 {
-	struct string_vec filt = string_vec_create();
+	struct string_ref_vec filt = string_ref_vec_create();
 	for (size_t i = 0; i < vec->count; i++) {
 		int32_t search_score;
 		if (fuzzy) {
@@ -159,7 +159,7 @@ struct string_vec desktop_vec_filter(
 			search_score = fuzzy_match_simple_words(substr, vec->buf[i].name);
 		}
 		if (search_score != INT32_MIN) {
-			string_vec_add(&filt, vec->buf[i].name);
+			string_ref_vec_add(&filt, vec->buf[i].name);
 			/*
 			 * Store the position of the match in the string as
 			 * its search_score, for later sorting.
@@ -174,7 +174,7 @@ struct string_vec desktop_vec_filter(
 				search_score = fuzzy_match_simple_words(substr, vec->buf[i].keywords);
 			}
 			if (search_score != INT32_MIN) {
-				string_vec_add(&filt, vec->buf[i].name);
+				string_ref_vec_add(&filt, vec->buf[i].name);
 				/*
 				 * Arbitrary score addition to make name
 				 * matches preferred over keyword matches.
@@ -254,7 +254,6 @@ bool match_current_desktop(char * const *desktop_list, gsize length)
 		string_vec_add(&desktops, desktop);
  		desktop = strtok_r(NULL, ":", &saveptr);
  	}
-	free(tmp);
 
 	string_vec_sort(&desktops);
 	for (gsize i = 0; i < length; i++) {
@@ -264,6 +263,7 @@ bool match_current_desktop(char * const *desktop_list, gsize length)
  	}
 
 	string_vec_destroy(&desktops);
+	free(tmp);
 	return false;
 }
 

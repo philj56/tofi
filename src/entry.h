@@ -55,8 +55,9 @@ struct entry {
 
 	uint32_t selection;
 	uint32_t first_result;
-	struct string_vec results;
-	struct string_vec commands;
+	char *command_buffer;
+	struct string_ref_vec results;
+	struct string_ref_vec commands;
 	struct desktop_vec apps;
 	struct history history;
 	bool use_pango;

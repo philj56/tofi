@@ -46,6 +46,35 @@ static uint32_t gettime_ms() {
 	return ms;
 }
 
+
+/* Read all of stdin into a buffer. */
+static char *read_stdin() {
+	const size_t block_size = BUFSIZ;
+	size_t num_blocks = 1;
+	size_t buf_size = block_size;
+
+	char *buf = xmalloc(buf_size);
+	for (size_t block = 0; ; block++) {
+		if (block == num_blocks) {
+			num_blocks *= 2;
+			buf = xrealloc(buf, num_blocks * block_size);
+		}
+		size_t bytes_read = fread(
+				&buf[block * block_size],
+				1,
+				block_size,
+				stdin);
+		if (bytes_read != block_size) {
+			if (!feof(stdin) && ferror(stdin)) {
+				log_error("Error reading stdin\n");
+			}
+			buf[block * block_size + bytes_read] = '\0';
+			break;
+		}
+	}
+	return buf;
+}
+
 static void zwlr_layer_surface_configure(
 		void *data,
 		struct zwlr_layer_surface_v1 *zwlr_layer_surface,
@@ -100,14 +129,15 @@ static void wl_keyboard_keymap(
 {
 	struct tofi *tofi = data;
 	assert(format == WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1);
-	log_debug("Configuring keyboard.\n");
 
 	char *map_shm = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
 	assert(map_shm != MAP_FAILED);
 
 	if (tofi->late_keyboard_init) {
+		log_debug("Delaying keyboard configuration.\n");
 		tofi->xkb_keymap_string = xstrdup(map_shm);
 	} else {
+		log_debug("Configuring keyboard.\n");
 		struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_string(
 				tofi->xkb_context,
 				map_shm,
@@ -121,11 +151,10 @@ static void wl_keyboard_keymap(
 		xkb_state_unref(tofi->xkb_state);
 		tofi->xkb_keymap = xkb_keymap;
 		tofi->xkb_state = xkb_state;
+		log_debug("Keyboard configured.\n");
 	}
 	munmap(map_shm, size);
 	close(fd);
-
-	log_debug("Keyboard configured.\n");
 }
 
 static void wl_keyboard_enter(
@@ -1095,6 +1124,7 @@ int main(int argc, char *argv[])
 	}
 
 	parse_args(&tofi, argc, argv);
+	log_debug("Config done\n");
 
 	if (!tofi.multiple_instance && lock_check()) {
 		log_error("Another instance of tofi is already running.\n");
@@ -1108,16 +1138,20 @@ int main(int argc, char *argv[])
 	 * to Wayland.
 	 */
 
+	log_debug("Connecting to Wayland display.\n");
 	tofi.wl_display = wl_display_connect(NULL);
 	if (tofi.wl_display == NULL) {
 		log_error("Couldn't connect to Wayland display.\n");
 		exit(EXIT_FAILURE);
 	}
 	tofi.wl_registry = wl_display_get_registry(tofi.wl_display);
-	tofi.xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	if (tofi.xkb_context == NULL) {
-		log_error("Couldn't create an XKB context.\n");
-		exit(EXIT_FAILURE);
+	if (!tofi.late_keyboard_init) {
+		log_debug("Creating xkb context.\n");
+		tofi.xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+		if (tofi.xkb_context == NULL) {
+			log_error("Couldn't create an XKB context.\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 	wl_registry_add_listener(
 			tofi.wl_registry,
@@ -1286,7 +1320,8 @@ int main(int argc, char *argv[])
 	if (strstr(argv[0], "-run")) {
 		log_debug("Generating command list.\n");
 		log_indent();
-		tofi.window.entry.commands = compgen_cached();
+		tofi.window.entry.command_buffer = compgen_cached();
+		tofi.window.entry.commands = string_ref_vec_from_buffer(tofi.window.entry.command_buffer);
 		if (tofi.use_history) {
 			if (tofi.history_file[0] == 0) {
 				tofi.window.entry.history = history_load_default_file(tofi.window.entry.drun);
@@ -1312,36 +1347,30 @@ int main(int argc, char *argv[])
 				drun_history_sort(&apps, &tofi.window.entry.history);
 			}
 		}
-		struct string_vec commands = string_vec_create();
+		struct string_ref_vec commands = string_ref_vec_create();
 		for (size_t i = 0; i < apps.count; i++) {
-			string_vec_add(&commands, apps.buf[i].name);
+			string_ref_vec_add(&commands, apps.buf[i].name);
 		}
 		tofi.window.entry.commands = commands;
 		tofi.window.entry.apps = apps;
 		log_unindent();
 		log_debug("App list generated.\n");
 	} else {
-		char *line = NULL;
-		size_t n = 0;
-		tofi.window.entry.commands = string_vec_create();
-		while (getline(&line, &n, stdin) != -1) {
-			char *c = strchr(line, '\n');
-			if (c) {
-				*c = '\0';
-			}
-			string_vec_add(&tofi.window.entry.commands, line);
-		}
-		free(line);
+		log_debug("Reading stdin.\n");
+		char *buf = read_stdin();
+		tofi.window.entry.command_buffer = buf;
+		tofi.window.entry.commands = string_ref_vec_from_buffer(buf);
 		if (tofi.use_history) {
 			if (tofi.history_file[0] == 0) {
 				tofi.use_history = false;
 			} else {
 				tofi.window.entry.history = history_load(tofi.history_file);
-				string_vec_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
+				string_ref_vec_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
 			}
 		}
+		log_debug("Result list generated.\n");
 	}
-	tofi.window.entry.results = string_vec_copy(&tofi.window.entry.commands);
+	tofi.window.entry.results = string_ref_vec_copy(&tofi.window.entry.commands);
 
 	/*
 	 * Next, we create the Wayland surface, which takes on the
@@ -1476,6 +1505,13 @@ int main(int argc, char *argv[])
 
 	/* If we delayed keyboard initialisation, do it now */
 	if (tofi.late_keyboard_init) {
+		log_debug("Creating xkb context.\n");
+		tofi.xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+		if (tofi.xkb_context == NULL) {
+			log_error("Couldn't create an XKB context.\n");
+			exit(EXIT_FAILURE);
+		}
+		log_debug("Configuring keyboard.\n");
 		struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_string(
 				tofi.xkb_context,
 				tofi.xkb_keymap_string,
@@ -1489,6 +1525,7 @@ int main(int argc, char *argv[])
 		tofi.xkb_state = xkb_state;
 		free(tofi.xkb_keymap_string);
 		tofi.late_keyboard_init = false;
+		log_debug("Keyboard configured.\n");
 	}
 
 	/*
@@ -1642,8 +1679,11 @@ int main(int argc, char *argv[])
 	if (tofi.window.entry.drun) {
 		desktop_vec_destroy(&tofi.window.entry.apps);
 	}
-	string_vec_destroy(&tofi.window.entry.commands);
-	string_vec_destroy(&tofi.window.entry.results);
+	if (tofi.window.entry.command_buffer != NULL) {
+		free(tofi.window.entry.command_buffer);
+	}
+	string_ref_vec_destroy(&tofi.window.entry.commands);
+	string_ref_vec_destroy(&tofi.window.entry.results);
 	if (tofi.use_history) {
 		history_destroy(&tofi.window.entry.history);
 	}

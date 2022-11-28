@@ -50,7 +50,60 @@ static char *get_cache_path() {
 	return cache_name;
 }
 
-struct string_vec compgen_cached()
+static void write_cache(const char *buffer, const char *filename)
+{
+	errno = 0;
+	FILE *fp = fopen(filename, "wb");
+	if (!fp) {
+		log_error("Failed to open cache file \"%s\": %s\n", filename, strerror(errno));
+		return;
+	}
+	size_t len = strlen(buffer);
+	errno = 0;
+	if (fwrite(buffer, len, 1, fp) != len) {
+		log_error("Error writing cache file \"%s\": %s\n", filename, strerror(errno));
+	}
+	fclose(fp);
+}
+
+static char *read_cache(const char *filename)
+{
+	errno = 0;
+	FILE *fp = fopen(filename, "rb");
+	if (!fp) {
+		log_error("Failed to open cache file \"%s\": %s\n", filename, strerror(errno));
+		return NULL;
+	}
+	if (fseek(fp, 0, SEEK_END)) {
+		log_error("Failed to seek in cache file: %s\n", strerror(errno));
+		fclose(fp);
+		return NULL;
+	}
+	size_t size;
+	{
+		long ssize = ftell(fp);
+		if (ssize < 0) {
+			log_error("Failed to determine cache file size: %s\n", strerror(errno));
+			fclose(fp);
+			return NULL;
+		}
+		size = (size_t)ssize;
+	}
+	char *cache = xmalloc(size + 1);
+	rewind(fp);
+	if (fread(cache, 1, size, fp) != size) {
+		log_error("Failed to read cache file: %s\n", strerror(errno));
+		free(cache);
+		fclose(fp);
+		return NULL;
+	}
+	fclose(fp);
+	cache[size] = '\0';
+
+	return cache;
+}
+
+char *compgen_cached()
 {
 	log_debug("Retrieving PATH.\n");
 	const char *env_path = getenv("PATH");
@@ -71,15 +124,12 @@ struct string_vec compgen_cached()
 	errno = 0;
 	if (stat(cache_path, &sb) == -1) {
 		if (errno == ENOENT) {
-			struct string_vec commands = compgen();
+			char *commands = compgen();
 			if (!mkdirp(cache_path)) {
 				free(cache_path);
 				return commands;
 			}
-			FILE *cache = fopen(cache_path, "wb");
-			string_vec_save(&commands, cache);
-			fclose(cache);
-			free(cache_path);
+			write_cache(commands, cache_path);
 			return commands;
 		}
 		free(cache_path);
@@ -103,26 +153,22 @@ struct string_vec compgen_cached()
 	}
 	free(path);
 
-	struct string_vec commands;
+	char *commands;
 	if (out_of_date) {
 		log_debug("Cache out of date, updating.\n");
 		log_indent();
 		commands = compgen();
 		log_unindent();
-		FILE *cache = fopen(cache_path, "wb");
-		string_vec_save(&commands, cache);
-		fclose(cache);
+		write_cache(commands, cache_path);
 	} else {
 		log_debug("Cache up to date, loading.\n");
-		FILE *cache = fopen(cache_path, "rb");
-		commands = string_vec_load(cache);
-		fclose(cache);
+		commands = read_cache(cache_path);
 	}
 	free(cache_path);
 	return commands;
 }
 
-struct string_vec compgen()
+char *compgen()
 {
 	log_debug("Retrieving PATH.\n");
 	const char *env_path = getenv("PATH");
@@ -167,7 +213,18 @@ struct string_vec compgen()
 	log_debug("Making unique.\n");
 	string_vec_uniq(&programs);
 
-	return programs;
+	size_t buf_len = 0;
+	for (size_t i = 0; i < programs.count; i++) {
+		buf_len += strlen(programs.buf[i].string) + 1;
+	}
+	char *buf = xmalloc(buf_len + 1);
+	size_t bytes_written = 0;
+	for (size_t i = 0; i < programs.count; i++) {
+		bytes_written += sprintf(&buf[bytes_written], "%s\n", programs.buf[i].string);
+	}
+	buf[bytes_written] = '\0';
+
+	return buf;
 }
 
 static int cmpscorep(const void *restrict a, const void *restrict b)
@@ -177,11 +234,11 @@ static int cmpscorep(const void *restrict a, const void *restrict b)
 	return str2->history_score - str1->history_score;
 }
 
-void compgen_history_sort(struct string_vec *programs, struct history *history)
+void compgen_history_sort(struct string_ref_vec *programs, struct history *history)
 {
 	log_debug("Moving already known programs to the front.\n");
 	for (size_t i = 0; i < history->count; i++) {
-		struct scored_string *res = string_vec_find_sorted(programs, history->buf[i].name);
+		struct scored_string_ref *res = string_ref_vec_find_sorted(programs, history->buf[i].name);
 		if (res == NULL) {
 			log_debug("History entry \"%s\" not found.\n", history->buf[i].name);
 			continue;

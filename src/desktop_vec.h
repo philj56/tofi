@@ -34,7 +34,7 @@ void desktop_vec_add_file(struct desktop_vec *desktop, const char *id, const cha
 
 void desktop_vec_sort(struct desktop_vec *restrict vec);
 struct desktop_entry *desktop_vec_find_sorted(struct desktop_vec *restrict vec, const char *name);
-struct string_vec desktop_vec_filter(
+struct string_ref_vec desktop_vec_filter(
 		const struct desktop_vec *restrict vec,
 		const char *restrict substr,
 		bool fuzzy);

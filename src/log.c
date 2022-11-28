@@ -53,11 +53,11 @@ void log_warning(const char *const fmt, ...)
 void log_debug(const char *const fmt, ...)
 {
 #ifndef DEBUG
-	return;
+	//return;
 #endif
 	static struct timespec start_time;
 	if (start_time.tv_nsec == 0) {
-		fprintf(stderr, "[ real,   cpu,   maxRSS]\n");
+		fprintf(stderr, "[    real,      cpu,   maxRSS]\n");
 		clock_gettime(CLOCK_REALTIME, &start_time);
 	}
 	struct timespec real_time;
@@ -73,11 +73,11 @@ void log_debug(const char *const fmt, ...)
 	va_start(args, fmt);
 	fprintf(
 		stderr,
-		"[%ld.%03ld, %ld.%03ld, %5ld KB][DEBUG]: ",
+		"[%ld.%06ld, %ld.%06ld, %5ld KB][DEBUG]: ",
 		real_time.tv_sec,
-		real_time.tv_nsec / 1000000,
+		real_time.tv_nsec / 1000,
 		cpu_time.tv_sec,
-		cpu_time.tv_nsec / 1000000,
+		cpu_time.tv_nsec / 1000,
 		usage.ru_maxrss
 		);
 	print_indent(stderr);
@@ -114,7 +114,7 @@ void log_append_warning(const char *const fmt, ...)
 void log_append_debug(const char *const fmt, ...)
 {
 #ifndef DEBUG
-	return;
+	//return;
 #endif
 	va_list args;
 	va_start(args, fmt);
