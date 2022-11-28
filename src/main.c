@@ -1321,14 +1321,17 @@ int main(int argc, char *argv[])
 		log_debug("Generating command list.\n");
 		log_indent();
 		tofi.window.entry.command_buffer = compgen_cached();
-		tofi.window.entry.commands = string_ref_vec_from_buffer(tofi.window.entry.command_buffer);
+		struct string_ref_vec commands = string_ref_vec_from_buffer(tofi.window.entry.command_buffer);
 		if (tofi.use_history) {
 			if (tofi.history_file[0] == 0) {
 				tofi.window.entry.history = history_load_default_file(tofi.window.entry.drun);
 			} else {
 				tofi.window.entry.history = history_load(tofi.history_file);
 			}
-			compgen_history_sort(&tofi.window.entry.commands, &tofi.window.entry.history);
+			tofi.window.entry.commands = compgen_history_sort(&commands, &tofi.window.entry.history);
+			string_ref_vec_destroy(&commands);
+		} else {
+			tofi.window.entry.commands = commands;
 		}
 		log_unindent();
 		log_debug("Command list generated.\n");

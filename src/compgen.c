@@ -234,7 +234,7 @@ static int cmpscorep(const void *restrict a, const void *restrict b)
 	return str2->history_score - str1->history_score;
 }
 
-void compgen_history_sort(struct string_ref_vec *programs, struct history *history)
+struct string_ref_vec compgen_history_sort(struct string_ref_vec *programs, struct history *history)
 {
 	log_debug("Moving already known programs to the front.\n");
 	for (size_t i = 0; i < history->count; i++) {
@@ -246,5 +246,28 @@ void compgen_history_sort(struct string_ref_vec *programs, struct history *histo
 		res->history_score = history->buf[i].run_count;
 	}
 
-	qsort(programs->buf, programs->count, sizeof(programs->buf[0]), cmpscorep);
+	/*
+	 * For compgen, we expect there to be many more commands than history
+	 * entries. For speed, we therefore create a copy of the command
+	 * vector with all of the non-zero history score items pushed to the
+	 * front. We can then call qsort() on just the first few items of the
+	 * new vector, rather than on the entire original vector.
+	 */
+	struct string_ref_vec vec = {
+		.count = programs->count,
+		.size = programs->size,
+		.buf = xcalloc(programs->size, sizeof(*vec.buf))
+	};
+
+	size_t n_hist = 0;
+	for (ssize_t i = programs->count - 1; i >= 0; i--) {
+		if (programs->buf[i].history_score == 0) {
+			vec.buf[i + n_hist] = programs->buf[i];
+		} else {
+			vec.buf[n_hist] = programs->buf[i];
+			n_hist++;
+		}
+	}
+	qsort(vec.buf, n_hist, sizeof(vec.buf[0]), cmpscorep);
+	return vec;
 }

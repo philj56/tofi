@@ -10,6 +10,7 @@ char *compgen(void);
 [[nodiscard("memory leaked")]]
 char *compgen_cached(void);
 
-void compgen_history_sort(struct string_ref_vec *programs, struct history *history);
+[[nodiscard("memory leaked")]]
+struct string_ref_vec compgen_history_sort(struct string_ref_vec *programs, struct history *history);
 
 #endif /* COMPGEN_H */
