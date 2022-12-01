@@ -53,7 +53,7 @@ void log_warning(const char *const fmt, ...)
 void log_debug(const char *const fmt, ...)
 {
 #ifndef DEBUG
-	//return;
+	return;
 #endif
 	static struct timespec start_time;
 	if (start_time.tv_nsec == 0) {
@@ -114,7 +114,7 @@ void log_append_warning(const char *const fmt, ...)
 void log_append_debug(const char *const fmt, ...)
 {
 #ifndef DEBUG
-	//return;
+	return;
 #endif
 	va_list args;
 	va_start(args, fmt);
