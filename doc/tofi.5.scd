@@ -118,6 +118,13 @@ options.
 
 	Default: false
 
+*ascii-input*=_true|false_
+	Assume input is plain ASCII, and disable some Unicode handling
+	functions. This is faster, but means e.g. a search for "e" will not
+	match "é".
+
+	Default: false
+
 # STYLE OPTIONS
 
 *font*=_font_

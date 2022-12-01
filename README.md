@@ -181,6 +181,11 @@ In roughly descending order, the most important options for performance are:
   sharpness, but your mileage may vary. This option has no effect if a path to
   a font file hasn't been passed to `--font`.
 
+* `--ascii-input` - Proper Unicode handling is slower than plain ASCII - on the
+  order of a few ms for ~40 kB of input. Specifying `--ascii-input true` will
+  disable some of this handling, speeding up tofi's startup, but searching for
+  non-ASCII characters may not work properly.
+
 * `--late-keyboard-init` - The last avoidable thing that slows down startup is
   initialisation of the keyboard. This only takes 1-2ms on my laptop, but up
   to 60ms on a Raspberry Pi Zero 2 W. Passing this option will delay keyboard

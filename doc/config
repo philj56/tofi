@@ -255,6 +255,11 @@
 	# from running simultaneously.
 	multi-instance = false
 
+	# Assume input is plain ASCII, and disable some Unicode handling
+	# functions. This is faster, but means e.g. a search for "e" will not
+	# match "é".
+	ascii-input = false
+
 #
 ### Inclusion
 #

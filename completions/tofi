@@ -79,6 +79,7 @@ _tofi()
 		--hint-font
 		--late-keyboard-init
 		--multi-instance
+		--ascii-input
      )
 
 	case "${prev}" in

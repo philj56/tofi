@@ -137,6 +137,14 @@ options.
 >
 > Default: false
 
+**ascii-input**=*true\|false*
+
+> Assume input is plain ASCII, and disable some Unicode handling
+> functions. This is faster, but means e.g. a search for "e" will not
+> match "é".
+>
+> Default: false
+
 # STYLE OPTIONS
 
 **font**=*font*

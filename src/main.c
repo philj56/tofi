@@ -48,7 +48,7 @@ static uint32_t gettime_ms() {
 
 
 /* Read all of stdin into a buffer. */
-static char *read_stdin() {
+static char *read_stdin(bool normalize) {
 	const size_t block_size = BUFSIZ;
 	size_t num_blocks = 1;
 	size_t buf_size = block_size;
@@ -66,10 +66,19 @@ static char *read_stdin() {
 				stdin);
 		if (bytes_read != block_size) {
 			if (!feof(stdin) && ferror(stdin)) {
-				log_error("Error reading stdin\n");
+				log_error("Error reading stdin.\n");
 			}
 			buf[block * block_size + bytes_read] = '\0';
 			break;
+		}
+	}
+	if (normalize) {
+		if (utf8_validate(buf)) {
+			char *tmp = utf8_normalize(buf);
+			free(buf);
+			buf = tmp;
+		} else {
+			log_error("Invalid UTF-8 in stdin.\n");
 		}
 	}
 	return buf;
@@ -875,6 +884,7 @@ const struct option long_options[] = {
 	{"terminal", required_argument, NULL, 0},
 	{"hint-font", required_argument, NULL, 0},
 	{"multi-instance", required_argument, NULL, 0},
+	{"ascii-input", required_argument, NULL, 0},
 	{"output", required_argument, NULL, 0},
 	{"scale", required_argument, NULL, 0},
 	{"late-keyboard-init", optional_argument, NULL, 'k'},
@@ -1360,7 +1370,7 @@ int main(int argc, char *argv[])
 		log_debug("App list generated.\n");
 	} else {
 		log_debug("Reading stdin.\n");
-		char *buf = read_stdin();
+		char *buf = read_stdin(!tofi.ascii_input);
 		tofi.window.entry.command_buffer = buf;
 		tofi.window.entry.commands = string_ref_vec_from_buffer(buf);
 		if (tofi.use_history) {

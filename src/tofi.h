@@ -86,6 +86,7 @@ struct tofi {
 
 	/* Options */
 	uint32_t anchor;
+	bool ascii_input;
 	bool hide_cursor;
 	bool use_history;
 	bool use_scale;

@@ -686,6 +686,11 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		if (!err) {
 			tofi->multiple_instance = val;
 		}
+	} else if (strcasecmp(option, "ascii-input") == 0) {
+		bool val = parse_bool(filename, lineno, value, &err);
+		if (!err) {
+			tofi->ascii_input = val;
+		}
 	} else if (strcasecmp(option, "late-keyboard-init") == 0) {
 		bool val = parse_bool(filename, lineno, value, &err);
 		if (!err) {
