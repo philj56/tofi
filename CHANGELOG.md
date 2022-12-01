@@ -11,30 +11,34 @@ removed in a future version of tofi, so please update your configs.
 ### Added
 - Added `placeholder-text` option.
 - Overhaul text styling. Each piece of text in tofi is now styleable in a
-	similar way, with foreground and background colours. The pieces of text
-	that can be individually styled are:
-		- `prompt`
-		- `placeholder`
-		- `input`
-		- `default-result`
-		- `alternate-result`
-		- `selection`
-	Each of these pieces of text now has the following options available:
-	  - `<text>-color`
-	  - `<text>-background`
-	  - `<text>-background-padding`
-	  - `<text>-background-corner-radius`
-	See `man 5 tofi` or the example config file for more information.
+  similar way, with foreground and background colours. The pieces of text
+  that can be individually styled are:
+
+    - `prompt`
+    - `placeholder`
+    - `input`
+    - `default-result`
+    - `alternate-result`
+    - `selection`
+
+  Each of these pieces of text now has the following options available:
+
+    - `<text>-color`
+    - `<text>-background`
+    - `<text>-background-padding`
+    - `<text>-background-corner-radius`
+
+  See `man 5 tofi` or the example config file for more information.
 - Added ability to paste from the clipboard with `ctrl-v`.
 - Added `history-file` option. This both allows changing the history file
-	location, and when combined with `history=true` (the default), enables
-	history sorting in plain `tofi` mode.
+  location, and when combined with `history=true` (the default), enables
+  history sorting in plain `tofi` mode.
 - Added `font-features` option, allowing the specification of OpenType font
-	features in a similar way to CSS `font-feature-settings`.
+  features in a similar way to CSS `font-feature-settings`.
 - Added `font-variations` option, allowing customisation of variable fonts in a
-	similar way to CSS `font-variation-settings`.
+  similar way to CSS `font-variation-settings`.
 - Added `clip-to-padding` option, to allow drawing text outside the specified
-	padding.
+  padding.
 
 ### Changed
 - Due to the number of available options, the usage info now only contains a
@@ -42,7 +46,7 @@ removed in a future version of tofi, so please update your configs.
 - If `-h` was passed, print usage info to `stdout` rather than `stderr`.
 - Improved performance of most text handling operations.
 - Improved performance of `selection-background` and others, so drawing
-	backgrounds is no longer an expensive operation.
+  backgrounds is no longer an expensive operation.
 
 ### Fixed
 - Invalid values in config options no longer set the option to a default value.
@@ -61,19 +65,19 @@ removed in a future version of tofi, so please update your configs.
 
 ### Changed
 - Searching is now Unicode aware, so case-insensitive matching of non-Latin
-	characters should work.
+  characters should work.
 - Fuzzy matching will now use a simpler algorithm when matching lines more than
-	100 characters in length to avoid slowdowns.
+  100 characters in length to avoid slowdowns.
 - By default, tofi will now refuse to start if another instance is already
-	running, preventing accidental double launches. This can be changed
-	with the `multi-instance` option.
+  running, preventing accidental double launches. This can be changed
+  with the `multi-instance` option.
 - Tofi will now show up on top of fullscreen windows.
 
 ### Fixed
 - Keyboard shortcuts are now bound to physical keys rather than characters, so
-	should not change places when changing keyboard layouts.
+  should not change places when changing keyboard layouts.
 - Fix crash when attempting to change the selection while no results are
-	displayed.
+  displayed.
 - Fixed a rare issue where input could become out of sync with the display.
 
 
@@ -90,19 +94,19 @@ values to make things look right again.
 
 ### Added
 - Added `require-match` option, to allow printing of input even when there are
-	no matching results.
+  no matching results.
 - Added `prompt-padding` option for more flexible spacing between the prompt
-	and other text.
+  and other text.
 - Added a new example theme, dark-paper.
 
 ### Changed
 - The `scale` option now defaults to `true`, as noted above. The example themes
-	have been updated to account for this change.
+  have been updated to account for this change.
 - Spaces are now allowed as part of normal input. Similarly to dmenu, tofi will
-	split the input into words, and only show results for which every word
-	matches individually.
+  split the input into words, and only show results for which every word
+  matches individually.
 - Split `tofi(5)` manpage into behaviour and style options to make finding
-	options easier.
+  options easier.
 
 ### Fixed
 - Fixed build failure when link-time optimisation is disabled.
