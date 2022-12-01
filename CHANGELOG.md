@@ -1,5 +1,56 @@
 # Changelog
 
+## [0.8.0] - 2022-12-01
+### Deprecated
+Text styling has been overhauled in this update, and as a result the
+`selection-padding` option has been replaced with
+`selection-background-padding`, to avoid ambiguity and match the other
+available options. `selection-padding` is therefore deprecated, and will be
+removed in a future version of tofi, so please update your configs.
+
+### Added
+- Added `placeholder-text` option.
+- Overhaul text styling. Each piece of text in tofi is now styleable in a
+	similar way, with foreground and background colours. The pieces of text
+	that can be individually styled are:
+		- `prompt`
+		- `placeholder`
+		- `input`
+		- `default-result`
+		- `alternate-result`
+		- `selection`
+	Each of these pieces of text now has the following options available:
+	  - `<text>-color`
+	  - `<text>-background`
+	  - `<text>-background-padding`
+	  - `<text>-background-corner-radius`
+	See `man 5 tofi` or the example config file for more information.
+- Added ability to paste from the clipboard with `ctrl-v`.
+- Added `history-file` option. This both allows changing the history file
+	location, and when combined with `history=true` (the default), enables
+	history sorting in plain `tofi` mode.
+- Added `font-features` option, allowing the specification of OpenType font
+	features in a similar way to CSS `font-feature-settings`.
+- Added `font-variations` option, allowing customisation of variable fonts in a
+	similar way to CSS `font-variation-settings`.
+- Added `clip-to-padding` option, to allow drawing text outside the specified
+	padding.
+
+### Changed
+- Due to the number of available options, the usage info now only contains a
+  short list of the most important ones and directs the user to `man 5 tofi`.
+- If `-h` was passed, print usage info to `stdout` rather than `stderr`.
+- Improved performance of most text handling operations.
+- Improved performance of `selection-background` and others, so drawing
+	backgrounds is no longer an expensive operation.
+
+### Fixed
+- Invalid values in config options no longer set the option to a default value.
+- Fix various potential errors due to malformed config files.
+- Fixed a compilation error on FreeBSD (from [@jbeich](https://github.com/jbeich)).
+- Fixed a compilation error with musl libc (from [@akdjka](https://github.com/akdjka)).
+
+
 ## [0.7.0] - 2022-11-01
 ### Added
 - Added `include` option, allowing config files to include other files.
@@ -14,8 +65,8 @@
 - Fuzzy matching will now use a simpler algorithm when matching lines more than
 	100 characters in length to avoid slowdowns.
 - By default, tofi will now refuse to start if another instance is already
-	running, preventing accidental double launches. This can be changed with the
-	`multi-instance` option.
+	running, preventing accidental double launches. This can be changed
+	with the `multi-instance` option.
 - Tofi will now show up on top of fullscreen windows.
 
 ### Fixed
@@ -184,6 +235,7 @@ is how it should have been done from the start.
 ## [0.1.0] - 2022-06-27
 Initial release. Good enough to use, but still some jank.
 
+[0.8.0]: https://github.com/philj56/tofi/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/philj56/tofi/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/philj56/tofi/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/philj56/tofi/compare/v0.4.0...v0.5.0
