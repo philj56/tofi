@@ -60,7 +60,7 @@ static void write_cache(const char *buffer, const char *filename)
 	}
 	size_t len = strlen(buffer);
 	errno = 0;
-	if (fwrite(buffer, len, 1, fp) != len) {
+	if (fwrite(buffer, 1, len, fp) != len) {
 		log_error("Error writing cache file \"%s\": %s\n", filename, strerror(errno));
 	}
 	fclose(fp);
