@@ -131,6 +131,9 @@ tweak them to look correct on your display.
 [`themes/dark-paper`](themes/dark-paper)
 ![Dark paper theme screenshot](screenshot_dark_paper.png)
 
+[`themes/soy-milk`](themes/soy-milk)
+![Soy milk theme screenshot](screenshot_soy_milk.png)
+
 ## Performance
 
 By default, tofi isn't really any faster than its alternatives. However, when
