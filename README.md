@@ -22,6 +22,7 @@ single frame.
 * [Performance](#performance)
   * [Options](#options)
   * [Benchmarks](#benchmarks)
+  * [Where is the time spent?](#where-is-the-time-spent)
 
 ## Install
 ### Building
@@ -198,10 +199,11 @@ In roughly descending order, the most important options for performance are:
 ### Benchmarks
 
 Below are some rough benchmarks of the included themes on different machines.
-The time shown is measured from program launch to Sway reporting that the
-window has entered the screen. Results are the mean and standard deviation of
-10 runs. All tests were performed with `--font /path/to/font/file.ttf` and
-`--hint-font false`.
+These were generated with version 0.1.0 of tofi. The time shown is measured
+from program launch to Sway reporting that the window has entered the screen.
+Results are the mean and standard deviation of 10 runs. All tests were
+performed with `--font /path/to/font/file.ttf`, `--hint-font false` and the
+equivalent of `--ascii-input true` (as tofi 0.1.0 didn't support Unicode text).
 
 <table>
   <thead>
@@ -333,3 +335,28 @@ support hugepages.
     </tr>
   </tbody>
 </table>
+
+### Where is the time spent?
+
+For those who are interested in how much time there is even left to save, I've
+plotted the startup performance of version 0.8.0 of `tofi-run` below, alongside
+the corresponding debug output. This is the data from 1000 runs of the dmenu
+theme on a Ryzen 7 3700X machine, with all performance options set as mentioned
+above, along with `--num-results 10`. I've highlighted some points of interest,
+most of which are out of tofi's control.
+
+[![Startup performance plot](startup_performance.svg)](https://raw.githubusercontent.com/philj56/tofi/master/startup_performance.svg)
+
+(You may want to click the image to see it at full size).
+
+Note that this is slightly faster than shown in previous benchmarks (with some
+runs under 1.5ms!), due to some string handling improvements made in version
+0.8.0. Also note that the real performance is slightly better still, as the
+performance logging used slows down the code by roughly 10%.
+
+As you can see, there's not a huge amount of time that could even theoretically
+be saved. Somewhere around 50% of the startup time is simply spent waiting, and
+most of the code isn't parallelisable, as many steps depend on the result of
+previous steps. One idea would be to daemonize tofi, skipping much of this
+startup. I don't want to do this, however, for two main reasons: complexity,
+and I think it's probably about fast enough already!
