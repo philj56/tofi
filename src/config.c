@@ -710,11 +710,9 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 	return !err;
 }
 
-void config_apply(struct tofi *tofi, const char *option, const char *value)
+bool config_apply(struct tofi *tofi, const char *option, const char *value)
 {
-	if (!parse_option(tofi, "", 0, option, value)) {
-		exit(EXIT_FAILURE);
-	};
+	return parse_option(tofi, "", 0, option, value);
 }
 
 uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent, uint32_t scale, bool use_scale)
@@ -905,6 +903,9 @@ uint32_t parse_char(const char *filename, size_t lineno, const char *str, bool *
 	ch = utf8_to_utf32_validate(tmp);
 	if (ch == (uint32_t)-2 || ch == (uint32_t)-1 || *utf8_next_char(tmp) != '\0') {
 		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as a character.\n", str);
+		if (err) {
+			*err = true;
+		}
 	}
 	free(tmp);
 
@@ -961,13 +962,13 @@ uint32_t parse_uint32(const char *filename, size_t lineno, const char *str, bool
 {
 	errno = 0;
 	char *endptr;
-	int32_t ret = strtoul(str, &endptr, 0);
-	if (endptr == str) {
+	int64_t ret = strtoul(str, &endptr, 0);
+	if (endptr == str || *endptr != '\0') {
 		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as unsigned int.\n", str);
 		if (err) {
 			*err = true;
 		}
-	} else if (errno || ret < 0) {
+	} else if (errno || ret < 0 || ret > UINT32_MAX) {
 		PARSE_ERROR(filename, lineno, "Unsigned int value \"%s\" out of range.\n", str);
 		if (err) {
 			*err = true;
@@ -980,13 +981,13 @@ int32_t parse_int32(const char *filename, size_t lineno, const char *str, bool *
 {
 	errno = 0;
 	char *endptr;
-	int32_t ret = strtol(str, &endptr, 0);
-	if (endptr == str) {
+	int64_t ret = strtol(str, &endptr, 0);
+	if (endptr == str || *endptr != '\0') {
 		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as int.\n", str);
 		if (err) {
 			*err = true;
 		}
-	} else if (errno) {
+	} else if (errno || ret < INT32_MIN || ret > INT32_MAX) {
 		PARSE_ERROR(filename, lineno, "Int value \"%s\" out of range.\n", str);
 		if (err) {
 			*err = true;
@@ -999,14 +1000,14 @@ struct uint32_percent parse_uint32_percent(const char *filename, size_t lineno, 
 {
 	errno = 0;
 	char *endptr;
-	int32_t val = strtoul(str, &endptr, 0);
+	int64_t val = strtoul(str, &endptr, 0);
 	bool percent = false;
-	if (endptr == str) {
+	if (endptr == str || (*endptr != '\0' && *endptr != '%')) {
 		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as unsigned int.\n", str);
 		if (err) {
 			*err = true;
 		}
-	} else if (errno || val < 0) {
+	} else if (errno || val < 0 || val > UINT32_MAX) {
 		PARSE_ERROR(filename, lineno, "Unsigned int value \"%s\" out of range.\n", str);
 		if (err) {
 			*err = true;
@@ -1022,7 +1023,8 @@ struct uint32_percent parse_uint32_percent(const char *filename, size_t lineno, 
 
 struct directional parse_directional(const char *filename, size_t lineno, const char *str, bool *err)
 {
-	int32_t values[4];
+	/* One extra value to act as a sentinel for too many values in str. */
+	int32_t values[5];
 	char *saveptr = NULL;
 	char *tmp = xstrdup(str);
 	char *val = strtok_r(tmp, ",", &saveptr);

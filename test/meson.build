@@ -1,4 +1,5 @@
 tests = [
+  'config',
   'utf8'
 ]
 

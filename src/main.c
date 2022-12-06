@@ -935,14 +935,18 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 	opt = getopt_long(argc, argv, short_options, long_options, &option_index);
 	while (opt != -1) {
 		if (opt == 0) {
-			config_apply(tofi, long_options[option_index].name, optarg);
+			if (!config_apply(tofi, long_options[option_index].name, optarg)) {
+				exit(EXIT_FAILURE);
+			}
 		} else if (opt == 'k') {
 			/*
 			 * Backwards compatibility for --late-keyboard-init not
 			 * taking an argument.
 			 */
 			if (optarg) {
-				config_apply(tofi, long_options[option_index].name, optarg);
+				if (!config_apply(tofi, long_options[option_index].name, optarg)) {
+					exit(EXIT_FAILURE);
+				}
 			} else {
 				tofi->late_keyboard_init = true;
 			}
