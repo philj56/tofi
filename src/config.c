@@ -334,7 +334,11 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 	} else if (strcasecmp(option, "output") == 0) {
 		snprintf(tofi->target_output_name, N_ELEM(tofi->target_output_name), "%s", value);
 	} else if (strcasecmp(option, "font") == 0) {
-		snprintf(tofi->window.entry.font_name, N_ELEM(tofi->window.entry.font_name), "%s", value);
+		if ((strlen(value) > 2) && (value[0] == '~') && (value[1] == '/')) {
+			snprintf(tofi->window.entry.font_name, N_ELEM(tofi->window.entry.font_name), "%s%s", getenv("HOME"), &(value[1]));
+        } else {
+		    snprintf(tofi->window.entry.font_name, N_ELEM(tofi->window.entry.font_name), "%s", value);
+        }
 	} else if (strcasecmp(option, "font-size") == 0) {
 		uint32_t val =  parse_uint32(filename, lineno, value, &err);
 		if (val == 0) {
