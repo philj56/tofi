@@ -125,11 +125,10 @@ char *compgen_cached()
 	if (stat(cache_path, &sb) == -1) {
 		if (errno == ENOENT) {
 			char *commands = compgen();
-			if (!mkdirp(cache_path)) {
-				free(cache_path);
-				return commands;
+			if (mkdirp(cache_path)) {
+				write_cache(commands, cache_path);
 			}
-			write_cache(commands, cache_path);
+			free(cache_path);
 			return commands;
 		}
 		free(cache_path);
@@ -223,6 +222,8 @@ char *compgen()
 		bytes_written += sprintf(&buf[bytes_written], "%s\n", programs.buf[i].string);
 	}
 	buf[bytes_written] = '\0';
+
+	string_vec_destroy(&programs);
 
 	return buf;
 }

@@ -81,7 +81,8 @@ void desktop_vec_add_file(struct desktop_vec *vec, const char *id, const char *p
 	 */
 	char *keywords = g_key_file_get_locale_string(file, group, "Keywords", NULL, NULL);
 	if (keywords == NULL) {
-		keywords = "";
+		keywords = xmalloc(1);
+		*keywords = '\0';
 	}
 
 	gsize length;
@@ -91,7 +92,7 @@ void desktop_vec_add_file(struct desktop_vec *vec, const char *id, const char *p
 		g_strfreev(list);
 		list = NULL;
 		if (!match) {
-			goto cleanup_name;
+			goto cleanup_all;
 		}
 	}
 
@@ -101,13 +102,14 @@ void desktop_vec_add_file(struct desktop_vec *vec, const char *id, const char *p
 		g_strfreev(list);
 		list = NULL;
 		if (match) {
-			goto cleanup_name;
+			goto cleanup_all;
 		}
 	}
 
 	desktop_vec_add(vec, id, name, path, keywords);
 
-cleanup_name:
+cleanup_all:
+	free(keywords);
 	free(name);
 cleanup_file:
 	g_key_file_unref(file);
