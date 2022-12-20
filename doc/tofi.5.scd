@@ -34,7 +34,12 @@ options.
 # BEHAVIOUR OPTIONS
 
 *hide-cursor*=_true|false_
-	Hide the cursor.
+	Hide the mouse cursor.
+
+	Default: false
+
+*text-cursor*=_true|false_
+	Show a text cursor in the input field.
 
 	Default: false
 
@@ -98,8 +103,8 @@ options.
 	Default: the value of the TERMINAL environment variable
 
 *drun-print-exec*=_true|false_
-	*WARNING*: This option does nothing, and may be removed in a future version
-	of tofi.
+	*WARNING*: This option does nothing, and may be removed in a future
+	version of tofi.
 
 	Default: true
 
@@ -209,8 +214,8 @@ options.
 	Default: #00000000
 
 *prompt-background-padding*=_directional_
-	Extra padding of the prompt background. See *DIRECTIONAL VALUES* for more
-	information.
+	Extra padding of the prompt background. See *DIRECTIONAL VALUES* for
+	more information.
 
 	Default: 0
 
@@ -236,8 +241,8 @@ options.
 	Default: #00000000
 
 *placeholder-background-padding*=_directional_
-	Extra padding of the placeholder input text background. See *DIRECTIONAL
-	VALUES* for more information.
+	Extra padding of the placeholder input text background. See
+	*DIRECTIONAL VALUES* for more information.
 
 	Default: 0
 
@@ -257,8 +262,8 @@ options.
 	Default: #00000000
 
 *input-background-padding*=_directional_
-	Extra padding of the input background. See *DIRECTIONAL VALUES* for more
-	information.
+	Extra padding of the input background. See *DIRECTIONAL VALUES* for
+	more information.
 
 	Default: 0
 
@@ -266,6 +271,32 @@ options.
 	Corner radius of the input background.
 
 	Default: 0
+
+*text-cursor-style*=_bar|block|underscore_
+	Style of the text cursor (if shown).
+
+	Default: bar
+
+*text-cursor-color*=_color_
+	Color of the text cursor.
+
+	Default: same as *input-color*
+
+*text-cursor-background*=_color_
+	Color of text behind the text cursor when *text-cursor-style*=block.
+
+	Default: same as *background-color*
+
+*text-cursor-corner-radius*=_px_
+	Corner radius of the text cursor.
+
+	Default: 0
+
+*text-cursor-thickness*=_px_
+	Thickness of the bar and underscore text cursors.
+
+	Default: font-dependent when *text-cursor-style*=underscore, 2
+	otherwise.
 
 *default-result-color*=_color_
 	Default color of result text. See *COLORS* for more information.
@@ -278,8 +309,8 @@ options.
 	Default: #00000000
 
 *default-result-background-padding*=_directional_
-	Default extra padding of result backgrounds. See *DIRECTIONAL VALUES* for
-	more information.
+	Default extra padding of result backgrounds. See *DIRECTIONAL VALUES*
+	for more information.
 
 	Default: 0
 
@@ -295,8 +326,8 @@ options.
 	Default: same as *default-result-color*
 
 *alternate-result-background*=_color_
-	Background color of alternate (even-numbered) results. See *COLORS* for more
-	information.
+	Background color of alternate (even-numbered) results. See *COLORS* for
+	more information.
 
 	Default: same as *default-result-background*
 
@@ -331,8 +362,9 @@ options.
 	Default: #00000000
 
 *selection-padding*=_px_
-	*WARNING*: This option is deprecated, and will be removed in a future version
-	of tofi. You should use the *selection-background-padding* option instead.
+	*WARNING*: This option is deprecated, and will be removed in a future
+	version of tofi. You should use the *selection-background-padding*
+	option instead.
 
 	Extra horizontal padding of the selection background. If _px_ = -1,
 	the padding will fill the whole window width.
@@ -345,8 +377,8 @@ options.
 	Default: #00000000
 
 *selection-background-padding*=_directional_
-	Extra padding of the selected result background. See *DIRECTIONAL VALUES* for
-	more information.
+	Extra padding of the selected result background. See *DIRECTIONAL
+	VALUES* for more information.
 
 	Default: 0
 
@@ -387,11 +419,11 @@ options.
 	Default: center
 
 *exclusive-zone*=_-1|px|%_
-	Set the size of the exclusive zone. A value of -1 means ignore exclusive
-	zones completely. A value of 0 will move tofi out of the way of other
-	windows' exclusive zones. A value greater than 0 will set that much space as
-	an exclusive zone. Values greater than 0 are only meaningful when tofi is
-	anchored to a single edge.
+	Set the size of the exclusive zone. A value of -1 means ignore
+	exclusive zones completely. A value of 0 will move tofi out of the way
+	of other windows' exclusive zones. A value greater than 0 will set that
+	much space as an exclusive zone. Values greater than 0 are only
+	meaningful when tofi is anchored to a single edge.
 
 	Default: -1
 

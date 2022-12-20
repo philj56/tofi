@@ -26,6 +26,12 @@ _tofi()
 		--selection-background-corner-radius
 		--outline-width
 		--outline-color
+		--text-cursor
+		--text-cursor-style
+		--text-cursor-color
+		--text-cursor-background
+		--text-cursor-corner-radius
+		--text-cursor-thickness
 		--prompt-text
 		--prompt-padding
 		--prompt-color

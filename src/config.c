@@ -78,6 +78,7 @@ static uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent,
 static void fixup_text_theme(struct text_theme *theme, uint32_t scale);
 
 static uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err);
+static enum cursor_style parse_cursor_style(const char *filename, size_t lineno, const char *str, bool *err);
 static bool parse_bool(const char *filename, size_t lineno, const char *str, bool *err);
 static uint32_t parse_char(const char *filename, size_t lineno, const char *str, bool *err);
 static struct color parse_color(const char *filename, size_t lineno, const char *str, bool *err);
@@ -365,6 +366,39 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		struct color val = parse_color(filename, lineno, value, &err);
 		if (!err) {
 			tofi->window.entry.outline_color = val;
+		}
+	} else if (strcasecmp(option, "text-cursor") == 0) {
+		bool val = parse_bool(filename, lineno, value, &err);
+		if (!err) {
+			tofi->window.entry.cursor_theme.show = val;
+		}
+	} else if (strcasecmp(option, "text-cursor-style") == 0) {
+		enum cursor_style val = parse_cursor_style(filename, lineno, value, &err);
+		if (!err) {
+			tofi->window.entry.cursor_theme.style = val;
+		}
+	} else if (strcasecmp(option, "text-cursor-color") == 0) {
+		struct color val = parse_color(filename, lineno, value, &err);
+		if (!err) {
+			tofi->window.entry.cursor_theme.color = val;
+			tofi->window.entry.cursor_theme.color_specified = true;
+		}
+	} else if (strcasecmp(option, "text-cursor-background") == 0) {
+		struct color val = parse_color(filename, lineno, value, &err);
+		if (!err) {
+			tofi->window.entry.cursor_theme.text_color = val;
+			tofi->window.entry.cursor_theme.text_color_specified = true;
+		}
+	} else if (strcasecmp(option, "text-cursor-corner-radius") == 0) {
+		uint32_t val = parse_uint32(filename, lineno, value, &err);
+		if (!err) {
+			tofi->window.entry.cursor_theme.corner_radius = val;
+		}
+	} else if (strcasecmp(option, "text-cursor-thickness") == 0) {
+		uint32_t val = parse_uint32(filename, lineno, value, &err);
+		if (!err) {
+			tofi->window.entry.cursor_theme.thickness = val;
+			tofi->window.entry.cursor_theme.thickness_specified = true;
 		}
 	} else if (strcasecmp(option, "prompt-text") == 0) {
 		snprintf(tofi->window.entry.prompt_text, N_ELEM(tofi->window.entry.prompt_text), "%s", value);
@@ -753,6 +787,9 @@ void config_fixup_values(struct tofi *tofi)
 		entry->outline_width *= scale;
 		entry->border_width *= scale;
 
+		entry->cursor_theme.corner_radius *= scale;
+		entry->cursor_theme.thickness *= scale;
+
 		fixup_text_theme(&entry->prompt_theme, scale);
 		fixup_text_theme(&entry->placeholder_theme, scale);
 		fixup_text_theme(&entry->input_theme, scale);
@@ -946,7 +983,27 @@ uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool
 		return ANCHOR_CENTER;
 	}
 	PARSE_ERROR(filename, lineno, "Invalid anchor \"%s\".\n", str);
-	*err = true;
+	if (err) {
+		*err = true;
+	}
+	return 0;
+}
+
+enum cursor_style parse_cursor_style(const char *filename, size_t lineno, const char *str, bool *err)
+{
+	if(strcasecmp(str, "bar") == 0) {
+		return CURSOR_STYLE_BAR;
+	}
+	if(strcasecmp(str, "block") == 0) {
+		return CURSOR_STYLE_BLOCK;
+	}
+	if(strcasecmp(str, "underscore") == 0) {
+		return CURSOR_STYLE_UNDERSCORE;
+	}
+	PARSE_ERROR(filename, lineno, "Invalid cursor style \"%s\".\n", str);
+	if (err) {
+		*err = true;
+	}
 	return 0;
 }
 

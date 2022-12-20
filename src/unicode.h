@@ -8,6 +8,7 @@
 uint8_t utf32_to_utf8(uint32_t c, char *buf);
 uint32_t utf8_to_utf32(const char *s);
 uint32_t utf8_to_utf32_validate(const char *s);
+uint32_t *utf8_string_to_utf32_string(const char *s);
 
 uint32_t utf32_isprint(uint32_t c);
 uint32_t utf32_isspace(uint32_t c);
@@ -16,6 +17,7 @@ uint32_t utf32_islower(uint32_t c);
 uint32_t utf32_isalnum(uint32_t c);
 uint32_t utf32_toupper(uint32_t c);
 uint32_t utf32_tolower(uint32_t c);
+size_t utf32_strlen(const uint32_t *s);
 
 char *utf8_next_char(const char *s);
 char *utf8_prev_char(const char *s);

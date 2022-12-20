@@ -832,6 +832,12 @@ const struct option long_options[] = {
 	{"selection-background-corner-radius", required_argument, NULL, 0},
 	{"outline-width", required_argument, NULL, 0},
 	{"outline-color", required_argument, NULL, 0},
+	{"text-cursor", required_argument, NULL, 0},
+	{"text-cursor-style", required_argument, NULL, 0},
+	{"text-cursor-color", required_argument, NULL, 0},
+	{"text-cursor-background", required_argument, NULL, 0},
+	{"text-cursor-corner-radius", required_argument, NULL, 0},
+	{"text-cursor-thickness", required_argument, NULL, 0},
 	{"prompt-text", required_argument, NULL, 0},
 	{"prompt-padding", required_argument, NULL, 0},
 	{"prompt-color", required_argument, NULL, 0},
@@ -1019,12 +1025,22 @@ static bool do_submit(struct tofi *tofi)
 static void read_clipboard(struct tofi *tofi)
 {
 	struct entry *entry = &tofi->window.entry;
+
+	/* Make a copy of any text after the cursor. */
+	uint32_t *end_text = NULL;
+	size_t end_text_length = entry->input_utf32_length - entry->cursor_position;
+	if (end_text_length > 0) {
+		end_text = xcalloc(end_text_length, sizeof(*entry->input_utf32));
+		memcpy(end_text,
+				&entry->input_utf32[entry->cursor_position],
+				end_text_length * sizeof(*entry->input_utf32));
+	}
 	/* Buffer for 4 UTF-8 bytes plus a null terminator. */
 	char buffer[5];
 	memset(buffer, 0, N_ELEM(buffer));
 	errno = 0;
 	bool eof = false;
-	while (entry->input_utf32_length < N_ELEM(entry->input_utf32)) {
+	while (entry->cursor_position < N_ELEM(entry->input_utf32)) {
 		for (size_t i = 0; i < 4; i++) {
 			/*
 			 * Read input 1 byte at a time. This is slow, but easy,
@@ -1062,8 +1078,8 @@ static void read_clipboard(struct tofi *tofi)
 				log_error("Invalid UTF-8 character in clipboard: %s\n", buffer);
 				break;
 			} else {
-				entry->input_utf32[entry->input_utf32_length] = unichar;
-				entry->input_utf32_length++;
+				entry->input_utf32[entry->cursor_position] = unichar;
+				entry->cursor_position++;
 				break;
 			}
 		}
@@ -1071,6 +1087,19 @@ static void read_clipboard(struct tofi *tofi)
 		if (eof) {
 			break;
 		}
+	}
+	entry->input_utf32_length = entry->cursor_position;
+
+	/* If there was any text after the cursor, re-insert it now. */
+	if (end_text != NULL) {
+		for (size_t i = 0; i < end_text_length; i++) {
+			if (entry->input_utf32_length == N_ELEM(entry->input_utf32)) {
+				break;
+			}
+			entry->input_utf32[entry->input_utf32_length] = end_text[i];
+			entry->input_utf32_length++;
+		}
+		free(end_text);
 	}
 	entry->input_utf32[MIN(entry->input_utf32_length, N_ELEM(entry->input_utf32) - 1)] = U'\0';
 
@@ -1117,7 +1146,8 @@ int main(int argc, char *argv[])
 				.placeholder_theme.foreground_color = {1.0f, 1.0f, 1.0f, 0.66f},
 				.placeholder_theme.foreground_specified = true,
 				.selection_theme.foreground_color = {0.976f, 0.149f, 0.447f, 1.0f},
-				.selection_theme.foreground_specified = true
+				.selection_theme.foreground_specified = true,
+				.cursor_theme.thickness = 2
 			}
 		},
 		.anchor =  ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
@@ -1495,7 +1525,8 @@ int main(int argc, char *argv[])
 			&tofi.window.entry,
 			tofi.window.surface.shm_pool_data,
 			tofi.window.width,
-			tofi.window.height);
+			tofi.window.height,
+			tofi.use_scale ? tofi.window.scale : 1);
 	log_unindent();
 	log_debug("Renderer initialised.\n");
 

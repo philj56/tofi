@@ -59,7 +59,7 @@ static void fixup_padding_sizes(struct directional *padding, uint32_t clip_width
 	}
 }
 
-void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height)
+void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t scale)
 {
 	entry->image.width = width;
 	entry->image.height = height;
@@ -210,6 +210,25 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	fixup_padding_sizes(&entry->default_result_theme.padding, width, height);
 	fixup_padding_sizes(&entry->alternate_result_theme.padding, width, height);
 	fixup_padding_sizes(&entry->selection_theme.padding, width, height);
+
+	/* The cursor is a special case, as it just needs the input colours. */
+	if (!entry->cursor_theme.color_specified) {
+		entry->cursor_theme.color = entry->input_theme.foreground_color;
+	}
+	if (!entry->cursor_theme.text_color_specified) {
+		entry->cursor_theme.text_color = entry->background_color;
+	}
+
+	/*
+	 * TODO:
+	 * This is a dirty hack. The proper thing to do is probably just to
+	 * stop scaling everything manually, set cairo_scale and have done
+	 * with. The reason that isn't how things are currently done is due to
+	 * historic scaling behaviour of tofi.
+	 */
+	if (!entry->cursor_theme.thickness_specified) {
+		entry->cursor_theme.thickness *= scale;
+	}
 
 	/*
 	 * Perform an initial render of the text.

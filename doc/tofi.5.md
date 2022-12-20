@@ -34,7 +34,13 @@ options.
 
 **hide-cursor**=*true\|false*
 
-> Hide the cursor.
+> Hide the mouse cursor.
+>
+> Default: false
+
+**text-cursor**=*true\|false*
+
+> Show a text cursor in the input field.
 >
 > Default: false
 
@@ -277,7 +283,7 @@ options.
 **placeholder-background-padding**=*directional*
 
 > Extra padding of the placeholder input text background. See
-> **DIRECTIONAL** VALUES for more information.
+> **DIRECTIONAL VALUES** for more information.
 >
 > Default: 0
 
@@ -311,6 +317,37 @@ options.
 > Corner radius of the input background.
 >
 > Default: 0
+
+**text-cursor-style**=*bar\|block\|underscore*
+
+> Style of the text cursor (if shown).
+>
+> Default: bar
+
+**text-cursor-color**=*color*
+
+> Color of the text cursor.
+>
+> Default: same as **input-color**
+
+**text-cursor-background**=*color*
+
+> Color of text behind the text cursor when **text-cursor-style**=block.
+>
+> Default: same as **background-color**
+
+**text-cursor-corner-radius**=*px*
+
+> Corner radius of the text cursor.
+>
+> Default: 0
+
+**text-cursor-thickness**=*px*
+
+> Thickness of the bar and underscore text cursors.
+>
+> Default: font-dependent when **text-cursor-style**=underscore, 2
+> otherwise.
 
 **default-result-color**=*color*
 
@@ -407,8 +444,8 @@ options.
 
 **selection-background-padding**=*directional*
 
-> Extra padding of the selected result background. See **DIRECTIONAL
-> VALUES** for more information.
+> Extra padding of the selected result background. See **DIRECTIONAL**
+> VALUES for more information.
 >
 > Default: 0
 

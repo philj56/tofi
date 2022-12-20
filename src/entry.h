@@ -19,6 +19,12 @@
 #define MAX_FONT_FEATURES_LENGTH 128
 #define MAX_FONT_VARIATIONS_LENGTH 128
 
+enum cursor_style {
+	CURSOR_STYLE_BAR,
+	CURSOR_STYLE_BLOCK,
+	CURSOR_STYLE_UNDERSCORE
+};
+
 struct directional {
 	int32_t top;
 	int32_t right;
@@ -38,6 +44,23 @@ struct text_theme {
 	bool radius_specified;
 };
 
+struct cursor_theme {
+	struct color color;
+	struct color text_color;
+	enum cursor_style style;
+	uint32_t corner_radius;
+	uint32_t thickness;
+
+	double underline_depth;
+	double em_width;
+
+	bool color_specified;
+	bool text_color_specified;
+	bool thickness_specified;
+
+	bool show;
+};
+
 struct entry {
 	struct image image;
 	struct entry_backend_harfbuzz harfbuzz;
@@ -52,6 +75,7 @@ struct entry {
 	char input_utf8[4*MAX_INPUT_LENGTH];
 	uint32_t input_utf32_length;
 	uint32_t input_utf8_length;
+	uint32_t cursor_position;
 
 	uint32_t selection;
 	uint32_t first_result;
@@ -103,6 +127,7 @@ struct entry {
 	struct color border_color;
 	struct color outline_color;
 
+	struct cursor_theme cursor_theme;
 	struct text_theme prompt_theme;
 	struct text_theme input_theme;
 	struct text_theme placeholder_theme;
@@ -111,7 +136,7 @@ struct entry {
 	struct text_theme selection_theme;
 };
 
-void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height);
+void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t scale);
 void entry_destroy(struct entry *entry);
 void entry_update(struct entry *entry);
 

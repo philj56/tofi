@@ -110,6 +110,34 @@
 	# Matching portion of selection text
 	selection-match-color = #00000000
 
+
+#
+### Text cursor theme
+#
+	# Style of the optional text cursor.
+	#
+	# Supported values: bar, block, underscore
+	text-cursor-style = bar
+
+	# Color of the text cursor
+	#
+	# If unspecified, defaults to the same as input-color
+	# text-cursor-color = #FFFFFF
+
+	# Color of text behind the text cursor when text-cursor-style = block
+	#
+	# If unspecified, defaults to the same as background-color
+	# text-cursor-background = #000000
+
+	# Corner radius of the text cursor
+	text-cursor-corner-radius = 0
+
+	# Thickness of the bar and underscore text cursors.
+	#
+	# If unspecified, defaults to a font-dependent value when
+	# text-cursor-style = underscore, or to 2 otherwise.
+	# text-cursor-thickness = 2
+
 #
 ### Text layout
 #
@@ -207,8 +235,11 @@
 #
 ### Behaviour
 #
-	# Hide the cursor.
+	# Hide the mouse cursor.
 	hide-cursor = false
+
+	# Show a text cursor in the input field.
+	text-cursor = false
 
 	# Sort results by number of usages in run and drun modes.
 	history = true

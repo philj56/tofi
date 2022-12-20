@@ -39,6 +39,12 @@ int main(int argc, char *argv[])
 	is_valid("anchor", "center", "Anchor center");
 	isnt_valid("anchor", "left-bottom", "Invalid anchor");
 
+	/* Cursor styles */
+	is_valid("text-cursor-style", "bar", "Text cursor bar");
+	is_valid("text-cursor-style", "block", "Text cursor block");
+	is_valid("text-cursor-style", "underscore", "Text cursor underscore");
+	isnt_valid("text-cursor-style", "blocky", "Invalid text cursor style");
+
 	/* Bools */
 	is_valid("horizontal", "tRuE", "Boolean true");
 	is_valid("horizontal", "fAlSe", "Boolean false");

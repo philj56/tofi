@@ -18,6 +18,11 @@ uint32_t utf8_to_utf32_validate(const char *s)
 	return g_utf8_get_char_validated(s, -1);
 }
 
+uint32_t *utf8_string_to_utf32_string(const char *s)
+{
+	return g_utf8_to_ucs4_fast(s, -1, NULL);
+}
+
 uint32_t utf32_isprint(uint32_t c)
 {
 	return g_unichar_isprint(c);
@@ -51,6 +56,15 @@ uint32_t utf32_toupper(uint32_t c)
 uint32_t utf32_tolower(uint32_t c)
 {
 	return g_unichar_tolower(c);
+}
+
+size_t utf32_strlen(const uint32_t *s)
+{
+	size_t len = 0;
+	while (s[len] != U'\0') {
+		len++;
+	}
+	return len;
 }
 
 char *utf8_next_char(const char *s)
