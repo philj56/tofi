@@ -521,18 +521,36 @@ void entry_backend_harfbuzz_init(
 	hb_font_extents_t font_extents;
 	hb_font_get_h_extents(hb->hb_font, &font_extents);
 	int32_t underline_depth;
+#ifdef NO_HARFBUZZ_METRIC_FALLBACK
+	if (!hb_ot_metrics_get_position(
+			hb->hb_font,
+			HB_OT_METRICS_TAG_UNDERLINE_OFFSET,
+			&underline_depth)) {
+		underline_depth = -font_size * 64.0 / 18;
+	}
+#else
 	hb_ot_metrics_get_position_with_fallback(
 			hb->hb_font,
 			HB_OT_METRICS_TAG_UNDERLINE_OFFSET,
 			&underline_depth);
+#endif
 	entry->cursor_theme.underline_depth = (font_extents.ascender - underline_depth) / 64.0;
 
 	if (entry->cursor_theme.style == CURSOR_STYLE_UNDERSCORE && !entry->cursor_theme.thickness_specified) {
 		int32_t thickness;
+#ifdef NO_HARFBUZZ_METRIC_FALLBACK
+		if (!hb_ot_metrics_get_position(
+				hb->hb_font,
+				HB_OT_METRICS_TAG_UNDERLINE_SIZE,
+				&thickness)) {
+			thickness = font_size * 64.0 / 18;
+		}
+#else
 		hb_ot_metrics_get_position_with_fallback(
 				hb->hb_font,
 				HB_OT_METRICS_TAG_UNDERLINE_SIZE,
 				&thickness);
+#endif
 		entry->cursor_theme.thickness = thickness / 64.0;
 
 	}
