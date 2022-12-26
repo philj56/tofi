@@ -104,11 +104,11 @@ static void zwlr_layer_surface_configure(
 	 * We want actual pixel width / height, so we have to scale the
 	 * values provided by Wayland.
 	 */
-	tofi->window.width = width * tofi->window.scale;
-	tofi->window.height = height * tofi->window.scale;
+	tofi->window.width = width;
+	tofi->window.height = height;
 
-	tofi->window.surface.width = tofi->window.width;
-	tofi->window.surface.height = tofi->window.height;
+	tofi->window.surface.width = width * tofi->window.scale;
+	tofi->window.surface.height = height * tofi->window.scale;
 
 	zwlr_layer_surface_v1_ack_configure(
 			tofi->window.zwlr_layer_surface,
@@ -1462,16 +1462,21 @@ int main(int argc, char *argv[])
 	zwlr_layer_surface_v1_set_exclusive_zone(
 			tofi.window.zwlr_layer_surface,
 			tofi.window.exclusive_zone);
+	/*
+	 * No matter whether we're scaling via Cairo or not, we're presenting a
+	 * scaled buffer to Wayland, so scale the window size here if we
+	 * haven't already done so.
+	 */
 	zwlr_layer_surface_v1_set_size(
 			tofi.window.zwlr_layer_surface,
-			tofi.window.width / tofi.window.scale,
-			tofi.window.height / tofi.window.scale);
+			tofi.window.width / (tofi.use_scale ? 1 : tofi.window.scale),
+			tofi.window.height / (tofi.use_scale ? 1 : tofi.window.scale));
 	zwlr_layer_surface_v1_set_margin(
 			tofi.window.zwlr_layer_surface,
-			tofi.window.margin_top / tofi.window.scale,
-			tofi.window.margin_right / tofi.window.scale,
-			tofi.window.margin_bottom / tofi.window.scale,
-			tofi.window.margin_left / tofi.window.scale);
+			tofi.window.margin_top,
+			tofi.window.margin_right,
+			tofi.window.margin_bottom,
+			tofi.window.margin_left);
 	wl_surface_commit(tofi.window.surface.wl_surface);
 
 	/*
@@ -1524,8 +1529,8 @@ int main(int argc, char *argv[])
 	entry_init(
 			&tofi.window.entry,
 			tofi.window.surface.shm_pool_data,
-			tofi.window.width,
-			tofi.window.height,
+			tofi.window.surface.width,
+			tofi.window.surface.height,
 			tofi.use_scale ? tofi.window.scale : 1);
 	log_unindent();
 	log_debug("Renderer initialised.\n");
@@ -1546,7 +1551,7 @@ int main(int argc, char *argv[])
 	memcpy(
 		cairo_image_surface_get_data(tofi.window.entry.cairo[1].surface),
 		cairo_image_surface_get_data(tofi.window.entry.cairo[0].surface),
-		tofi.window.entry.image.width * tofi.window.entry.image.height * sizeof(uint32_t)
+		tofi.window.surface.width * tofi.window.surface.height * sizeof(uint32_t)
 	);
 	log_debug("Second buffer initialised.\n");
 

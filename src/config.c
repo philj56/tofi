@@ -74,8 +74,7 @@ struct uint32_percent {
 static char *strip(const char *str);
 static bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const char *option, const char *value);
 static char *get_config_path(void);
-static uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent, uint32_t scale, bool use_scale);
-static void fixup_text_theme(struct text_theme *theme, uint32_t scale);
+static uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent);
 
 static uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err);
 static enum cursor_style parse_cursor_style(const char *filename, size_t lineno, const char *str, bool *err);
@@ -753,112 +752,69 @@ bool config_apply(struct tofi *tofi, const char *option, const char *value)
 	return parse_option(tofi, "", 0, option, value);
 }
 
-uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent, uint32_t scale, bool use_scale)
+uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent)
 {
 	if (is_percent) {
 		return value * base / 100;
-	} else if (use_scale) {
-		return value * scale;
 	}
 	return value;
-}
-
-void fixup_text_theme(struct text_theme *theme, uint32_t scale)
-{
-	theme->background_corner_radius *= scale;
-	theme->padding.top *= scale;
-	theme->padding.bottom *= scale;
-	theme->padding.left *= scale;
-	theme->padding.right *= scale;
 }
 
 void config_fixup_values(struct tofi *tofi)
 {
 	uint32_t scale = tofi->window.scale;
+	uint32_t base_width = tofi->output_width;
+	uint32_t base_height = tofi->output_height;
 
+	/*
+	 * If we're going to be scaling these values in Cairo,
+	 * we need to apply the inverse scale here.
+	 */
 	if (tofi->use_scale) {
-		struct entry *entry = &tofi->window.entry;
-
-		entry->font_size *= scale;
-		entry->prompt_padding *= scale;
-		entry->corner_radius *= scale;
-		entry->result_spacing *= scale;
-		entry->input_width *= scale;
-		entry->outline_width *= scale;
-		entry->border_width *= scale;
-
-		entry->cursor_theme.corner_radius *= scale;
-		entry->cursor_theme.thickness *= scale;
-
-		fixup_text_theme(&entry->prompt_theme, scale);
-		fixup_text_theme(&entry->placeholder_theme, scale);
-		fixup_text_theme(&entry->input_theme, scale);
-		fixup_text_theme(&entry->default_result_theme, scale);
-		fixup_text_theme(&entry->alternate_result_theme, scale);
-		fixup_text_theme(&entry->selection_theme, scale);
+		base_width /= scale;
+		base_height /= scale;
 	}
 
-	/* These values should only be scaled if they're not percentages. */
 	tofi->window.width = fixup_percentage(
 			tofi->window.width,
-			tofi->output_width,
-			tofi->window.width_is_percent,
-			tofi->window.scale,
-			tofi->use_scale);
+			base_width,
+			tofi->window.width_is_percent);
 	tofi->window.height = fixup_percentage(
 			tofi->window.height,
-			tofi->output_height,
-			tofi->window.height_is_percent,
-			tofi->window.scale,
-			tofi->use_scale);
+			base_height,
+			tofi->window.height_is_percent);
 	tofi->window.margin_top = fixup_percentage(
 			tofi->window.margin_top,
-			tofi->output_height,
-			tofi->window.margin_top_is_percent,
-			tofi->window.scale,
-			tofi->use_scale);
+			base_height,
+			tofi->window.margin_top_is_percent);
 	tofi->window.margin_bottom = fixup_percentage(
 			tofi->window.margin_bottom,
-			tofi->output_height,
-			tofi->window.margin_bottom_is_percent,
-			tofi->window.scale,
-			tofi->use_scale);
+			base_height,
+			tofi->window.margin_bottom_is_percent);
 	tofi->window.margin_left = fixup_percentage(
 			tofi->window.margin_left,
-			tofi->output_width,
-			tofi->window.margin_left_is_percent,
-			tofi->window.scale,
-			tofi->use_scale);
+			base_width,
+			tofi->window.margin_left_is_percent);
 	tofi->window.margin_right = fixup_percentage(
 			tofi->window.margin_right,
-			tofi->output_width,
-			tofi->window.margin_right_is_percent,
-			tofi->window.scale,
-			tofi->use_scale);
+			base_width,
+			tofi->window.margin_right_is_percent);
 	tofi->window.entry.padding_top = fixup_percentage(
 			tofi->window.entry.padding_top,
-			tofi->output_height,
-			tofi->window.entry.padding_top_is_percent,
-			tofi->window.scale,
-			tofi->use_scale);
+			base_height,
+			tofi->window.entry.padding_top_is_percent);
 	tofi->window.entry.padding_bottom = fixup_percentage(
 			tofi->window.entry.padding_bottom,
-			tofi->output_height,
-			tofi->window.entry.padding_bottom_is_percent,
-			tofi->window.scale,
-			tofi->use_scale);
+			base_height,
+			tofi->window.entry.padding_bottom_is_percent);
 	tofi->window.entry.padding_left = fixup_percentage(
 			tofi->window.entry.padding_left,
-			tofi->output_width,
-			tofi->window.entry.padding_left_is_percent,
-			tofi->window.scale,
-			tofi->use_scale);
+			base_width,
+			tofi->window.entry.padding_left_is_percent);
 	tofi->window.entry.padding_right = fixup_percentage(
 			tofi->window.entry.padding_right,
-			tofi->output_width,
-			tofi->window.entry.padding_right_is_percent,
-			tofi->window.scale,
-			tofi->use_scale);
+			base_width,
+			tofi->window.entry.padding_right_is_percent);
 
 	/* Don't attempt percentage handling if exclusive_zone is set to -1. */
 	if (tofi->window.exclusive_zone > 0) {
@@ -868,24 +824,20 @@ void config_fixup_values(struct tofi *tofi)
 			case ANCHOR_BOTTOM:
 				tofi->window.exclusive_zone = fixup_percentage(
 						tofi->window.exclusive_zone,
-						tofi->output_height,
-						tofi->window.exclusive_zone_is_percent,
-						tofi->window.scale,
-						tofi->use_scale);
+						base_height,
+						tofi->window.exclusive_zone_is_percent);
 				break;
 			case ANCHOR_LEFT:
 			case ANCHOR_RIGHT:
 				tofi->window.exclusive_zone = fixup_percentage(
 						tofi->window.exclusive_zone,
-						tofi->output_width,
-						tofi->window.exclusive_zone_is_percent,
-						tofi->window.scale,
-						tofi->use_scale);
+						base_width,
+						tofi->window.exclusive_zone_is_percent);
 				break;
 			default:
 				/*
-				 * Exclusive zone >0 is meaningless for other anchor
-				 * positions.
+				 * Exclusive zone >0 is meaningless for other
+				 * anchor positions.
 				 */
 				tofi->window.exclusive_zone =
 					MIN(tofi->window.exclusive_zone, 0);

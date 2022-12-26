@@ -84,7 +84,7 @@ static void setup_hb_buffer(hb_buffer_t *buffer)
  * Render a hb_buffer with Cairo, and return the extents of the rendered text
  * in Cairo units.
  */
-static cairo_text_extents_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
+static cairo_text_extents_t render_hb_buffer(cairo_t *cr, hb_font_extents_t *font_extents, hb_buffer_t *buffer, double scale)
 {
 	cairo_save(cr);
 
@@ -92,9 +92,7 @@ static cairo_text_extents_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
 	 * Cairo uses y-down coordinates, but HarfBuzz uses y-up, so we
 	 * shift the text down by its ascent height to compensate.
 	 */
-	cairo_font_extents_t font_extents;
-	cairo_font_extents(cr, &font_extents);
-	cairo_translate(cr, 0, font_extents.ascent);
+	cairo_translate(cr, 0, font_extents->ascender / 64.0);
 
 	unsigned int glyph_count;
 	hb_glyph_info_t *glyph_info = hb_buffer_get_glyph_infos(buffer, &glyph_count);
@@ -107,12 +105,17 @@ static cairo_text_extents_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
 		/*
 		 * The coordinates returned by HarfBuzz are in 26.6 fixed-point
 		 * format, so we divide by 64.0 (2^6) to get floats.
+		 *
+		 * For whatever reason, the coordinates are also scaled by
+		 * Cairo's scale factor, so we have to also divide by the scale
+		 * factor to account for this.
 		 */
 		cairo_glyphs[i].index = glyph_info[i].codepoint;
-		cairo_glyphs[i].x = x + glyph_pos[i].x_offset / 64.0;
-		cairo_glyphs[i].y = y - glyph_pos[i].y_offset / 64.0;
-		x += glyph_pos[i].x_advance / 64.0;
-		y -= glyph_pos[i].y_advance / 64.0;
+		cairo_glyphs[i].x = x + glyph_pos[i].x_offset / 64.0 / scale;
+		cairo_glyphs[i].y = y - glyph_pos[i].y_offset / 64.0 / scale;
+
+		x += glyph_pos[i].x_advance / 64.0 / scale;
+		y -= glyph_pos[i].y_advance / 64.0 / scale;
 	}
 
 	cairo_show_glyphs(cr, cairo_glyphs, glyph_count);
@@ -121,7 +124,7 @@ static cairo_text_extents_t render_hb_buffer(cairo_t *cr, hb_buffer_t *buffer)
 	cairo_glyph_extents(cr, cairo_glyphs, glyph_count, &extents);
 
 	/* Account for the shifted baseline in our returned text extents. */
-	extents.y_bearing += font_extents.ascent;
+	extents.y_bearing += font_extents->ascender / 64.0;
 
 	free(cairo_glyphs);
 
@@ -143,7 +146,7 @@ static cairo_text_extents_t render_text(
 	setup_hb_buffer(hb->hb_buffer);
 	hb_buffer_add_utf8(hb->hb_buffer, text, -1, 0, -1);
 	hb_shape(hb->hb_font, hb->hb_buffer, hb->hb_features, hb->num_features);
-	return render_hb_buffer(cr, hb->hb_buffer);
+	return render_hb_buffer(cr, &hb->hb_font_extents, hb->hb_buffer, hb->scale);
 }
 
 
@@ -259,7 +262,7 @@ static cairo_text_extents_t render_input(
 	setup_hb_buffer(hb->hb_buffer);
 	hb_buffer_add_utf32(hb->hb_buffer, text, -1, 0, -1);
 	hb_shape(hb->hb_font, hb->hb_buffer, hb->hb_features, hb->num_features);
-	cairo_text_extents_t extents = render_hb_buffer(cr, hb->hb_buffer);
+	cairo_text_extents_t extents = render_hb_buffer(cr, &hb->hb_font_extents, hb->hb_buffer, hb->scale);
 
 	/*
 	 * If the cursor is at the end of text, we need to account for it in
@@ -304,7 +307,7 @@ static cairo_text_extents_t render_input(
 		color = theme->foreground_color;
 		cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
-		render_hb_buffer(cr, hb->hb_buffer);
+		render_hb_buffer(cr, &hb->hb_font_extents, hb->hb_buffer, hb->scale);
 	}
 
 	if (!cursor_theme->show) {
@@ -385,8 +388,8 @@ static cairo_text_extents_t render_input(
 			cursor_end += x_advance;
 		}
 		/* Convert from HarfBuzz 26.6 fixed-point to float. */
-		cursor_x = cursor_start / 64.0;
-		cursor_width = (cursor_end - cursor_start) / 64.0;
+		cursor_x = cursor_start / 64.0 / hb->scale;
+		cursor_width = (cursor_end - cursor_start) / 64.0 / hb->scale;
 	}
 
 	cairo_save(cr);
@@ -405,7 +408,7 @@ static cairo_text_extents_t render_input(
 			cairo_translate(cr, -cursor_x, 0);
 			color = cursor_theme->text_color;
 			cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-			render_hb_buffer(cr, hb->hb_buffer);
+			render_hb_buffer(cr, &hb->hb_font_extents, hb->hb_buffer, hb->scale);
 			break;
 		case CURSOR_STYLE_UNDERSCORE:
 			cairo_translate(cr, 0, cursor_theme->underline_depth);
@@ -444,6 +447,7 @@ void entry_backend_harfbuzz_init(
 	struct entry_backend_harfbuzz *hb = &entry->harfbuzz;
 	cairo_t *cr = entry->cairo[0].cr;
 	uint32_t font_size = floor(entry->font_size * PT_TO_DPI);
+	cairo_surface_get_device_scale(entry->cairo[0].surface, &hb->scale, NULL);
 
 	/*
 	 * Setting up our font has three main steps:
@@ -582,6 +586,11 @@ void entry_backend_harfbuzz_init(
 	log_debug("Creating Harfbuzz buffer.\n");
 	hb->hb_buffer = hb_buffer_create();
 
+	hb_font_get_h_extents(hb->hb_font, &hb->hb_font_extents);
+	if (hb->hb_font_extents.line_gap == 0) {
+		hb->hb_font_extents.line_gap = (hb->hb_font_extents.ascender - hb->hb_font_extents.descender);
+	}
+
 	log_debug("Creating Cairo font.\n");
 	hb->cairo_face = cairo_ft_font_face_create_for_ft_face(hb->ft_face, 0);
 
@@ -619,13 +628,17 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	cairo_t *cr = entry->cairo[entry->index].cr;
 	cairo_text_extents_t extents;
 
-	cairo_font_extents_t font_extents;
-	cairo_font_extents(cr, &font_extents);
-
 	cairo_save(cr);
 
 	/* Render the prompt */
 	extents = render_text_themed(cr, entry, entry->prompt_text, &entry->prompt_theme);
+	{
+		struct entry_backend_harfbuzz *hb = &entry->harfbuzz;
+		hb_buffer_clear_contents(hb->hb_buffer);
+		setup_hb_buffer(hb->hb_buffer);
+		hb_buffer_add_utf8(hb->hb_buffer, "test", -1, 0, -1);
+		hb_shape(hb->hb_font, hb->hb_buffer, hb->hb_features, hb->num_features);
+	}
 
 	cairo_translate(cr, extents.x_advance, 0);
 	cairo_translate(cr, entry->prompt_padding, 0);
@@ -683,7 +696,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 		if (entry->horizontal) {
 			cairo_translate(cr, extents.x_advance + entry->result_spacing, 0);
 		} else {
-			cairo_translate(cr, 0, font_extents.height + entry->result_spacing);
+			cairo_translate(cr, 0, entry->harfbuzz.hb_font_extents.line_gap / 64.0 + entry->result_spacing);
 		}
 		if (entry->num_results == 0) {
 			if (size_overflows(entry, 0, 0)) {
@@ -729,7 +742,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				 * The height of the text doesn't change, so
 				 * we don't need to re-measure it each time.
 				 */
-				if (size_overflows(entry, 0, font_extents.height)) {
+				if (size_overflows(entry, 0, entry->harfbuzz.hb_font_extents.line_gap / 64.0)) {
 					break;
 				} else {
 					extents = render_text_themed(cr, entry, result, theme);
@@ -871,7 +884,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 					rounded_rectangle(
 							cr,
 							ceil(extents.width + padding.left + padding.right),
-							ceil(font_extents.height + padding.top + padding.bottom),
+							ceil(entry->harfbuzz.hb_font_extents.line_gap / 64.0 + padding.top + padding.bottom),
 							entry->selection_theme.background_corner_radius
 							);
 					cairo_fill(cr);

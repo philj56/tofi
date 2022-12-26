@@ -19,11 +19,14 @@ struct entry_backend_harfbuzz {
 	cairo_font_face_t *cairo_face;
 
 	hb_font_t *hb_font;
+	hb_font_extents_t hb_font_extents;
 	hb_buffer_t *hb_buffer;
 	hb_variation_t hb_variations[MAX_FONT_VARIATIONS];
 	hb_feature_t hb_features[MAX_FONT_FEATURES];
 	uint8_t num_variations;
 	uint8_t num_features;
+
+	double scale;
 
 	bool disable_hinting;
 };

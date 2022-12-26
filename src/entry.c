@@ -64,6 +64,7 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 			height,
 			width * sizeof(uint32_t)
 			);
+	cairo_surface_set_device_scale(surface, scale, scale);
 	cairo_t *cr = cairo_create(surface);
 
 	entry->cairo[0].surface = surface;
@@ -76,8 +77,12 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 			height,
 			width * sizeof(uint32_t)
 			);
+	cairo_surface_set_device_scale(entry->cairo[1].surface, scale, scale);
 	entry->cairo[1].cr = cairo_create(entry->cairo[1].surface);
 
+	/* If we're scaling with Cairo, remember to account for that here. */
+	width /= scale;
+	height /= scale;
 
 	log_debug("Drawing window.\n");
 	/* Draw the background */
@@ -194,17 +199,6 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	}
 	if (!entry->cursor_theme.text_color_specified) {
 		entry->cursor_theme.text_color = entry->background_color;
-	}
-
-	/*
-	 * TODO:
-	 * This is a dirty hack. The proper thing to do is probably just to
-	 * stop scaling everything manually, set cairo_scale and have done
-	 * with. The reason that isn't how things are currently done is due to
-	 * historic scaling behaviour of tofi.
-	 */
-	if (!entry->cursor_theme.thickness_specified) {
-		entry->cursor_theme.thickness *= scale;
 	}
 
 	/*
