@@ -48,6 +48,14 @@ the form **--key=value**.
 
 > Move the selection forward one entry.
 
+\<Page Up\>
+
+> Move the selection back one page.
+
+\<Page Down\>
+
+> Move the selection forward one page.
+
 \<Ctrl\>-u
 
 > Delete line.

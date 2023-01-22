@@ -44,6 +44,12 @@ All config file options described in *tofi*(5) are also accepted, in the form
 <Down> | <Right> | <Ctrl>-j | <Tab>
 	Move the selection forward one entry.
 
+<Page Up>
+	Move the selection back one page.
+
+<Page Down>
+	Move the selection forward one page.
+
 <Ctrl>-u
 	Delete line.
 

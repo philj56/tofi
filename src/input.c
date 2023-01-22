@@ -16,6 +16,8 @@ static void clear_input(struct tofi *tofi);
 static void paste(struct tofi *tofi);
 static void select_previous_result(struct tofi *tofi);
 static void select_next_result(struct tofi *tofi);
+static void select_previous_page(struct tofi *tofi);
+static void select_next_page(struct tofi *tofi);
 static void next_cursor_or_result(struct tofi *tofi);
 static void previous_cursor_or_result(struct tofi *tofi);
 static void reset_selection(struct tofi *tofi);
@@ -88,6 +90,10 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		select_next_result(tofi);
 	} else if (sym == XKB_KEY_Home) {
 		reset_selection(tofi);
+	} else if (sym == XKB_KEY_Page_Up) {
+		select_previous_page(tofi);
+	} else if (sym == XKB_KEY_Page_Down) {
+		select_next_page(tofi);
 	} else if (sym == XKB_KEY_Escape
 			|| (key == KEY_C
 				&& xkb_state_mod_name_is_active(
@@ -334,4 +340,29 @@ void next_cursor_or_result(struct tofi *tofi)
 	} else {
 		select_next_result(tofi);
 	}
+}
+
+void select_previous_page(struct tofi *tofi)
+{
+	struct entry *entry = &tofi->window.entry;
+
+	if (entry->first_result >= entry->last_num_results_drawn) {
+		entry->first_result -= entry->last_num_results_drawn;
+	} else {
+		entry->first_result = 0;
+	}
+	entry->selection = 0;
+	entry->last_num_results_drawn = entry->num_results_drawn;
+}
+
+void select_next_page(struct tofi *tofi)
+{
+	struct entry *entry = &tofi->window.entry;
+
+	entry->first_result += entry->num_results_drawn;
+	if (entry->first_result >= entry->results.count) {
+		entry->first_result = 0;
+	}
+	entry->selection = 0;
+	entry->last_num_results_drawn = entry->num_results_drawn;
 }
