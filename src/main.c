@@ -97,7 +97,7 @@ static void zwlr_layer_surface_configure(
 		log_debug("Layer surface configure with no width or height.\n");
 		return;
 	}
-	log_debug("Layer surface configure, %d x %d.\n", width, height);
+	log_debug("Layer surface configure, %u x %u.\n", width, height);
 
 	/*
 	 * Resize the main window.
@@ -1542,11 +1542,13 @@ int main(int argc, char *argv[])
 	 * possible after startup.
 	 */
 	wl_display_roundtrip(tofi.wl_display);
+	log_debug("Initialising second buffer.\n");
 	memcpy(
 		cairo_image_surface_get_data(tofi.window.entry.cairo[1].surface),
 		cairo_image_surface_get_data(tofi.window.entry.cairo[0].surface),
 		tofi.window.entry.image.width * tofi.window.entry.image.height * sizeof(uint32_t)
 	);
+	log_debug("Second buffer initialised.\n");
 
 	/* We've just rendered, so we don't need to do it again right now. */
 	tofi.window.surface.redraw = false;
