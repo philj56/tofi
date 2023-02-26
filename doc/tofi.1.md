@@ -40,11 +40,11 @@ the form **--key=value**.
 
 # KEYS
 
-\<Up\> \| \<Left\> \| \<Ctrl\>-k
+\<Up\> \| \<Left\> \| \<Ctrl\>-k \| \<Ctrl\>-p
 
 > Move the selection back one entry.
 
-\<Down\> \| \<Right\> \| \<Ctrl\>-j \| \<Tab\>
+\<Down\> \| \<Right\> \| \<Ctrl\>-j \| \<Ctrl\>-n \| \<Tab\>
 
 > Move the selection forward one entry.
 

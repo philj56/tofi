@@ -71,7 +71,7 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	} else if (sym == XKB_KEY_Right) {
 		next_cursor_or_result(tofi);
 	} else if (sym == XKB_KEY_Up || sym == XKB_KEY_Left || sym == XKB_KEY_ISO_Left_Tab
-			|| (key == KEY_K
+			|| ((key == KEY_K || key == KEY_P)
 				&& xkb_state_mod_name_is_active(
 					tofi->xkb_state,
 					XKB_MOD_NAME_CTRL,
@@ -80,7 +80,7 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	   ) {
 		select_previous_result(tofi);
 	} else if (sym == XKB_KEY_Down || sym == XKB_KEY_Right || sym == XKB_KEY_Tab
-			|| (key == KEY_J
+			|| ((key == KEY_J || key == KEY_N)
 				&& xkb_state_mod_name_is_active(
 					tofi->xkb_state,
 					XKB_MOD_NAME_CTRL,
