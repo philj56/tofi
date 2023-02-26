@@ -34,12 +34,13 @@ static void rounded_rectangle(cairo_t *cr, uint32_t width, uint32_t height, uint
 
 static void render_text_themed(
 		cairo_t *cr,
-		PangoLayout *layout,
+		struct entry *entry,
 		const char *text,
 		const struct text_theme *theme,
 		PangoRectangle *ink_rect,
 		PangoRectangle *logical_rect)
 {
+	PangoLayout *layout = entry->pango.layout;
 	struct color color = theme->foreground_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 
@@ -55,6 +56,23 @@ static void render_text_themed(
 	}
 
 	struct directional padding = theme->padding;
+
+	cairo_matrix_t mat;
+	cairo_get_matrix(cr, &mat);
+	int32_t base_x = mat.x0 - entry->clip_x + ink_rect->x;
+	int32_t base_y = mat.y0 - entry->clip_y;
+	if (padding.left < 0) {
+		padding.left = base_x;
+	}
+	if (padding.right < 0) {
+		padding.right = entry->clip_width - ink_rect->width - base_x;
+	}
+	if (padding.top < 0) {
+		padding.top = base_y;
+	}
+	if (padding.bottom < 0) {
+		padding.bottom = entry->clip_height - logical_rect->height - base_y;
+	}
 
 	cairo_save(cr);
 	color = theme->background_color;
@@ -299,7 +317,7 @@ void entry_backend_pango_update(struct entry *entry)
 	/* Render the prompt */
 	PangoRectangle ink_rect;
 	PangoRectangle logical_rect;
-	render_text_themed(cr, layout, entry->prompt_text, &entry->prompt_theme, &ink_rect, &logical_rect);
+	render_text_themed(cr, entry, entry->prompt_text, &entry->prompt_theme, &ink_rect, &logical_rect);
 
 	cairo_translate(cr, logical_rect.width + logical_rect.x, 0);
 	cairo_translate(cr, entry->prompt_padding, 0);
@@ -402,17 +420,17 @@ void entry_backend_pango_update(struct entry *entry)
 			}
 
 			if (entry->num_results > 0) {
-				render_text_themed(cr, layout, str, theme, &ink_rect, &logical_rect);
+				render_text_themed(cr, entry, str, theme, &ink_rect, &logical_rect);
 			} else if (!entry->horizontal) {
 				if (size_overflows(entry, 0, logical_rect.height)) {
 					entry->num_results_drawn = i;
 					break;
 				} else {
-					render_text_themed(cr, layout, str, theme, &ink_rect, &logical_rect);
+					render_text_themed(cr, entry, str, theme, &ink_rect, &logical_rect);
 				}
 			} else {
 				cairo_push_group(cr);
-				render_text_themed(cr, layout, str, theme, &ink_rect, &logical_rect);
+				render_text_themed(cr, entry, str, theme, &ink_rect, &logical_rect);
 
 				cairo_pattern_t *group = cairo_pop_group(cr);
 				if (size_overflows(entry, logical_rect.width, 0)) {

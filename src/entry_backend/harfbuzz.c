@@ -153,10 +153,11 @@ static cairo_text_extents_t render_text(
  */
 static cairo_text_extents_t render_text_themed(
 		cairo_t *cr,
-		struct entry_backend_harfbuzz *hb,
+		struct entry *entry,
 		const char *text,
 		const struct text_theme *theme)
 {
+	struct entry_backend_harfbuzz *hb = &entry->harfbuzz;
 	cairo_font_extents_t font_extents;
 	cairo_font_extents(cr, &font_extents);
 	struct directional padding = theme->padding;
@@ -178,6 +179,29 @@ static cairo_text_extents_t render_text_themed(
 	if (theme->background_color.a == 0) {
 		/* No background to draw, we're done. */
 		return extents;
+	}
+
+	/*
+	 * If any of the padding values are negative, make them just big enough
+	 * to fit the available area. This is needed over just making them
+	 * bigger than the clip area in order to make rounded corners line up
+	 * with the edges nicely.
+	 */
+	cairo_matrix_t mat;
+	cairo_get_matrix(cr, &mat);
+	int32_t base_x = mat.x0 - entry->clip_x + extents.x_bearing;
+	int32_t base_y = mat.y0 - entry->clip_y;
+	if (padding.left < 0) {
+		padding.left = base_x;
+	}
+	if (padding.right < 0) {
+		padding.right = entry->clip_width - extents.width - base_x;
+	}
+	if (padding.top < 0) {
+		padding.top = base_y;
+	}
+	if (padding.bottom < 0) {
+		padding.bottom = entry->clip_height - font_extents.height - base_y;
 	}
 
 	cairo_save(cr);
@@ -601,7 +625,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	cairo_save(cr);
 
 	/* Render the prompt */
-	extents = render_text_themed(cr, &entry->harfbuzz, entry->prompt_text, &entry->prompt_theme);
+	extents = render_text_themed(cr, entry, entry->prompt_text, &entry->prompt_theme);
 
 	cairo_translate(cr, extents.x_advance, 0);
 	cairo_translate(cr, entry->prompt_padding, 0);
@@ -699,7 +723,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				 * We're not auto-detecting how many results we
 				 * can fit, so just render the text.
 				 */
-				extents = render_text_themed(cr, &entry->harfbuzz, result, theme);
+				extents = render_text_themed(cr, entry, result, theme);
 			} else if (!entry->horizontal) {
 				/*
 				 * The height of the text doesn't change, so
@@ -708,7 +732,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				if (size_overflows(entry, 0, font_extents.height)) {
 					break;
 				} else {
-					extents = render_text_themed(cr, &entry->harfbuzz, result, theme);
+					extents = render_text_themed(cr, entry, result, theme);
 				}
 			} else {
 				/*
@@ -720,7 +744,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				 * to the main canvas only if it will fit.
 				 */
 				cairo_push_group(cr);
-				extents = render_text_themed(cr, &entry->harfbuzz, result, theme);
+				extents = render_text_themed(cr, entry, result, theme);
 
 				cairo_pattern_t *group = cairo_pop_group(cr);
 				if (size_overflows(entry, extents.x_advance, 0)) {

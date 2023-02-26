@@ -43,22 +43,6 @@ static void apply_text_theme_fallback(struct text_theme *theme, const struct tex
 	}
 }
 
-static void fixup_padding_sizes(struct directional *padding, uint32_t clip_width, uint32_t clip_height)
-{
-	if (padding->top < 0) {
-		padding->top = clip_height;
-	}
-	if (padding->bottom < 0) {
-		padding->bottom = clip_height;
-	}
-	if (padding->left < 0) {
-		padding->left = clip_width;
-	}
-	if (padding->right < 0) {
-		padding->right = clip_width;
-	}
-}
-
 void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t scale)
 {
 	entry->image.width = width;
@@ -203,13 +187,6 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	apply_text_theme_fallback(&entry->default_result_theme, &default_theme);
 	apply_text_theme_fallback(&entry->alternate_result_theme, &entry->default_result_theme);
 	apply_text_theme_fallback(&entry->selection_theme, &default_theme);
-
-	fixup_padding_sizes(&entry->prompt_theme.padding, width, height);
-	fixup_padding_sizes(&entry->input_theme.padding, width, height);
-	fixup_padding_sizes(&entry->placeholder_theme.padding, width, height);
-	fixup_padding_sizes(&entry->default_result_theme.padding, width, height);
-	fixup_padding_sizes(&entry->alternate_result_theme.padding, width, height);
-	fixup_padding_sizes(&entry->selection_theme.padding, width, height);
 
 	/* The cursor is a special case, as it just needs the input colours. */
 	if (!entry->cursor_theme.color_specified) {
