@@ -192,19 +192,26 @@ static cairo_text_extents_t render_text_themed(
 	 */
 	cairo_matrix_t mat;
 	cairo_get_matrix(cr, &mat);
-	int32_t base_x = mat.x0 - entry->clip_x + extents.x_bearing;
-	int32_t base_y = mat.y0 - entry->clip_y;
+	double base_x = mat.x0 - entry->clip_x + extents.x_bearing;
+	double base_y = mat.y0 - entry->clip_y;
+
+	/* Need to use doubles to end up on nice pixel boundaries. */
+	double padding_left = padding.left;
+	double padding_right = padding.right;
+	double padding_top = padding.top;
+	double padding_bottom = padding.bottom;
+
 	if (padding.left < 0) {
-		padding.left = base_x;
+		padding_left = base_x;
 	}
 	if (padding.right < 0) {
-		padding.right = entry->clip_width - extents.width - base_x;
+		padding_right = entry->clip_width - extents.width - base_x;
 	}
 	if (padding.top < 0) {
-		padding.top = base_y;
+		padding_top = base_y;
 	}
 	if (padding.bottom < 0) {
-		padding.bottom = entry->clip_height - font_extents.height - base_y;
+		padding_bottom = entry->clip_height - font_extents.height - base_y;
 	}
 
 	cairo_save(cr);
@@ -212,12 +219,12 @@ static cairo_text_extents_t render_text_themed(
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_translate(
 			cr,
-			floor(-padding.left + extents.x_bearing),
-			-padding.top);
+			-padding_left + extents.x_bearing,
+			-padding_top);
 	rounded_rectangle(
 			cr,
-			ceil(extents.width + padding.left + padding.right),
-			ceil(font_extents.height + padding.top + padding.bottom),
+			ceil(extents.width + padding_left + padding_right),
+			ceil(font_extents.height + padding_top + padding_bottom),
 			theme->background_corner_radius
 			);
 	cairo_fill(cr);

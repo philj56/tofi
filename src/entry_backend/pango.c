@@ -61,17 +61,23 @@ static void render_text_themed(
 	cairo_get_matrix(cr, &mat);
 	int32_t base_x = mat.x0 - entry->clip_x + ink_rect->x;
 	int32_t base_y = mat.y0 - entry->clip_y;
-	if (padding.left < 0) {
-		padding.left = base_x;
+
+	double padding_left = padding.left;
+	double padding_right = padding.right;
+	double padding_top = padding.top;
+	double padding_bottom = padding.bottom;
+
+	if (padding_left < 0) {
+		padding_left = base_x;
 	}
-	if (padding.right < 0) {
-		padding.right = entry->clip_width - ink_rect->width - base_x;
+	if (padding_right < 0) {
+		padding_right = entry->clip_width - ink_rect->width - base_x;
 	}
-	if (padding.top < 0) {
-		padding.top = base_y;
+	if (padding_top < 0) {
+		padding_top = base_y;
 	}
-	if (padding.bottom < 0) {
-		padding.bottom = entry->clip_height - logical_rect->height - base_y;
+	if (padding_bottom < 0) {
+		padding_bottom = entry->clip_height - logical_rect->height - base_y;
 	}
 
 	cairo_save(cr);
@@ -79,12 +85,12 @@ static void render_text_themed(
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_translate(
 			cr,
-			floor(-padding.left + ink_rect->x),
-			-padding.top);
+			-padding_left + ink_rect->x,
+			-padding_top);
 	rounded_rectangle(
 			cr,
-			ceil(ink_rect->width + padding.left + padding.right),
-			ceil(logical_rect->height + padding.top + padding.bottom),
+			ceil(ink_rect->width + padding_left + padding_right),
+			ceil(logical_rect->height + padding_top + padding_bottom),
 			theme->background_corner_radius
 			);
 	cairo_fill(cr);
