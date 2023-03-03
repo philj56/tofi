@@ -35,6 +35,7 @@ struct tofi {
 	struct wl_shm *wl_shm;
 	struct wl_data_device_manager *wl_data_device_manager;
 	struct wl_data_device *wl_data_device;
+	struct wp_viewporter *wp_viewporter;
 	struct zwlr_layer_shell_v1 *zwlr_layer_shell;
 	struct wl_list output_list;
 	struct output_list_element *default_output;
@@ -57,6 +58,7 @@ struct tofi {
 	struct clipboard clipboard;
 	struct {
 		struct surface surface;
+		struct wp_viewport *wp_viewport;
 		struct zwlr_layer_surface_v1 *zwlr_layer_surface;
 		struct entry entry;
 		uint32_t width;

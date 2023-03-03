@@ -177,6 +177,7 @@ wl_proto_headers = []
 wl_proto_src = []
 wl_proto_xml = [
   wayland_protocols_dir + '/stable/xdg-shell/xdg-shell.xml',
+  wayland_protocols_dir + '/stable/viewporter/viewporter.xml',
 ]
 
 foreach proto : wl_proto_xml

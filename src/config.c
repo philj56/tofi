@@ -775,14 +775,6 @@ void config_fixup_values(struct tofi *tofi)
 		base_height /= scale;
 	}
 
-	tofi->window.width = fixup_percentage(
-			tofi->window.width,
-			base_width,
-			tofi->window.width_is_percent);
-	tofi->window.height = fixup_percentage(
-			tofi->window.height,
-			base_height,
-			tofi->window.height_is_percent);
 	tofi->window.margin_top = fixup_percentage(
 			tofi->window.margin_top,
 			base_height,
@@ -815,6 +807,27 @@ void config_fixup_values(struct tofi *tofi)
 			tofi->window.entry.padding_right,
 			base_width,
 			tofi->window.entry.padding_right_is_percent);
+
+	/*
+	 * Window width and height are a little special. We're only going to be
+	 * using them to specify sizes to Wayland, which always wants scaled
+	 * pixels, so always scale them here (unless we've directly specified a
+	 * scaled size).
+	 */
+	tofi->window.width = fixup_percentage(
+			tofi->window.width,
+			tofi->output_width,
+			tofi->window.width_is_percent);
+	tofi->window.height = fixup_percentage(
+			tofi->window.height,
+			tofi->output_height,
+			tofi->window.height_is_percent);
+	if (tofi->window.width_is_percent || !tofi->use_scale) {
+		tofi->window.width /= scale;
+	}
+	if (tofi->window.height_is_percent || !tofi->use_scale) {
+		tofi->window.height /= scale;
+	}
 
 	/* Don't attempt percentage handling if exclusive_zone is set to -1. */
 	if (tofi->window.exclusive_zone > 0) {

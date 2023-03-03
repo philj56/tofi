@@ -27,6 +27,7 @@
 #include "string_vec.h"
 #include "string_vec.h"
 #include "unicode.h"
+#include "viewporter.h"
 #include "xmalloc.h"
 
 #undef MAX
@@ -104,9 +105,6 @@ static void zwlr_layer_surface_configure(
 	 * We want actual pixel width / height, so we have to scale the
 	 * values provided by Wayland.
 	 */
-	tofi->window.width = width;
-	tofi->window.height = height;
-
 	tofi->window.surface.width = width * tofi->window.scale;
 	tofi->window.surface.height = height * tofi->window.scale;
 
@@ -697,6 +695,13 @@ static void registry_global(
 				&zwlr_layer_shell_v1_interface,
 				version);
 		log_debug("Bound to zwlr_layer_shell_v1 %u.\n", name);
+	} else if (!strcmp(interface, wp_viewporter_interface.name)) {
+		tofi->wp_viewporter = wl_registry_bind(
+				wl_registry,
+				name,
+				&wp_viewporter_interface,
+				1);
+		log_debug("Bound to wp_viewporter %u.\n", name);
 	}
 }
 
@@ -1430,9 +1435,30 @@ int main(int argc, char *argv[])
 			tofi.window.surface.wl_surface,
 			&wl_surface_listener,
 			&tofi);
-	wl_surface_set_buffer_scale(
-			tofi.window.surface.wl_surface,
-			tofi.window.scale);
+	if (tofi.window.width == 0 || tofi.window.height == 0) {
+		/*
+		 * Workaround for compatibility with legacy behaviour.
+		 *
+		 * Before the fractional_scale protocol was released, there was
+		 * no way for a client to know whether a fractional scale
+		 * factor had been set, meaning percentage-based dimensions
+		 * were incorrect. As a workaround for full-size windows, we
+		 * allowed specifying 0 for the width / height, which caused
+		 * zwlr_layer_shell to tell us the correct size to use.
+		 *
+		 * To make fractional scaling work, we have to use
+		 * wp_viewporter, and no longer need to set the buffer scale.
+		 * However, viewporter doesn't allow specifying 0 for
+		 * destination width or height. As a workaround, if 0 size is
+		 * set, don't use viewporter, warn the user and set the buffer
+		 * scale here.
+		 */
+		log_warning("Width or height set to 0, disabling fractional scaling support.\n");
+		log_warning("If your compositor supports the fractional scale protocol, percentages are preferred.\n");
+		wl_surface_set_buffer_scale(
+				tofi.window.surface.wl_surface,
+				tofi.window.scale);
+	}
 
 	/* Grab the first (and only remaining) output from our list. */
 	struct wl_output *wl_output;
@@ -1450,8 +1476,7 @@ int main(int argc, char *argv[])
 			"launcher");
 	zwlr_layer_surface_v1_set_keyboard_interactivity(
 			tofi.window.zwlr_layer_surface,
-			ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE
-			);
+			ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
 	zwlr_layer_surface_v1_add_listener(
 			tofi.window.zwlr_layer_surface,
 			&zwlr_layer_surface_listener,
@@ -1462,6 +1487,12 @@ int main(int argc, char *argv[])
 	zwlr_layer_surface_v1_set_exclusive_zone(
 			tofi.window.zwlr_layer_surface,
 			tofi.window.exclusive_zone);
+	zwlr_layer_surface_v1_set_margin(
+			tofi.window.zwlr_layer_surface,
+			tofi.window.margin_top,
+			tofi.window.margin_right,
+			tofi.window.margin_bottom,
+			tofi.window.margin_left);
 	/*
 	 * No matter whether we're scaling via Cairo or not, we're presenting a
 	 * scaled buffer to Wayland, so scale the window size here if we
@@ -1469,14 +1500,23 @@ int main(int argc, char *argv[])
 	 */
 	zwlr_layer_surface_v1_set_size(
 			tofi.window.zwlr_layer_surface,
-			tofi.window.width / (tofi.use_scale ? 1 : tofi.window.scale),
-			tofi.window.height / (tofi.use_scale ? 1 : tofi.window.scale));
-	zwlr_layer_surface_v1_set_margin(
-			tofi.window.zwlr_layer_surface,
-			tofi.window.margin_top,
-			tofi.window.margin_right,
-			tofi.window.margin_bottom,
-			tofi.window.margin_left);
+			tofi.window.width,
+			tofi.window.height);
+
+	/*
+	 * Set up a viewport for our surface, necessary for fractional scaling.
+	 */
+	tofi.window.wp_viewport = wp_viewporter_get_viewport(
+			tofi.wp_viewporter,
+			tofi.window.surface.wl_surface);
+	if (tofi.window.width > 0 && tofi.window.height > 0) {
+		wp_viewport_set_destination(
+				tofi.window.wp_viewport,
+				tofi.window.width,
+				tofi.window.height);
+	}
+
+	/* Commit the surface to finalise setup. */
 	wl_surface_commit(tofi.window.surface.wl_surface);
 
 	/*
@@ -1490,7 +1530,6 @@ int main(int argc, char *argv[])
 			tofi.wl_data_device,
 			&wl_data_device_listener,
 			&tofi.clipboard);
-
 
 	/*
 	 * Now that we've done all our Wayland-related setup, we do another
@@ -1700,6 +1739,7 @@ int main(int argc, char *argv[])
 	 */
 	surface_destroy(&tofi.window.surface);
 	entry_destroy(&tofi.window.entry);
+	wp_viewport_destroy(tofi.window.wp_viewport);
 	zwlr_layer_surface_v1_destroy(tofi.window.zwlr_layer_surface);
 	wl_surface_destroy(tofi.window.surface.wl_surface);
 	if (tofi.wl_keyboard != NULL) {
@@ -1727,6 +1767,7 @@ int main(int argc, char *argv[])
 	}
 	wl_shm_destroy(tofi.wl_shm);
 	zwlr_layer_shell_v1_destroy(tofi.zwlr_layer_shell);
+	wp_viewporter_destroy(tofi.wp_viewporter);
 	xkb_state_unref(tofi.xkb_state);
 	xkb_keymap_unref(tofi.xkb_keymap);
 	xkb_context_unref(tofi.xkb_context);
