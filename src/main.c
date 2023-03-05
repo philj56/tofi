@@ -18,7 +18,6 @@
 #include "drun.h"
 #include "config.h"
 #include "entry.h"
-#include "image.h"
 #include "input.h"
 #include "log.h"
 #include "nelem.h"

@@ -45,9 +45,6 @@ static void apply_text_theme_fallback(struct text_theme *theme, const struct tex
 
 void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t scale)
 {
-	entry->image.width = width;
-	entry->image.height = height;
-
 	/*
 	 * Create the cairo surfaces and contexts we'll be using.
 	 *

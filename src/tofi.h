@@ -8,7 +8,6 @@
 #include "clipboard.h"
 #include "color.h"
 #include "entry.h"
-#include "image.h"
 #include "surface.h"
 #include "wlr-layer-shell-unstable-v1.h"
 

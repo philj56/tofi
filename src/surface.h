@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <wayland-client.h>
 #include "color.h"
-#include "image.h"
 
 struct surface {
 	struct wl_surface *wl_surface;

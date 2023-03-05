@@ -9,7 +9,6 @@
 #include "color.h"
 #include "desktop_vec.h"
 #include "history.h"
-#include "image.h"
 #include "surface.h"
 #include "string_vec.h"
 
@@ -62,7 +61,6 @@ struct cursor_theme {
 };
 
 struct entry {
-	struct image image;
 	struct entry_backend_harfbuzz harfbuzz;
 	struct entry_backend_pango pango;
 	struct {
