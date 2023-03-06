@@ -10,7 +10,7 @@
 #include "entry.h"
 #include "surface.h"
 #include "wlr-layer-shell-unstable-v1.h"
-#include "wp-fractional-scale-v1.h"
+#include "fractional-scale-v1.h"
 
 #define MAX_OUTPUT_NAME_LEN 256
 #define MAX_TERMINAL_NAME_LEN 256

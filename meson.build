@@ -112,8 +112,6 @@ common_sources = files(
   'src/string_vec.c',
   'src/surface.c',
   'src/unicode.c',
-  'src/wlr-layer-shell-unstable-v1.c',
-  'src/wp-fractional-scale-v1.c',
   'src/xmalloc.c',
 )
 
@@ -180,6 +178,8 @@ wl_proto_src = []
 wl_proto_xml = [
   wayland_protocols_dir + '/stable/xdg-shell/xdg-shell.xml',
   wayland_protocols_dir + '/stable/viewporter/viewporter.xml',
+  'protocols/wlr-layer-shell-unstable-v1.xml',
+  'protocols/fractional-scale-v1.xml'
 ]
 
 foreach proto : wl_proto_xml
