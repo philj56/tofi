@@ -15,7 +15,7 @@ static int indent = 0;
 static void print_indent(FILE *file)
 {
 	for (int i = 0; i < indent; i++) {
-		fprintf(file, "\t");
+		fprintf(file, "    ");
 	}
 }
 
@@ -45,7 +45,6 @@ void log_warning(const char *const fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	fprintf(stderr, "[WARNING]: ");
-	print_indent(stderr);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 }
