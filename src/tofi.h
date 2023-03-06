@@ -10,6 +10,7 @@
 #include "entry.h"
 #include "surface.h"
 #include "wlr-layer-shell-unstable-v1.h"
+#include "wp-fractional-scale-v1.h"
 
 #define MAX_OUTPUT_NAME_LEN 256
 #define MAX_TERMINAL_NAME_LEN 256
@@ -35,6 +36,7 @@ struct tofi {
 	struct wl_data_device_manager *wl_data_device_manager;
 	struct wl_data_device *wl_data_device;
 	struct wp_viewporter *wp_viewporter;
+	struct wp_fractional_scale_manager_v1 *wp_fractional_scale_manager;
 	struct zwlr_layer_shell_v1 *zwlr_layer_shell;
 	struct wl_list output_list;
 	struct output_list_element *default_output;
@@ -63,6 +65,7 @@ struct tofi {
 		uint32_t width;
 		uint32_t height;
 		uint32_t scale;
+		uint32_t fractional_scale;
 		int32_t transform;
 		int32_t exclusive_zone;
 		int32_t margin_top;

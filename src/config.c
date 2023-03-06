@@ -10,6 +10,7 @@
 #include "config.h"
 #include "log.h"
 #include "nelem.h"
+#include "scale.h"
 #include "unicode.h"
 #include "xmalloc.h"
 
@@ -762,17 +763,22 @@ uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent)
 
 void config_fixup_values(struct tofi *tofi)
 {
-	uint32_t scale = tofi->window.scale;
 	uint32_t base_width = tofi->output_width;
 	uint32_t base_height = tofi->output_height;
+	uint32_t scale;
+	if (tofi->window.fractional_scale != 0) {
+		scale = tofi->window.fractional_scale;
+	} else {
+		scale = tofi->window.scale * 120;
+	}
 
 	/*
 	 * If we're going to be scaling these values in Cairo,
 	 * we need to apply the inverse scale here.
 	 */
 	if (tofi->use_scale) {
-		base_width /= scale;
-		base_height /= scale;
+		base_width = scale_apply_inverse(base_width, scale);
+		base_height = scale_apply_inverse(base_height, scale);
 	}
 
 	tofi->window.margin_top = fixup_percentage(
@@ -823,10 +829,10 @@ void config_fixup_values(struct tofi *tofi)
 			tofi->output_height,
 			tofi->window.height_is_percent);
 	if (tofi->window.width_is_percent || !tofi->use_scale) {
-		tofi->window.width /= scale;
+		tofi->window.width = scale_apply_inverse(tofi->window.width, scale);
 	}
 	if (tofi->window.height_is_percent || !tofi->use_scale) {
-		tofi->window.height /= scale;
+		tofi->window.height = scale_apply_inverse(tofi->window.height, scale);
 	}
 
 	/* Don't attempt percentage handling if exclusive_zone is set to -1. */

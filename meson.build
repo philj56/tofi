@@ -107,11 +107,13 @@ common_sources = files(
   'src/lock.c',
   'src/log.c',
   'src/mkdirp.c',
+  'src/scale.c',
   'src/shm.c',
   'src/string_vec.c',
   'src/surface.c',
   'src/unicode.c',
   'src/wlr-layer-shell-unstable-v1.c',
+  'src/wp-fractional-scale-v1.c',
   'src/xmalloc.c',
 )
 

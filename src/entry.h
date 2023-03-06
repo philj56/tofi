@@ -134,7 +134,7 @@ struct entry {
 	struct text_theme selection_theme;
 };
 
-void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t scale);
+void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t fractional_scale_numerator);
 void entry_destroy(struct entry *entry);
 void entry_update(struct entry *entry);
 

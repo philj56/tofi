@@ -22,6 +22,7 @@
 #include "log.h"
 #include "nelem.h"
 #include "lock.h"
+#include "scale.h"
 #include "shm.h"
 #include "string_vec.h"
 #include "string_vec.h"
@@ -104,8 +105,13 @@ static void zwlr_layer_surface_configure(
 	 * We want actual pixel width / height, so we have to scale the
 	 * values provided by Wayland.
 	 */
-	tofi->window.surface.width = width * tofi->window.scale;
-	tofi->window.surface.height = height * tofi->window.scale;
+	if (tofi->window.fractional_scale != 0) {
+		tofi->window.surface.width = scale_apply(width, tofi->window.fractional_scale);
+		tofi->window.surface.height = scale_apply(height, tofi->window.fractional_scale);
+	} else {
+		tofi->window.surface.width = width * tofi->window.scale;
+		tofi->window.surface.height = height * tofi->window.scale;
+	}
 
 	zwlr_layer_surface_v1_ack_configure(
 			tofi->window.zwlr_layer_surface,
@@ -701,6 +707,13 @@ static void registry_global(
 				&wp_viewporter_interface,
 				1);
 		log_debug("Bound to wp_viewporter %u.\n", name);
+	} else if (!strcmp(interface, wp_fractional_scale_manager_v1_interface.name)) {
+		tofi->wp_fractional_scale_manager = wl_registry_bind(
+				wl_registry,
+				name,
+				&wp_fractional_scale_manager_v1_interface,
+				1);
+		log_debug("Bound to wp_fractional_scale_manager_v1 %u.\n", name);
 	}
 }
 
@@ -763,6 +776,19 @@ static void dummy_layer_surface_close(
 static const struct zwlr_layer_surface_v1_listener dummy_layer_surface_listener = {
 	.configure = dummy_layer_surface_configure,
 	.closed = dummy_layer_surface_close
+};
+
+static void dummy_fractional_scale_preferred_scale(
+		void *data,
+		struct wp_fractional_scale_v1 *wp_fractional_scale,
+		uint32_t scale)
+{
+	struct tofi *tofi = data;
+	tofi->window.fractional_scale = scale;
+}
+
+static const struct wp_fractional_scale_v1_listener dummy_fractional_scale_listener = {
+	.preferred_scale = dummy_fractional_scale_preferred_scale
 };
 
 static void dummy_surface_enter(
@@ -1228,20 +1254,28 @@ int main(int argc, char *argv[])
 	log_unindent();
 	log_debug("Second roundtrip done.\n");
 
-	/* If there's more than one output, we need to select one. */
-	if (wl_list_length(&tofi.output_list) > 1) {
+	{
 		/*
-		 * Determine the default output
+		 * Determine the output we're going to appear on, and get its
+		 * fractional scale if supported.
 		 *
 		 * This seems like an ugly solution, but as far as I know
 		 * there's no way to determine the default output other than to
 		 * call get_layer_surface with NULL as the output and see which
 		 * output our surface turns up on.
 		 *
+		 * Additionally, determining fractional scale factors can
+		 * currently only be done by attaching a wp_fractional_scale to
+		 * a surface and displaying it.
+		 *
 		 * Here we set up a single pixel surface, perform the required
 		 * two roundtrips, then tear it down. tofi.default_output
-		 * should then contain the output our surface was assigned to.
+		 * should then contain the output our surface was assigned to,
+		 * and tofi.window.fractional_scale should have the scale
+		 * factor.
 		 */
+		log_debug("Determining output.\n");
+		log_indent();
 		struct surface surface = {
 			.width = 1,
 			.height = 1
@@ -1253,11 +1287,38 @@ int main(int argc, char *argv[])
 				&dummy_surface_listener,
 				&tofi);
 
+		struct wp_fractional_scale_v1 *wp_fractional_scale = NULL;
+		if (tofi.wp_fractional_scale_manager != NULL) {
+			wp_fractional_scale =
+				wp_fractional_scale_manager_v1_get_fractional_scale(
+						tofi.wp_fractional_scale_manager,
+						surface.wl_surface);
+			wp_fractional_scale_v1_add_listener(
+					wp_fractional_scale,
+					&dummy_fractional_scale_listener,
+					&tofi);
+		}
+
+		/*
+		 * If we have a desired output, make sure we appear on it so we
+		 * can determine the correct fractional scale.
+		 */
+		struct wl_output *wl_output = NULL;
+		if (tofi.target_output_name[0] != '\0') {
+			struct output_list_element *el;
+			wl_list_for_each(el, &tofi.output_list, link) {
+				if (!strcmp(tofi.target_output_name, el->name)) {
+					wl_output = el->wl_output;
+					break;
+				}
+			}
+		}
+
 		struct zwlr_layer_surface_v1 *zwlr_layer_surface =
 			zwlr_layer_shell_v1_get_layer_surface(
 					tofi.zwlr_layer_shell,
 					surface.wl_surface,
-					NULL,
+					wl_output,
 					ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND,
 					"dummy");
 		/*
@@ -1277,12 +1338,27 @@ int main(int argc, char *argv[])
 				1,
 				1);
 		wl_surface_commit(surface.wl_surface);
+		log_debug("First dummy roundtrip start.\n");
+		log_indent();
 		wl_display_roundtrip(tofi.wl_display);
+		log_unindent();
+		log_debug("First dummy roundtrip done.\n");
+		log_debug("Initialising dummy surface.\n");
+		log_indent();
 		surface_init(&surface, tofi.wl_shm);
 		surface_draw(&surface);
+		log_unindent();
+		log_debug("Dummy surface initialised.\n");
+		log_debug("Second dummy roundtrip start.\n");
+		log_indent();
 		wl_display_roundtrip(tofi.wl_display);
+		log_unindent();
+		log_debug("Second dummy roundtrip done.\n");
 		surface_destroy(&surface);
 		zwlr_layer_surface_v1_destroy(zwlr_layer_surface);
+		if (wp_fractional_scale != NULL) {
+			wp_fractional_scale_v1_destroy(wp_fractional_scale);
+		}
 		wl_surface_destroy(surface.wl_surface);
 
 		/*
@@ -1324,13 +1400,11 @@ int main(int argc, char *argv[])
 				free(el);
 			}
 		}
-	}
-	{
+
 		/*
 		 * The only output left should either be the one we want, or
 		 * the first that was advertised.
 		 */
-		struct output_list_element *el;
 		el = wl_container_of(tofi.output_list.next, el, link);
 
 		/*
@@ -1351,6 +1425,7 @@ int main(int argc, char *argv[])
 		}
 		tofi.window.scale = el->scale;
 		tofi.window.transform = el->transform;
+		log_unindent();
 		log_debug("Selected output %s.\n", el->name);
 	}
 
@@ -1454,6 +1529,7 @@ int main(int argc, char *argv[])
 		 */
 		log_warning("Width or height set to 0, disabling fractional scaling support.\n");
 		log_warning("If your compositor supports the fractional scale protocol, percentages are preferred.\n");
+		tofi.window.fractional_scale = 0;
 		wl_surface_set_buffer_scale(
 				tofi.window.surface.wl_surface,
 				tofi.window.scale);
@@ -1564,12 +1640,28 @@ int main(int argc, char *argv[])
 	 */
 	log_debug("Initialising renderer.\n");
 	log_indent();
-	entry_init(
-			&tofi.window.entry,
-			tofi.window.surface.shm_pool_data,
-			tofi.window.surface.width,
-			tofi.window.surface.height,
-			tofi.use_scale ? tofi.window.scale : 1);
+	{
+		/*
+		 * No matter how we're scaling (with fractions, integers or not
+		 * at all), we pass a fractional scale factor (the numerator of
+		 * a fraction with denominator 120) to our setup function for
+		 * ease.
+		 */
+		uint32_t scale = 120;
+		if (tofi.use_scale) {
+			if (tofi.window.fractional_scale != 0) {
+				scale = tofi.window.fractional_scale;
+			} else {
+				scale = tofi.window.scale * 120;
+			}
+		}
+		entry_init(
+				&tofi.window.entry,
+				tofi.window.surface.shm_pool_data,
+				tofi.window.surface.width,
+				tofi.window.surface.height,
+				scale);
+	}
 	log_unindent();
 	log_debug("Renderer initialised.\n");
 
@@ -1765,8 +1857,11 @@ int main(int argc, char *argv[])
 		}
 	}
 	wl_shm_destroy(tofi.wl_shm);
-	zwlr_layer_shell_v1_destroy(tofi.zwlr_layer_shell);
+	if (tofi.wp_fractional_scale_manager != NULL) {
+		wp_fractional_scale_manager_v1_destroy(tofi.wp_fractional_scale_manager);
+	}
 	wp_viewporter_destroy(tofi.wp_viewporter);
+	zwlr_layer_shell_v1_destroy(tofi.zwlr_layer_shell);
 	xkb_state_unref(tofi.xkb_state);
 	xkb_keymap_unref(tofi.xkb_keymap);
 	xkb_context_unref(tofi.xkb_context);

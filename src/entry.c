@@ -4,6 +4,7 @@
 #include "entry.h"
 #include "log.h"
 #include "nelem.h"
+#include "scale.h"
 
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -43,8 +44,9 @@ static void apply_text_theme_fallback(struct text_theme *theme, const struct tex
 	}
 }
 
-void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t scale)
+void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, uint32_t height, uint32_t fractional_scale_numerator)
 {
+	double scale = fractional_scale_numerator / 120.;
 	/*
 	 * Create the cairo surfaces and contexts we'll be using.
 	 *
@@ -54,6 +56,10 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	 * (width * height * (sizeof(uint32_t) == 4) * 2) bytes,
 	 * to allow for double buffering.
 	 */
+	log_debug("Creating %u x %u Cairo surface with scale factor %.3lf.\n",
+			width,
+			height,
+			fractional_scale_numerator / 120.);
 	cairo_surface_t *surface = cairo_image_surface_create_for_data(
 			buffer,
 			CAIRO_FORMAT_ARGB32,
@@ -78,8 +84,8 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	entry->cairo[1].cr = cairo_create(entry->cairo[1].surface);
 
 	/* If we're scaling with Cairo, remember to account for that here. */
-	width /= scale;
-	height /= scale;
+	width = scale_apply_inverse(width, fractional_scale_numerator);
+	height = scale_apply_inverse(height, fractional_scale_numerator);
 
 	log_debug("Drawing window.\n");
 	/* Draw the background */
@@ -107,8 +113,14 @@ void entry_init(struct entry *entry, uint8_t *restrict buffer, uint32_t width, u
 	cairo_stroke_preserve(cr);
 
 	/* Clear the overdrawn bits outside of the rounded corners */
-	cairo_rectangle(cr, 0, 0, width, height);
-	cairo_set_source_rgba(cr, 0, 0, 0, 0.5);
+	/*
+	 * N.B. the +1's shouldn't be required, but certain fractional scale
+	 * factors can otherwise cause 1-pixel artifacts on the edges
+	 * (presumably because Cairo is performing rounding differently to us
+	 * at some point).
+	 */
+	cairo_rectangle(cr, 0, 0, width + 1, height + 1);
+	cairo_set_source_rgba(cr, 0, 0, 0, 1);
 	cairo_save(cr);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
 	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
