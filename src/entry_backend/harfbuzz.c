@@ -553,8 +553,7 @@ void entry_backend_harfbuzz_init(
 		/* If we somehow fail to get an m from the font, just guess. */
 		entry->cursor_theme.em_width = font_size * 5.0 / 8.0;
 	}
-	hb_font_extents_t font_extents;
-	hb_font_get_h_extents(hb->hb_font, &font_extents);
+	hb_font_get_h_extents(hb->hb_font, &hb->hb_font_extents);
 	int32_t underline_depth;
 #ifdef NO_HARFBUZZ_METRIC_FALLBACK
 	if (!hb_ot_metrics_get_position(
@@ -569,7 +568,7 @@ void entry_backend_harfbuzz_init(
 			HB_OT_METRICS_TAG_UNDERLINE_OFFSET,
 			&underline_depth);
 #endif
-	entry->cursor_theme.underline_depth = (font_extents.ascender - underline_depth) / 64.0;
+	entry->cursor_theme.underline_depth = (hb->hb_font_extents.ascender - underline_depth) / 64.0;
 
 	if (entry->cursor_theme.style == CURSOR_STYLE_UNDERSCORE && !entry->cursor_theme.thickness_specified) {
 		int32_t thickness;
@@ -590,13 +589,12 @@ void entry_backend_harfbuzz_init(
 
 	}
 
-	log_debug("Creating Harfbuzz buffer.\n");
-	hb->hb_buffer = hb_buffer_create();
-
-	hb_font_get_h_extents(hb->hb_font, &hb->hb_font_extents);
 	if (hb->hb_font_extents.line_gap == 0) {
 		hb->hb_font_extents.line_gap = (hb->hb_font_extents.ascender - hb->hb_font_extents.descender);
 	}
+
+	log_debug("Creating Harfbuzz buffer.\n");
+	hb->hb_buffer = hb_buffer_create();
 
 	log_debug("Creating Cairo font.\n");
 	hb->cairo_face = cairo_ft_font_face_create_for_ft_face(hb->ft_face, 0);
