@@ -1533,6 +1533,18 @@ int main(int argc, char *argv[])
 		wl_surface_set_buffer_scale(
 				tofi.window.surface.wl_surface,
 				tofi.window.scale);
+	} else if (tofi.wp_viewporter == NULL) {
+		/*
+		 * We also could be running on a Wayland compositor which
+		 * doesn't support wp_viewporter, in which case we need to use
+		 * the old scaling method.
+		 */
+		log_warning("Using an outdated compositor, "
+				"fractional scaling will not work properly.\n");
+		tofi.window.fractional_scale = 0;
+		wl_surface_set_buffer_scale(
+				tofi.window.surface.wl_surface,
+				tofi.window.scale);
 	}
 
 	/* Grab the first (and only remaining) output from our list. */
@@ -1581,14 +1593,16 @@ int main(int argc, char *argv[])
 	/*
 	 * Set up a viewport for our surface, necessary for fractional scaling.
 	 */
-	tofi.window.wp_viewport = wp_viewporter_get_viewport(
-			tofi.wp_viewporter,
-			tofi.window.surface.wl_surface);
-	if (tofi.window.width > 0 && tofi.window.height > 0) {
-		wp_viewport_set_destination(
-				tofi.window.wp_viewport,
-				tofi.window.width,
-				tofi.window.height);
+	if (tofi.wp_viewporter != NULL) {
+		tofi.window.wp_viewport = wp_viewporter_get_viewport(
+				tofi.wp_viewporter,
+				tofi.window.surface.wl_surface);
+		if (tofi.window.width > 0 && tofi.window.height > 0) {
+			wp_viewport_set_destination(
+					tofi.window.wp_viewport,
+					tofi.window.width,
+					tofi.window.height);
+		}
 	}
 
 	/* Commit the surface to finalise setup. */
@@ -1830,7 +1844,9 @@ int main(int argc, char *argv[])
 	 */
 	surface_destroy(&tofi.window.surface);
 	entry_destroy(&tofi.window.entry);
-	wp_viewport_destroy(tofi.window.wp_viewport);
+	if (tofi.window.wp_viewport != NULL) {
+		wp_viewport_destroy(tofi.window.wp_viewport);
+	}
 	zwlr_layer_surface_v1_destroy(tofi.window.zwlr_layer_surface);
 	wl_surface_destroy(tofi.window.surface.wl_surface);
 	if (tofi.wl_keyboard != NULL) {
@@ -1860,7 +1876,9 @@ int main(int argc, char *argv[])
 	if (tofi.wp_fractional_scale_manager != NULL) {
 		wp_fractional_scale_manager_v1_destroy(tofi.wp_fractional_scale_manager);
 	}
-	wp_viewporter_destroy(tofi.wp_viewporter);
+	if (tofi.wp_viewporter != NULL) {
+		wp_viewporter_destroy(tofi.wp_viewporter);
+	}
 	zwlr_layer_shell_v1_destroy(tofi.zwlr_layer_shell);
 	xkb_state_unref(tofi.xkb_state);
 	xkb_keymap_unref(tofi.xkb_keymap);
