@@ -87,6 +87,8 @@ add_project_arguments(
     '-Wno-unused-parameter',
     '-D_GNU_SOURCE',
     '-D_FORTIFY_SOURCE=2',
+    # Disable these unwind tables for binary size, as we don't use exceptions
+    # or anything else that requires them.
     '-fno-asynchronous-unwind-tables',
   ],
   language: 'c'
