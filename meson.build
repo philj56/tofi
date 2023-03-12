@@ -87,6 +87,7 @@ add_project_arguments(
     '-Wno-unused-parameter',
     '-D_GNU_SOURCE',
     '-D_FORTIFY_SOURCE=2',
+    '-fno-asynchronous-unwind-tables',
   ],
   language: 'c'
 )
