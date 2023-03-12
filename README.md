@@ -88,6 +88,9 @@ set $drun tofi-drun --drun-launch=true
 bindsym $mod+Shift+d exec $drun
 ```
 
+If you run `tofi-run` in terminal and it yields warning messages, you should
+launch `set $run tofi-run 2> /dev/null | xargs swaymsg exec --` instead.
+
 See the main [manpage](doc/tofi.1.md) for more info.
 
 ### Theming
