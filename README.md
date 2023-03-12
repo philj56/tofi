@@ -47,6 +47,16 @@ sudo dnf install freetype-devel cairo-devel pango-devel wayland-devel libxkbcomm
 sudo dnf install meson scdoc wayland-protocols-devel
 ```
 
+#### For Debian/Ubuntu
+
+```sh
+# Runtime dependencies
+sudo apt install libfreetype-dev libcairo2-dev libpango1.0-dev libwayland-dev libxkbcommon-dev libharfbuzz-dev
+
+# Build-time dependencies
+sudo apt install meson scdoc wayland-protocols
+```
+
 Then build:
 ```sh
 meson build && ninja -C build install
