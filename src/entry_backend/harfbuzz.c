@@ -619,6 +619,17 @@ void entry_backend_harfbuzz_init(
 	cairo_set_font_options(entry->cairo[1].cr, opts);
 
 	cairo_font_options_destroy(opts);
+
+	/*
+	 * Cairo changes the size of the font, which sometimes causes rendering
+	 * of 'm' characters to mess up (as harfbuzz has already it when we
+	 * measured it). We therefore have to notify harfbuzz of any potential
+	 * changes here.
+	 *
+	 * In future, the recently-added hb-cairo interface would probably
+	 * solve this issue.
+	 */
+	hb_ft_font_changed(hb->hb_font);
 }
 
 void entry_backend_harfbuzz_destroy(struct entry *entry)
