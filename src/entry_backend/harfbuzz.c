@@ -79,7 +79,6 @@ static void setup_hb_buffer(hb_buffer_t *buffer)
 	hb_buffer_set_cluster_level(buffer, HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS);
 }
 
-
 /*
  * Render a hb_buffer with Cairo, and return the extents of the rendered text
  * in Cairo units.
@@ -149,40 +148,18 @@ static cairo_text_extents_t render_text(
 	return render_hb_buffer(cr, &hb->hb_font_extents, hb->hb_buffer, hb->scale);
 }
 
-
 /*
- * Render some text with an optional background box, using settings from the
- * given theme.
+ * Render the background box for a piece of text with the given theme and text
+ * extents.
  */
-static cairo_text_extents_t render_text_themed(
+static void render_text_background(
 		cairo_t *cr,
 		struct entry *entry,
-		const char *text,
+		cairo_text_extents_t extents,
 		const struct text_theme *theme)
 {
-	struct entry_backend_harfbuzz *hb = &entry->harfbuzz;
-	cairo_font_extents_t font_extents;
-	cairo_font_extents(cr, &font_extents);
 	struct directional padding = theme->padding;
-
-	/*
-	 * I previously thought rendering the text to a group, measuring it,
-	 * drawing the box on the main canvas and then drawing the group would
-	 * be the most efficient way of doing this. I was wrong.
-	 *
-	 * It turns out to be much quicker to just draw the text to the canvas,
-	 * paint over it with the box, and then draw the text again. This is
-	 * fine, as long as the box is always bigger than the text (which it is
-	 * unless the user sets some extreme values for the corner radius).
-	 */
-	struct color color = theme->foreground_color;
-	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-	cairo_text_extents_t extents = render_text(cr, hb, text);
-
-	if (theme->background_color.a == 0) {
-		/* No background to draw, we're done. */
-		return extents;
-	}
+	cairo_font_extents_t font_extents = entry->harfbuzz.cairo_font_extents;
 
 	/*
 	 * If any of the padding values are negative, make them just big enough
@@ -215,7 +192,7 @@ static cairo_text_extents_t render_text_themed(
 	}
 
 	cairo_save(cr);
-	color = theme->background_color;
+	struct color color = theme->background_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 	cairo_translate(
 			cr,
@@ -229,6 +206,41 @@ static cairo_text_extents_t render_text_themed(
 			);
 	cairo_fill(cr);
 	cairo_restore(cr);
+}
+
+
+/*
+ * Render some text with an optional background box, using settings from the
+ * given theme.
+ */
+static cairo_text_extents_t render_text_themed(
+		cairo_t *cr,
+		struct entry *entry,
+		const char *text,
+		const struct text_theme *theme)
+{
+	struct entry_backend_harfbuzz *hb = &entry->harfbuzz;
+
+	/*
+	 * I previously thought rendering the text to a group, measuring it,
+	 * drawing the box on the main canvas and then drawing the group would
+	 * be the most efficient way of doing this. I was wrong.
+	 *
+	 * It turns out to be much quicker to just draw the text to the canvas,
+	 * paint over it with the box, and then draw the text again. This is
+	 * fine, as long as the box is always bigger than the text (which it is
+	 * unless the user sets some extreme values for the corner radius).
+	 */
+	struct color color = theme->foreground_color;
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+	cairo_text_extents_t extents = render_text(cr, hb, text);
+
+	if (theme->background_color.a == 0) {
+		/* No background to draw, we're done. */
+		return extents;
+	}
+
+	render_text_background(cr, entry, extents, theme);
 
 	color = theme->foreground_color;
 	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
@@ -619,9 +631,19 @@ void entry_backend_harfbuzz_init(
 	cairo_font_options_destroy(opts);
 
 	/*
+	 * This is really dumb, but if we don't call cairo_font_extents (or
+	 * presumably some similar function) before rendering the text for the
+	 * first time, font spacing is all messed up.
+	 *
+	 * This whole Harfbuzz - Cairo - FreeType thing is a bit finicky to
+	 * set up.
+	 */
+	cairo_font_extents(cr, &hb->cairo_font_extents);
+
+	/*
 	 * Cairo changes the size of the font, which sometimes causes rendering
-	 * of 'm' characters to mess up (as harfbuzz has already it when we
-	 * measured it). We therefore have to notify harfbuzz of any potential
+	 * of 'm' characters to mess up (as Harfbuzz has already it when we
+	 * measured it). We therefore have to notify Harfbuzz of any potential
 	 * changes here.
 	 *
 	 * In future, the recently-added hb-cairo interface would probably
@@ -889,22 +911,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 					 * First pass, paint over the text with
 					 * our background box.
 					 */
-					struct directional padding = entry->selection_theme.padding;
-					cairo_save(cr);
-					color = entry->selection_theme.background_color;
-					cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
-					cairo_translate(
-							cr,
-							floor(-padding.left + extents.x_bearing),
-							-padding.top);
-					rounded_rectangle(
-							cr,
-							ceil(extents.width + padding.left + padding.right),
-							ceil(entry->harfbuzz.hb_font_extents.line_gap / 64.0 + padding.top + padding.bottom),
-							entry->selection_theme.background_corner_radius
-							);
-					cairo_fill(cr);
-					cairo_restore(cr);
+					render_text_background(cr, entry, extents, &entry->selection_theme);
 				}
 			}
 

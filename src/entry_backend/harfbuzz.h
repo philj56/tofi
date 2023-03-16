@@ -17,6 +17,7 @@ struct entry_backend_harfbuzz {
 	FT_Face ft_face;
 
 	cairo_font_face_t *cairo_face;
+	cairo_font_extents_t cairo_font_extents;
 
 	hb_font_t *hb_font;
 	hb_font_extents_t hb_font_extents;
