@@ -693,6 +693,11 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		if (!err) {
 			tofi->require_match = val;
 		}
+	} else if (strcasecmp(option, "auto-accept-single") == 0) {
+		bool val = parse_bool(filename, lineno, value, &err);
+		if (!err) {
+			tofi->auto_accept_single = val;
+		}
 	} else if (strcasecmp(option, "hide-input") == 0) {
 		bool val = parse_bool(filename, lineno, value, &err);
 		if (!err) {

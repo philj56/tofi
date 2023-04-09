@@ -89,6 +89,14 @@ options.
 >
 > Default: true
 
+**auto-accept-single**=*true\|false*
+
+> If true, automatically accept a result if it is the only one
+> remaining. If there's only one result on startup, window creation is
+> skipped altogether.
+>
+> Default: false
+
 **hide-input**=*true\|false*
 
 > If true, typed input will be hidden, and what is displayed (if

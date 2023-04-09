@@ -257,6 +257,11 @@
 	# In drun mode, this is always true.
 	require-match = true
 
+	# If true, automatically accept a result if it is the only one
+	# remaining. If there's only one result on startup, window creation is
+	# skipped altogether.
+	auto-accept-single = false
+
 	# If true, typed input will be hidden, and what is displayed (if
 	# anything) is determined by the hidden-character option.
 	hide-input = false

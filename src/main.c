@@ -913,6 +913,7 @@ const struct option long_options[] = {
 	{"history-file", required_argument, NULL, 0},
 	{"fuzzy-match", required_argument, NULL, 0},
 	{"require-match", required_argument, NULL, 0},
+	{"auto-accept-single", required_argument, NULL, 0},
 	{"hide-input", required_argument, NULL, 0},
 	{"hidden-character", required_argument, NULL, 0},
 	{"drun-launch", required_argument, NULL, 0},
@@ -1198,7 +1199,7 @@ int main(int argc, char *argv[])
 	}
 
 	parse_args(&tofi, argc, argv);
-	log_debug("Config done\n");
+	log_debug("Config done.\n");
 
 	if (!tofi.multiple_instance && lock_check()) {
 		log_error("Another instance of tofi is already running.\n");
@@ -1497,6 +1498,12 @@ int main(int argc, char *argv[])
 		log_debug("Result list generated.\n");
 	}
 	tofi.window.entry.results = string_ref_vec_copy(&tofi.window.entry.commands);
+
+	if (tofi.auto_accept_single && tofi.window.entry.results.count == 1) {
+		log_debug("Only one result, exiting.\n");
+		do_submit(&tofi);
+		return EXIT_SUCCESS;
+	}
 
 	/*
 	 * Next, we create the Wayland surface, which takes on the

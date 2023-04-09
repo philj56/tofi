@@ -110,6 +110,10 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		return;
 	}
 
+	if (tofi->auto_accept_single && tofi->window.entry.results.count == 1) {
+		tofi->submit = true;
+	}
+
 	tofi->window.surface.redraw = true;
 }
 

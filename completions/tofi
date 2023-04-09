@@ -78,6 +78,7 @@ _tofi()
 		--history-file
 		--fuzzy-match
 		--require-match
+		--auto-accept-single
 		--hide-input
 		--hidden-character
 		--drun-launch
