@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.9.0] - 2023-04-09
+### Added
+- Added support for a text cursor. This can be enabled with the `text-cursor`
+  option, the style of cursor chosen with `text-cursor-style`, and themed
+  similarly to other text.
+- Added support for fractional scaling, correcting the behaviour of percentage
+  sizes when fractional scaling is used.
+- Added Ctrl-n, Ctrl-p, Page-Up and Page-Down keybindings.
+- Added `auto-accept-single` option, to automatically accept the last remaining
+  result when there is only one.
+
+### Changed
+- The `font` option now performs home path substitution for paths starting with
+  `~/`.
+
+### Fixed
+- Fixed some more potential errors from malformed config files.
+- Fixed some potential memory leaks when generating caches.
+- Fixed rounded corners when a background padding of -1 is specified.
+- Fixed broken text rendering with some versions of Harfbuzz.
+- Fixed some man page typos.
+
+
+## [0.8.1] - 2022-12-01
+### Fixed
+- Stop debug logs printing in release builds.
+
+
 ## [0.8.0] - 2022-12-01
 ### Deprecated
 Text styling has been overhauled in this update, and as a result the
@@ -239,6 +267,8 @@ is how it should have been done from the start.
 ## [0.1.0] - 2022-06-27
 Initial release. Good enough to use, but still some jank.
 
+[0.9.0]: https://github.com/philj56/tofi/compare/v0.8.1...v0.9.0
+[0.8.1]: https://github.com/philj56/tofi/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/philj56/tofi/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/philj56/tofi/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/philj56/tofi/compare/v0.5.0...v0.6.0
