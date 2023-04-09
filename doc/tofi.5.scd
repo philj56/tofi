@@ -91,7 +91,7 @@ options.
 
 *drun-launch*=_true|false_
 	If true, directly launch applications on selection when in drun mode.
-	Otherwise, just print the path of the .desktop file to stdout.
+	Otherwise, just print the Exec line of the .desktop file to stdout.
 
 	Default: false
 
@@ -543,4 +543,4 @@ Philip Jones <philj56@gmail.com>
 
 # SEE ALSO
 
-*tofi*(5), *dmenu*(1) *rofi*(1)
+*tofi*(1), *dmenu*(1) *rofi*(1)
