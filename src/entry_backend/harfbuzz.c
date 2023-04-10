@@ -601,9 +601,10 @@ void entry_backend_harfbuzz_init(
 
 	}
 
-	if (hb->hb_font_extents.line_gap == 0) {
-		hb->hb_font_extents.line_gap = (hb->hb_font_extents.ascender - hb->hb_font_extents.descender);
-	}
+	hb->line_spacing =
+		hb->hb_font_extents.ascender
+		- hb->hb_font_extents.descender
+		+ hb->hb_font_extents.line_gap;
 
 	log_debug("Creating Harfbuzz buffer.\n");
 	hb->hb_buffer = hb_buffer_create();
@@ -734,7 +735,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 		if (entry->horizontal) {
 			cairo_translate(cr, extents.x_advance + entry->result_spacing, 0);
 		} else {
-			cairo_translate(cr, 0, entry->harfbuzz.hb_font_extents.line_gap / 64.0 + entry->result_spacing);
+			cairo_translate(cr, 0, entry->harfbuzz.line_spacing / 64.0 + entry->result_spacing);
 		}
 		if (entry->num_results == 0) {
 			if (size_overflows(entry, 0, 0)) {
@@ -780,7 +781,7 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 				 * The height of the text doesn't change, so
 				 * we don't need to re-measure it each time.
 				 */
-				if (size_overflows(entry, 0, entry->harfbuzz.hb_font_extents.line_gap / 64.0)) {
+				if (size_overflows(entry, 0, entry->harfbuzz.line_spacing / 64.0)) {
 					break;
 				} else {
 					extents = render_text_themed(cr, entry, result, theme);

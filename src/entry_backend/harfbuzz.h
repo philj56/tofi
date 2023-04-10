@@ -27,6 +27,7 @@ struct entry_backend_harfbuzz {
 	uint8_t num_variations;
 	uint8_t num_features;
 
+	double line_spacing;
 	double scale;
 
 	bool disable_hinting;
