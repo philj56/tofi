@@ -7,4 +7,7 @@ int32_t fuzzy_match_simple_words(const char *restrict patterns, const char *rest
 int32_t fuzzy_match_words(const char *restrict patterns, const char *restrict str);
 int32_t fuzzy_match(const char *restrict pattern, const char *restrict str);
 
+int32_t levenshtein(const char *restrict pattern, const char *restrict str);
+int32_t levenshtein_osa(const char *restrict pattern, const char *restrict str);
+
 #endif /* FUZZY_MATCH_H */

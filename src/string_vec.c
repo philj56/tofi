@@ -190,7 +190,13 @@ struct string_ref_vec string_ref_vec_filter(
 	for (size_t i = 0; i < vec->count; i++) {
 		int32_t search_score;
 		if (fuzzy) {
-			search_score = fuzzy_match_words(substr, vec->buf[i].string);
+			//search_score = fuzzy_match_words(substr, vec->buf[i].string);
+			//if (search_score != INT32_MIN) {
+				search_score = levenshtein_osa(substr, vec->buf[i].string);//fuzzy_match_words(substr, vec->buf[i].string);
+				if (search_score != INT32_MIN) {
+					search_score *= -search_score * search_score;
+				}
+			//}
 		} else {
 			search_score = fuzzy_match_simple_words(substr, vec->buf[i].string);
 		}

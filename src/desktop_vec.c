@@ -157,6 +157,12 @@ struct string_ref_vec desktop_vec_filter(
 		int32_t search_score;
 		if (fuzzy) {
 			search_score = fuzzy_match_words(substr, vec->buf[i].name);
+			if (search_score != INT32_MIN) {
+				search_score = levenshtein_osa(substr, vec->buf[i].name);//fuzzy_match_words(substr, vec->buf[i].string);h
+				if (search_score != INT32_MIN) {
+					search_score *= -search_score * search_score;
+				}
+			}
 		} else {
 			search_score = fuzzy_match_simple_words(substr, vec->buf[i].name);
 		}
@@ -169,6 +175,7 @@ struct string_ref_vec desktop_vec_filter(
 			filt.buf[filt.count - 1].search_score = search_score;
 			filt.buf[filt.count - 1].history_score = vec->buf[i].history_score;
 		} else {
+			continue;
 			/* If we didn't match the name, check the keywords. */
 			if (fuzzy) {
 				search_score = fuzzy_match_words(substr, vec->buf[i].keywords);

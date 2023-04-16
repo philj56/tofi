@@ -236,3 +236,113 @@ int32_t compute_score(int32_t jump, bool first_char, const char *restrict match)
 
 	return score;
 }
+
+int32_t levenshtein(const char *restrict pattern, const char *restrict str)
+{
+	const size_t slen = strlen(str);
+	const size_t plen = strlen(pattern);
+
+	if (*pattern == '\0') {
+		return INT32_MIN;
+	}
+	//if (slen < plen) {
+	//	return INT32_MIN;
+	//}
+
+	uint32_t *v0 = xcalloc(slen + 1, sizeof(*v0));
+	uint32_t *v1 = xcalloc(slen + 1, sizeof(*v1));
+
+	for (uint32_t i = 0; i < slen + 1; i++) {
+		v0[i] = i;
+	}
+
+	for (uint32_t i = 0; i < plen; i++) {
+		v1[0] = i + 1;
+
+		for (uint32_t j = 0; j < slen; j++) {
+			uint32_t deletion_cost = v0[j + 1] + 1;
+			uint32_t insertion_cost = v1[j] + 1;
+			uint32_t substitution_cost;
+			if (pattern[i] == str[j]) {
+				substitution_cost = v0[j];
+			} else {
+				substitution_cost = v0[j] + 1;
+			}
+
+			v1[j + 1] = MIN(deletion_cost, MIN(insertion_cost, substitution_cost));
+		}
+
+		uint32_t *tmp = v0;
+		v0 = v1;
+		v1 = tmp;
+	}
+
+	uint32_t result = v0[slen];
+
+	free(v0);
+	free(v1);
+
+	return result;
+}
+
+int32_t levenshtein_osa(const char *restrict pattern, const char *restrict str)
+{
+	const size_t slen = strlen(str);
+	const size_t plen = strlen(pattern);
+
+	const uint32_t deletion_price = 1;
+	const uint32_t insertion_price = 1;
+	const uint32_t substitution_price = 1;
+	const uint32_t transposition_price = 1;
+
+	if (*pattern == '\0') {
+		return INT32_MIN;
+	}
+	if (slen < plen - 1) {
+		return INT32_MIN;
+	}
+
+	// vn: n = difference from current row
+	uint32_t *v0 = xcalloc(slen + 1, sizeof(*v0));
+	uint32_t *v1 = xcalloc(slen + 1, sizeof(*v1));
+	uint32_t *v2 = xcalloc(slen + 1, sizeof(*v2));
+
+	for (uint32_t i = 0; i < slen + 1; i++) {
+		v1[i] = i * deletion_price;
+	}
+
+	for (uint32_t i = 0; i < plen; i++) {
+		v0[0] = (i + 1) * deletion_price;
+
+		for (uint32_t j = 0; j < slen; j++) {
+			uint32_t deletion_cost = v1[j + 1] + deletion_price;
+			uint32_t insertion_cost = v0[j] + insertion_price;
+			uint32_t substitution_cost;
+			if (pattern[i] == str[j]) {
+				substitution_cost = v1[j];
+			} else {
+				substitution_cost = v1[j] + substitution_price;
+			}
+
+			v0[j + 1] = MIN(deletion_cost, MIN(insertion_cost, substitution_cost));
+
+			if (i > 0 && j > 0 && pattern[i] == str[j - 1] && pattern[i - 1] == str[j]) {
+				uint32_t transposition_cost = v2[j - 1] + transposition_price;
+				v0[j + 1] = MIN(v0[j + 1], transposition_cost);
+			}
+		}
+
+		uint32_t *tmp = v2;
+		v2 = v1;
+		v1 = v0;
+		v0 = tmp;
+	}
+
+	uint32_t result = v1[slen];
+
+	free(v0);
+	free(v1);
+	free(v2);
+
+	return result;
+}
