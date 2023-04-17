@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "history.h"
+#include "matching.h"
 
 struct scored_string {
 	char *string;
@@ -73,7 +74,7 @@ struct scored_string_ref *string_ref_vec_find_sorted(struct string_ref_vec *rest
 struct string_ref_vec string_ref_vec_filter(
 		const struct string_ref_vec *restrict vec,
 		const char *restrict substr,
-		bool fuzzy);
+		enum matching_algorithm algorithm);
 
 [[nodiscard("memory leaked")]]
 struct string_ref_vec string_ref_vec_from_buffer(char *buffer);

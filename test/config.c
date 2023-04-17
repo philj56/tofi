@@ -45,6 +45,12 @@ int main(int argc, char *argv[])
 	is_valid("text-cursor-style", "underscore", "Text cursor underscore");
 	isnt_valid("text-cursor-style", "blocky", "Invalid text cursor style");
 
+	/* Matching algorithms */
+	is_valid("matching-algorithm", "normal", "Normal matching");
+	is_valid("matching-algorithm", "fuzzy", "Fuzzy matching");
+	is_valid("matching-algorithm", "prefix", "Prefix matching");
+	isnt_valid("matching-algorithm", "regex", "Regex matching");
+
 	/* Bools */
 	is_valid("horizontal", "tRuE", "Boolean true");
 	is_valid("horizontal", "fAlSe", "Boolean false");

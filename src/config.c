@@ -79,6 +79,8 @@ static uint32_t fixup_percentage(uint32_t value, uint32_t base, bool is_percent)
 
 static uint32_t parse_anchor(const char *filename, size_t lineno, const char *str, bool *err);
 static enum cursor_style parse_cursor_style(const char *filename, size_t lineno, const char *str, bool *err);
+static enum matching_algorithm parse_matching_algorithm(const char *filename, size_t lineno, const char *str, bool *err);
+
 static bool parse_bool(const char *filename, size_t lineno, const char *str, bool *err);
 static uint32_t parse_char(const char *filename, size_t lineno, const char *str, bool *err);
 static struct color parse_color(const char *filename, size_t lineno, const char *str, bool *err);
@@ -683,10 +685,18 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		}
 	} else if (strcasecmp(option, "history-file") == 0) {
 		snprintf(tofi->history_file, N_ELEM(tofi->history_file), "%s", value);
+	} else if (strcasecmp(option, "matching-algorithm") == 0) {
+		enum matching_algorithm val = parse_matching_algorithm(filename, lineno, value, &err);
+		if (!err) {
+			tofi->matching_algorithm= val;
+		}
 	} else if (strcasecmp(option, "fuzzy-match") == 0) {
+		log_warning("The \"fuzzy-match\" option is deprecated, and may be removed in future. Please switch to \"matching-algorithm\".\n");
 		bool val = parse_bool(filename, lineno, value, &err);
 		if (!err) {
-			tofi->fuzzy_match = val;
+			if (val) {
+				tofi->matching_algorithm = MATCHING_ALGORITHM_FUZZY;
+			}
 		}
 	} else if (strcasecmp(option, "require-match") == 0) {
 		bool val = parse_bool(filename, lineno, value, &err);
@@ -977,6 +987,24 @@ enum cursor_style parse_cursor_style(const char *filename, size_t lineno, const 
 		return CURSOR_STYLE_UNDERSCORE;
 	}
 	PARSE_ERROR(filename, lineno, "Invalid cursor style \"%s\".\n", str);
+	if (err) {
+		*err = true;
+	}
+	return 0;
+}
+
+enum matching_algorithm parse_matching_algorithm(const char *filename, size_t lineno, const char *str, bool *err)
+{
+	if(strcasecmp(str, "normal") == 0) {
+		return MATCHING_ALGORITHM_NORMAL;
+	}
+	if(strcasecmp(str, "fuzzy") == 0) {
+		return MATCHING_ALGORITHM_FUZZY;
+	}
+	if(strcasecmp(str, "prefix") == 0) {
+		return MATCHING_ALGORITHM_PREFIX;
+	}
+	PARSE_ERROR(filename, lineno, "Invalid matching algorithm \"%s\".\n", str);
 	if (err) {
 		*err = true;
 	}

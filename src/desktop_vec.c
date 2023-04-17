@@ -1,7 +1,7 @@
 #include <glib.h>
 #include <stdbool.h>
 #include "desktop_vec.h"
-#include "fuzzy_match.h"
+#include "matching.h"
 #include "log.h"
 #include "string_vec.h"
 #include "unicode.h"
@@ -150,31 +150,20 @@ struct desktop_entry *desktop_vec_find_sorted(struct desktop_vec *restrict vec, 
 struct string_ref_vec desktop_vec_filter(
 		const struct desktop_vec *restrict vec,
 		const char *restrict substr,
-		bool fuzzy)
+		enum matching_algorithm algorithm)
 {
 	struct string_ref_vec filt = string_ref_vec_create();
 	for (size_t i = 0; i < vec->count; i++) {
 		int32_t search_score;
-		if (fuzzy) {
-			search_score = fuzzy_match_words(substr, vec->buf[i].name);
-		} else {
-			search_score = fuzzy_match_simple_words(substr, vec->buf[i].name);
-		}
+		search_score = match_words(algorithm, substr, vec->buf[i].name);
 		if (search_score != INT32_MIN) {
 			string_ref_vec_add(&filt, vec->buf[i].name);
-			/*
-			 * Store the position of the match in the string as
-			 * its search_score, for later sorting.
-			 */
+			/* Store the score of the match for later sorting. */
 			filt.buf[filt.count - 1].search_score = search_score;
 			filt.buf[filt.count - 1].history_score = vec->buf[i].history_score;
 		} else {
 			/* If we didn't match the name, check the keywords. */
-			if (fuzzy) {
-				search_score = fuzzy_match_words(substr, vec->buf[i].keywords);
-			} else {
-				search_score = fuzzy_match_simple_words(substr, vec->buf[i].keywords);
-			}
+			search_score = match_words(algorithm, substr, vec->buf[i].keywords);
 			if (search_score != INT32_MIN) {
 				string_ref_vec_add(&filt, vec->buf[i].name);
 				/*

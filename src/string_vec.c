@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include "fuzzy_match.h"
 #include "history.h"
+#include "matching.h"
 #include "string_vec.h"
 #include "unicode.h"
 #include "xmalloc.h"
@@ -181,7 +181,7 @@ struct scored_string_ref *string_ref_vec_find_sorted(struct string_ref_vec *rest
 struct string_ref_vec string_ref_vec_filter(
 		const struct string_ref_vec *restrict vec,
 		const char *restrict substr,
-		bool fuzzy)
+		enum matching_algorithm algorithm)
 {
 	if (substr[0] == '\0') {
 		return string_ref_vec_copy(vec);
@@ -189,11 +189,7 @@ struct string_ref_vec string_ref_vec_filter(
 	struct string_ref_vec filt = string_ref_vec_create();
 	for (size_t i = 0; i < vec->count; i++) {
 		int32_t search_score;
-		if (fuzzy) {
-			search_score = fuzzy_match_words(substr, vec->buf[i].string);
-		} else {
-			search_score = fuzzy_match_simple_words(substr, vec->buf[i].string);
-		}
+		search_score = match_words(algorithm, substr, vec->buf[i].string);
 		if (search_score != INT32_MIN) {
 			string_ref_vec_add(&filt, vec->buf[i].string);
 			filt.buf[filt.count - 1].search_score = search_score;

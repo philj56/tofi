@@ -104,7 +104,7 @@ common_sources = files(
   'src/entry.c',
   'src/entry_backend/pango.c',
   'src/entry_backend/harfbuzz.c',
-  'src/fuzzy_match.c',
+  'src/matching.c',
   'src/history.c',
   'src/input.c',
   'src/lock.c',
@@ -121,7 +121,7 @@ common_sources = files(
 compgen_sources = files(
   'src/main_compgen.c',
   'src/compgen.c',
-  'src/fuzzy_match.c',
+  'src/matching.c',
   'src/log.c',
   'src/mkdirp.c',
   'src/string_vec.c',

@@ -834,7 +834,6 @@ static void usage(bool err)
 "      --output <name>                  Name of output to display window on.\n"
 "      --anchor <position>              Location on screen to anchor window.\n"
 "      --horizontal <true|false>        List results horizontally.\n"
-"      --fuzzy-match <true|false>       Use fuzzy matching for searching.\n"
 "\n"
 "All options listed in \"man 5 tofi\" are also accpted in the form \"--key=value\".\n"
 	);
@@ -912,6 +911,7 @@ const struct option long_options[] = {
 	{"history", required_argument, NULL, 0},
 	{"history-file", required_argument, NULL, 0},
 	{"fuzzy-match", required_argument, NULL, 0},
+	{"matching-algorithm", required_argument, NULL, 0},
 	{"require-match", required_argument, NULL, 0},
 	{"auto-accept-single", required_argument, NULL, 0},
 	{"hide-input", required_argument, NULL, 0},

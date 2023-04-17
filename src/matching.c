@@ -4,17 +4,28 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "fuzzy_match.h"
+#include "matching.h"
 #include "unicode.h"
 #include "xmalloc.h"
 
 #undef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-static int32_t compute_score(
-		int32_t jump,
-		bool first_char,
-		const char *restrict match);
+static int32_t simple_match_words(
+		const char *restrict patterns,
+		const char *restrict str);
+
+static int32_t prefix_match_words(
+		const char *restrict patterns,
+		const char *restrict str);
+
+static int32_t fuzzy_match_words(
+		const char *restrict patterns,
+		const char *restrict str);
+
+static int32_t fuzzy_match(
+		const char *restrict pattern,
+		const char *restrict str);
 
 static int32_t fuzzy_match_recurse(
 		const char *restrict pattern,
@@ -23,12 +34,39 @@ static int32_t fuzzy_match_recurse(
 		bool first_match_only,
 		bool first_char);
 
+static int32_t compute_score(
+		int32_t jump,
+		bool first_char,
+		const char *restrict match);
+
+/*
+ * Select the appropriate algorithm, and return its score.
+ * Each algorithm returns larger scores for better matches,
+ * and returns INT32_MIN if a word is not found.
+ */
+int32_t match_words(
+		enum matching_algorithm algorithm,
+		const char *restrict patterns,
+		const char *restrict str)
+{
+	switch (algorithm) {
+		case MATCHING_ALGORITHM_NORMAL:
+			return simple_match_words(patterns, str);
+		case MATCHING_ALGORITHM_PREFIX:
+			return prefix_match_words(patterns, str);
+		case MATCHING_ALGORITHM_FUZZY:
+			return fuzzy_match_words(patterns, str);
+		default:
+			return INT32_MIN;
+	}
+}
+
 /*
  * Split patterns into words, and perform simple matching against str for each.
- * Returns the sum of substring distances from the start of str.
+ * Returns the negative sum of substring distances from the start of str.
  * If a word is not found, returns INT32_MIN.
  */
-int32_t fuzzy_match_simple_words(const char *restrict patterns, const char *restrict str)
+int32_t simple_match_words(const char *restrict patterns, const char *restrict str)
 {
 	int32_t score = 0;
 	char *saveptr = NULL;
@@ -40,7 +78,32 @@ int32_t fuzzy_match_simple_words(const char *restrict patterns, const char *rest
 			score = INT32_MIN;
 			break;
 		} else {
-			score += str - c;
+			score -= c - str;
+		}
+		pattern = strtok_r(NULL, " ", &saveptr);
+	}
+	free(tmp);
+	return score;
+}
+
+/*
+ * Split patterns into words, and perform prefix matching against str for each.
+ * Returns the negative sum of remaining string suffix lengths.
+ * If a word is not found, returns INT32_MIN.
+ */
+int32_t prefix_match_words(const char *restrict patterns, const char *restrict str)
+{
+	int32_t score = 0;
+	char *saveptr = NULL;
+	char *tmp = utf8_normalize(patterns);
+	char *pattern = strtok_r(tmp, " ", &saveptr);
+	while (pattern != NULL) {
+		char *c = utf8_strcasestr(str, pattern);
+		if (c != str) {
+			score = INT32_MIN;
+			break;
+		} else {
+			score -= utf8_strlen(str) - utf8_strlen(pattern);
 		}
 		pattern = strtok_r(NULL, " ", &saveptr);
 	}

@@ -61,8 +61,21 @@ options.
 		- tofi-run:  _$XDG_STATE_HOME/tofi-history_
 		- tofi-drun: _$XDG_STATE_HOME/tofi-drun-history_
 
+*matching-algorithm*=_normal|prefix|fuzzy_
+	Select the matching algorithm used.
+	If _normal_, substring matching is used, weighted to favour matches
+	closer to the beginning of the string.
+	If _prefix_, only substrings at the beginning of the string are matched.
+	If _fuzzy_, searching is performed via a simple fuzzy matching
+	algorithm.
+
+	Default: normal
 
 *fuzzy-match*=_true|false_
+	*WARNING*: This option is deprecated, and may be removed in a future
+	version of tofi. You should use the *matching-algorithm*
+	option instead.
+
 	If true, searching is performed via a simple fuzzy matching algorithm.
 	If false, substring matching is used, weighted to favour matches closer
 	to the beginning of the string.

@@ -8,6 +8,7 @@
 #include "clipboard.h"
 #include "color.h"
 #include "entry.h"
+#include "matching.h"
 #include "surface.h"
 #include "wlr-layer-shell-unstable-v1.h"
 #include "fractional-scale-v1.h"
@@ -90,6 +91,7 @@ struct tofi {
 
 	/* Options */
 	uint32_t anchor;
+	enum matching_algorithm matching_algorithm;
 	bool ascii_input;
 	bool hide_cursor;
 	bool use_history;
@@ -97,7 +99,6 @@ struct tofi {
 	bool late_keyboard_init;
 	bool drun_launch;
 	bool drun_print_exec;
-	bool fuzzy_match;
 	bool require_match;
 	bool auto_accept_single;
 	bool multiple_instance;

@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
+#include "matching.h"
 
 struct desktop_entry {
 	char *id;
@@ -37,7 +38,7 @@ struct desktop_entry *desktop_vec_find_sorted(struct desktop_vec *restrict vec, 
 struct string_ref_vec desktop_vec_filter(
 		const struct desktop_vec *restrict vec,
 		const char *restrict substr,
-		bool fuzzy);
+		enum matching_algorithm algorithm);
 
 struct desktop_vec desktop_vec_load(FILE *file);
 void desktop_vec_save(struct desktop_vec *restrict vec, FILE *restrict file);

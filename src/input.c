@@ -148,12 +148,12 @@ void add_character(struct tofi *tofi, xkb_keycode_t keycode)
 		entry->input_utf8_length += len;
 
 		if (entry->drun) {
-			struct string_ref_vec results = desktop_vec_filter(&entry->apps, entry->input_utf8, tofi->fuzzy_match);
+			struct string_ref_vec results = desktop_vec_filter(&entry->apps, entry->input_utf8, tofi->matching_algorithm);
 			string_ref_vec_destroy(&entry->results);
 			entry->results = results;
 		} else {
 			struct string_ref_vec tmp = entry->results;
-			entry->results = string_ref_vec_filter(&entry->results, entry->input_utf8, tofi->fuzzy_match);
+			entry->results = string_ref_vec_filter(&entry->results, entry->input_utf8, tofi->matching_algorithm);
 			string_ref_vec_destroy(&tmp);
 		}
 
@@ -186,9 +186,9 @@ void input_refresh_results(struct tofi *tofi)
 	entry->input_utf8_length = bytes_written;
 	string_ref_vec_destroy(&entry->results);
 	if (entry->drun) {
-		entry->results = desktop_vec_filter(&entry->apps, entry->input_utf8, tofi->fuzzy_match);
+		entry->results = desktop_vec_filter(&entry->apps, entry->input_utf8, tofi->matching_algorithm);
 	} else {
-		entry->results = string_ref_vec_filter(&entry->commands, entry->input_utf8, tofi->fuzzy_match);
+		entry->results = string_ref_vec_filter(&entry->commands, entry->input_utf8, tofi->matching_algorithm);
 	}
 
 	reset_selection(tofi);

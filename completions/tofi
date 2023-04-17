@@ -76,6 +76,7 @@ _tofi()
 		--hide-cursor
 		--history
 		--history-file
+		--matching-algorithm
 		--fuzzy-match
 		--require-match
 		--auto-accept-single
