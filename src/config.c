@@ -1027,7 +1027,7 @@ uint32_t parse_uint32(const char *filename, size_t lineno, const char *str, bool
 {
 	errno = 0;
 	char *endptr;
-	int64_t ret = strtoul(str, &endptr, 0);
+	int64_t ret = strtoull(str, &endptr, 0);
 	if (endptr == str || *endptr != '\0') {
 		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as unsigned int.\n", str);
 		if (err) {
@@ -1046,7 +1046,7 @@ int32_t parse_int32(const char *filename, size_t lineno, const char *str, bool *
 {
 	errno = 0;
 	char *endptr;
-	int64_t ret = strtol(str, &endptr, 0);
+	int64_t ret = strtoll(str, &endptr, 0);
 	if (endptr == str || *endptr != '\0') {
 		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as int.\n", str);
 		if (err) {
@@ -1065,7 +1065,7 @@ struct uint32_percent parse_uint32_percent(const char *filename, size_t lineno, 
 {
 	errno = 0;
 	char *endptr;
-	int64_t val = strtoul(str, &endptr, 0);
+	int64_t val = strtoull(str, &endptr, 0);
 	bool percent = false;
 	if (endptr == str || (*endptr != '\0' && *endptr != '%')) {
 		PARSE_ERROR(filename, lineno, "Failed to parse \"%s\" as unsigned int.\n", str);

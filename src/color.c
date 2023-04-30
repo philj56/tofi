@@ -22,7 +22,7 @@ struct color hex_to_color(const char *hex)
 			hex[2], hex[2],
 			'\0'};
 		char *endptr;
-		tmp = strtol(str, &endptr, 16);
+		tmp = strtoll(str, &endptr, 16);
 		if (errno || *endptr != '\0' || tmp < 0) {
 			return (struct color) { -1, -1, -1, -1 };
 		}
@@ -37,14 +37,14 @@ struct color hex_to_color(const char *hex)
 			hex[3], hex[3],
 			'\0'};
 		char *endptr;
-		tmp = strtol(str, &endptr, 16);
+		tmp = strtoll(str, &endptr, 16);
 		if (errno || *endptr != '\0' || tmp < 0) {
 			return (struct color) { -1, -1, -1, -1 };
 		}
 		val = tmp;
 	} else if (len == 6) {
 		char *endptr;
-		tmp = strtol(hex, &endptr, 16);
+		tmp = strtoll(hex, &endptr, 16);
 		if (errno || *endptr != '\0' || tmp < 0) {
 			return (struct color) { -1, -1, -1, -1 };
 		}
@@ -53,7 +53,7 @@ struct color hex_to_color(const char *hex)
 		val |= 0xFFu;
 	} else if (len == 8) {
 		char *endptr;
-		tmp = strtol(hex, &endptr, 16);
+		tmp = strtoll(hex, &endptr, 16);
 		if (errno || *endptr != '\0' || tmp < 0) {
 			return (struct color) { -1, -1, -1, -1 };
 		}
