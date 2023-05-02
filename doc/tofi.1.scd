@@ -59,7 +59,7 @@ All config file options described in *tofi*(5) are also accepted, in the form
 <Enter>
 	Confirm the current selection and quit.
 
-<Escape> | <Ctrl>-c | <Ctrl>-o
+<Escape> | <Ctrl>-c | <Ctrl>-[
 	Quit without making a selection.
 
 # FILES

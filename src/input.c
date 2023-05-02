@@ -101,7 +101,7 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 					XKB_MOD_NAME_CTRL,
 					XKB_STATE_MODS_EFFECTIVE)
 			   )
-			|| (key == KEY_O
+			|| (key == KEY_LEFTBRACE
 				&& xkb_state_mod_name_is_active(
 					tofi->xkb_state,
 					XKB_MOD_NAME_CTRL,

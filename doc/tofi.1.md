@@ -68,7 +68,7 @@ the form **--key=value**.
 
 > Confirm the current selection and quit.
 
-\<Escape\>
+\<Escape\> \| \<Ctrl\>-c \| \<Ctrl\>-\[
 
 > Quit without making a selection.
 
