@@ -66,11 +66,13 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	} else if (sym == XKB_KEY_Up
 			|| sym == XKB_KEY_Left
 			|| sym == XKB_KEY_ISO_Left_Tab
+			|| (key == KEY_H && alt)
 			|| ((key == KEY_K || key == KEY_P) && (ctrl || alt))) {
 		select_previous_result(tofi);
 	} else if (sym == XKB_KEY_Down
 			|| sym == XKB_KEY_Right
 			|| sym == XKB_KEY_Tab
+			|| (key == KEY_L && alt)
 			|| ((key == KEY_J || key == KEY_N) && (ctrl || alt))) {
 		select_next_result(tofi);
 	} else if (sym == XKB_KEY_Home) {
