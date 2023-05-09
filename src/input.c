@@ -35,58 +35,43 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	const uint32_t key = keycode - 8;
 
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(tofi->xkb_state, keycode);
-
-	uint32_t ch = xkb_state_key_get_utf32(
+	bool ctrl = xkb_state_mod_name_is_active(
 			tofi->xkb_state,
-			keycode);
-	if (utf32_isprint(ch)) {
+			XKB_MOD_NAME_CTRL,
+			XKB_STATE_MODS_EFFECTIVE);
+	bool alt = xkb_state_mod_name_is_active(
+			tofi->xkb_state,
+			XKB_MOD_NAME_ALT,
+			XKB_STATE_MODS_EFFECTIVE);
+
+	uint32_t ch = xkb_state_key_get_utf32(tofi->xkb_state, keycode);
+	/*
+	 * Alt does not affect which character is selected, so we have to check
+	 * for it explicitly.
+	 */
+	if (utf32_isprint(ch) && !alt) {
 		add_character(tofi, keycode);
-	} else if ((sym == XKB_KEY_BackSpace || key == KEY_W)
-			&& xkb_state_mod_name_is_active(
-				tofi->xkb_state,
-				XKB_MOD_NAME_CTRL,
-				XKB_STATE_MODS_EFFECTIVE))
-	{
+	} else if ((sym == XKB_KEY_BackSpace || key == KEY_W) && ctrl) {
 		delete_word(tofi);
 	} else if (sym == XKB_KEY_BackSpace) {
 		delete_character(tofi);
-	} else if (key == KEY_U
-			&& xkb_state_mod_name_is_active(
-				tofi->xkb_state,
-				XKB_MOD_NAME_CTRL,
-				XKB_STATE_MODS_EFFECTIVE)
-		   )
-	{
+	} else if (key == KEY_U && ctrl) {
 		clear_input(tofi);
-	} else if (key == KEY_V
-			&& xkb_state_mod_name_is_active(
-				tofi->xkb_state,
-				XKB_MOD_NAME_CTRL,
-				XKB_STATE_MODS_EFFECTIVE)
-		   )
-	{
+	} else if (key == KEY_V && ctrl) {
 		paste(tofi);
 	} else if (sym == XKB_KEY_Left) {
 		previous_cursor_or_result(tofi);
 	} else if (sym == XKB_KEY_Right) {
 		next_cursor_or_result(tofi);
-	} else if (sym == XKB_KEY_Up || sym == XKB_KEY_Left || sym == XKB_KEY_ISO_Left_Tab
-			|| ((key == KEY_K || key == KEY_P)
-				&& xkb_state_mod_name_is_active(
-					tofi->xkb_state,
-					XKB_MOD_NAME_CTRL,
-					XKB_STATE_MODS_EFFECTIVE)
-			   )
-	   ) {
+	} else if (sym == XKB_KEY_Up
+			|| sym == XKB_KEY_Left
+			|| sym == XKB_KEY_ISO_Left_Tab
+			|| ((key == KEY_K || key == KEY_P) && (ctrl || alt))) {
 		select_previous_result(tofi);
-	} else if (sym == XKB_KEY_Down || sym == XKB_KEY_Right || sym == XKB_KEY_Tab
-			|| ((key == KEY_J || key == KEY_N)
-				&& xkb_state_mod_name_is_active(
-					tofi->xkb_state,
-					XKB_MOD_NAME_CTRL,
-					XKB_STATE_MODS_EFFECTIVE)
-			   )
-		  ) {
+	} else if (sym == XKB_KEY_Down
+			|| sym == XKB_KEY_Right
+			|| sym == XKB_KEY_Tab
+			|| ((key == KEY_J || key == KEY_N) && (ctrl || alt))) {
 		select_next_result(tofi);
 	} else if (sym == XKB_KEY_Home) {
 		reset_selection(tofi);
@@ -95,20 +80,7 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	} else if (sym == XKB_KEY_Page_Down) {
 		select_next_page(tofi);
 	} else if (sym == XKB_KEY_Escape
-			|| (key == KEY_C
-				&& xkb_state_mod_name_is_active(
-					tofi->xkb_state,
-					XKB_MOD_NAME_CTRL,
-					XKB_STATE_MODS_EFFECTIVE)
-			   )
-			|| (key == KEY_LEFTBRACE
-				&& xkb_state_mod_name_is_active(
-					tofi->xkb_state,
-					XKB_MOD_NAME_CTRL,
-					XKB_STATE_MODS_EFFECTIVE)
-			   )
-		  )
-	{
+			|| ((key == KEY_C || key == KEY_LEFTBRACE) && ctrl)) {
 		tofi->closed = true;
 		return;
 	} else if (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter) {
