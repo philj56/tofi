@@ -103,8 +103,8 @@ See the main [manpage](doc/tofi.1.md) for more info.
 ### Theming
 
 Tofi supports a fair number of theming options - see the default [config
-file](doc/config) config file or the config file [manpage](doc/tofi.5.md) for a
-complete description. Theming is based on the box model shown below:
+file](doc/config) or the config file [manpage](doc/tofi.5.md) for a complete
+description. Theming is based on the box model shown below:
 
 ![Default theme screenshot](screenshot_default.png)
 
