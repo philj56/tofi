@@ -1,8 +1,8 @@
-# NAME
+## NAME
 
 tofi - configuration file
 
-# DESCRIPTION
+## DESCRIPTION
 
 The config file format is basic .ini/.cfg style. Options are set one per
 line, with the syntax:
@@ -14,13 +14,11 @@ given by enclosing them in double quotes like so:
 
 > option = " value "
 
-Lines beginning with \# or ; are treated as comments. Section headers of
-the form \[header\] are currently ignored. All options and values are
 case-insensitive, except where not possible (e.g. paths). Later options
 override earlier options, and command line options override config file
 options.
 
-# SPECIAL OPTIONS
+## SPECIAL OPTIONS
 
 **include**=*path*
 
@@ -30,7 +28,7 @@ options.
 > Inclusion happens immediately, before the rest of the current file's
 > contents are parsed.
 
-# BEHAVIOUR OPTIONS
+## BEHAVIOUR OPTIONS
 
 **hide-cursor**=*true\|false*
 
@@ -61,17 +59,10 @@ options.
 >
 > Defaults:
 >
-> > > ·
-> > >
-> > > tofi: None (no history file)
-> >
-> > > ·
-> > >
-> > > tofi-run: *\$XDG_STATE_HOME/tofi-history*
-> >
-> > > ·
-> > >
-> > > tofi-drun: *\$XDG_STATE_HOME/tofi-drun-history*
+>
+> > - tofi: None (no history file)
+> > - tofi-run: *\$XDG_STATE_HOME/tofi-history*
+> > - tofi-drun: *\$XDG_STATE_HOME/tofi-drun-history*
 
 **matching-algorithm**=*normal\|prefix\|fuzzy*
 
@@ -173,7 +164,7 @@ options.
 >
 > Default: false
 
-# STYLE OPTIONS
+## STYLE OPTIONS
 
 **font**=*font*
 
@@ -291,7 +282,8 @@ options.
 
 **placeholder-color**=*color*
 
-> Color of placeholder input text. See **COLORS** for more information.
+> Color of placeholder input text. See **COLORS** for more
+> information.
 >
 > Default: \#FFFFFFA8
 
@@ -354,7 +346,8 @@ options.
 
 **text-cursor-background**=*color*
 
-> Color of text behind the text cursor when **text-cursor-style**=block.
+> Color of text behind the text cursor when
+> **text-cursor-style**=block.
 >
 > Default: same as **background-color**
 
@@ -466,8 +459,8 @@ options.
 
 **selection-background-padding**=*directional*
 
-> Extra padding of the selected result background. See **DIRECTIONAL**
-> VALUES for more information.
+> Extra padding of the selected result background. See **DIRECTIONAL
+> VALUES** for more information.
 >
 > Default: 0
 
@@ -495,7 +488,8 @@ options.
 
 **height**=*px\|%*
 
-> Height of the window. See **PERCENTAGE VALUES** for more information.
+> Height of the window. See **PERCENTAGE VALUES** for more
+> information.
 >
 > Default: 720
 
@@ -620,12 +614,12 @@ options.
 >
 > Default: true
 
-# COLORS
+## COLORS
 
 Colors can be specified in the form *RGB*, *RGBA*, *RRGGBB* or
 *RRGGBBAA*, optionally prefixed with a hash (#).
 
-# PERCENTAGE VALUES
+## PERCENTAGE VALUES
 
 Some pixel values can optionally have a % suffix, like so:
 
@@ -634,35 +628,24 @@ Some pixel values can optionally have a % suffix, like so:
 This will be interpreted as a percentage of the screen resolution in the
 relevant direction.
 
-# DIRECTIONAL VALUES
+## DIRECTIONAL VALUES
 
 The background box padding of a type of text can be specified by one to
 four comma separated values, with meanings similar to the CSS padding
 property:
 
-> ·
->
-> One value sets all edges.
-
-> ·
->
-> Two values set (top & bottom), (left & right) edges.
-
-> ·
->
-> Three values set (top), (left & right), (bottom) edges.
-
-> ·
->
-> Four values set (top), (right), (bottom), (left) edges.
+- One value sets all edges.
+- Two values set (top & bottom), (left & right) edges.
+- Three values set (top), (left & right), (bottom) edges.
+- Four values set (top), (right), (bottom), (left) edges.
 
 Specifying -1 for any of the values will pad as far as possible in that
 direction.
 
-# AUTHORS
+## AUTHORS
 
-Philip Jones \<philj56@gmail.com\>
+Philip Jones \<<philj56@gmail.com>\>
 
-# SEE ALSO
+## SEE ALSO
 
 **tofi**(1), **dmenu**(1) **rofi**(1)

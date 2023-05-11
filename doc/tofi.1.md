@@ -1,9 +1,9 @@
-# NAME
+## NAME
 
 tofi - Tiny dynamic menu for Wayland, inspired by **rofi**(1) and
 **dmenu**(1).
 
-# SYNOPSIS
+## SYNOPSIS
 
 **tofi** \[options...\]
 
@@ -11,7 +11,7 @@ tofi - Tiny dynamic menu for Wayland, inspired by **rofi**(1) and
 
 **tofi-drun** \[options...\]
 
-# DESCRIPTION
+## DESCRIPTION
 
 **tofi** is a tiny dynamic menu for Wayland compositors supporting the
 layer-shell protocol. It reads newline-separated items from stdin, and
@@ -25,7 +25,7 @@ When invoked via the name **tofi-drun**, **tofi** will not accept items
 on stdin, and will generate a list of applications from desktop files as
 described in the Desktop Entry Specification.
 
-# OPTIONS
+## OPTIONS
 
 **-h, --help**
 
@@ -38,7 +38,7 @@ described in the Desktop Entry Specification.
 All config file options described in **tofi**(5) are also accepted, in
 the form **--key=value**.
 
-# KEYS
+## KEYS
 
 \<Up\> \| \<Left\> \| \<Ctrl\>-k \| \<Ctrl\>-p \| \<Alt\>-k \| \<Alt\>-p
 \| \<Alt\>-h
@@ -74,7 +74,7 @@ the form **--key=value**.
 
 > Quit without making a selection.
 
-# FILES
+## FILES
 
 */etc/xdg/tofi/config*
 
@@ -102,10 +102,10 @@ the form **--key=value**.
 > Numeric count of commands selected in **tofi-drun**, to enable sorting
 > results by run count.
 
-# AUTHORS
+## AUTHORS
 
-Philip Jones \<philj56@gmail.com\>
+Philip Jones \<<philj56@gmail.com>\>
 
-# SEE ALSO
+## SEE ALSO
 
 **tofi**(5), **dmenu**(1) **rofi**(1)
