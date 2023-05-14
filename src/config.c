@@ -708,6 +708,11 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		if (!err) {
 			tofi->auto_accept_single = val;
 		}
+	} else if (strcasecmp(option, "print-index") == 0) {
+		bool val = parse_bool(filename, lineno, value, &err);
+		if (!err) {
+			tofi->print_index = val;
+		}
 	} else if (strcasecmp(option, "hide-input") == 0) {
 		bool val = parse_bool(filename, lineno, value, &err);
 		if (!err) {

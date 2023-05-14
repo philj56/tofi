@@ -109,6 +109,14 @@ options.
 
 	Default: \*
 
+*print-index*=_true|false_
+	Instead of printing the selected entry, print the 1-based index of the
+	selection. This option has no effect in run or drun mode. If
+	*require-match* is set to false, non-matching input will still result in
+	the input being printed.
+
+	Default: false
+
 *drun-launch*=_true|false_
 	If true, directly launch applications on selection when in drun mode.
 	Otherwise, just print the Exec line of the .desktop file to stdout.

@@ -117,6 +117,15 @@ options.
 >
 > Default: \*
 
+**print-index**=*true\|false*
+
+> Instead of printing the selected entry, print the 1-based index of the
+> selection. This option has no effect in run or drun mode. If
+> **require-match** is set to false, non-matching input will still
+> result in the input being printed.
+>
+> Default: false
+
 **drun-launch**=*true\|false*
 
 > If true, directly launch applications on selection when in drun mode.

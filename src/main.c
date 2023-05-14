@@ -914,6 +914,7 @@ const struct option long_options[] = {
 	{"matching-algorithm", required_argument, NULL, 0},
 	{"require-match", required_argument, NULL, 0},
 	{"auto-accept-single", required_argument, NULL, 0},
+	{"print-index", required_argument, NULL, 0},
 	{"hide-input", required_argument, NULL, 0},
 	{"hidden-character", required_argument, NULL, 0},
 	{"drun-launch", required_argument, NULL, 0},
@@ -1006,7 +1007,7 @@ static bool do_submit(struct tofi *tofi)
 
 	if (tofi->window.entry.results.count == 0) {
 		/* Always require a match in drun mode. */
-		if (tofi->require_match || entry->drun) {
+		if (tofi->require_match || entry->mode == TOFI_MODE_DRUN) {
 			return false;
 		} else {
 			printf("%s\n", entry->input_utf8);
@@ -1014,7 +1015,7 @@ static bool do_submit(struct tofi *tofi)
 		}
 	}
 
-	if (entry->drun) {
+	if (entry->mode == TOFI_MODE_DRUN) {
 		/*
 		 * At this point, the list of apps is history sorted rather
 		 * than alphabetically sorted, so we can't use
@@ -1038,14 +1039,18 @@ static bool do_submit(struct tofi *tofi)
 			drun_print(path, tofi->default_terminal);
 		}
 	} else {
-		printf("%s\n", res);
+		if (entry->mode == TOFI_MODE_PLAIN && tofi->print_index) {
+			printf("%u\n", selection + 1);
+		} else {
+			printf("%s\n", res);
+		}
 	}
 	if (tofi->use_history) {
 		history_add(
 				&entry->history,
 				entry->results.buf[selection].string);
 		if (tofi->history_file[0] == 0) {
-			history_save_default_file(&entry->history, entry->drun);
+			history_save_default_file(&entry->history, entry->mode == TOFI_MODE_DRUN);
 		} else {
 			history_save(&entry->history, tofi->history_file);
 		}
@@ -1444,11 +1449,12 @@ int main(int argc, char *argv[])
 	if (strstr(argv[0], "-run")) {
 		log_debug("Generating command list.\n");
 		log_indent();
+		tofi.window.entry.mode = TOFI_MODE_RUN;
 		tofi.window.entry.command_buffer = compgen_cached();
 		struct string_ref_vec commands = string_ref_vec_from_buffer(tofi.window.entry.command_buffer);
 		if (tofi.use_history) {
 			if (tofi.history_file[0] == 0) {
-				tofi.window.entry.history = history_load_default_file(tofi.window.entry.drun);
+				tofi.window.entry.history = history_load_default_file(false);
 			} else {
 				tofi.window.entry.history = history_load(tofi.history_file);
 			}
@@ -1462,17 +1468,15 @@ int main(int argc, char *argv[])
 	} else if (strstr(argv[0], "-drun")) {
 		log_debug("Generating desktop app list.\n");
 		log_indent();
-		tofi.window.entry.drun = true;
+		tofi.window.entry.mode = TOFI_MODE_DRUN;
 		struct desktop_vec apps = drun_generate_cached();
 		if (tofi.use_history) {
 			if (tofi.history_file[0] == 0) {
-				tofi.window.entry.history = history_load_default_file(tofi.window.entry.drun);
+				tofi.window.entry.history = history_load_default_file(true);
 			} else {
 				tofi.window.entry.history = history_load(tofi.history_file);
 			}
-			if (tofi.window.entry.drun) {
-				drun_history_sort(&apps, &tofi.window.entry.history);
-			}
+			drun_history_sort(&apps, &tofi.window.entry.history);
 		}
 		struct string_ref_vec commands = string_ref_vec_create();
 		for (size_t i = 0; i < apps.count; i++) {
@@ -1891,7 +1895,7 @@ int main(int argc, char *argv[])
 	xkb_keymap_unref(tofi.xkb_keymap);
 	xkb_context_unref(tofi.xkb_context);
 	wl_registry_destroy(tofi.wl_registry);
-	if (tofi.window.entry.drun) {
+	if (tofi.window.entry.mode == TOFI_MODE_DRUN) {
 		desktop_vec_destroy(&tofi.window.entry.apps);
 	}
 	if (tofi.window.entry.command_buffer != NULL) {

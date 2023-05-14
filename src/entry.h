@@ -18,6 +18,12 @@
 #define MAX_FONT_FEATURES_LENGTH 128
 #define MAX_FONT_VARIATIONS_LENGTH 128
 
+enum tofi_mode {
+	TOFI_MODE_PLAIN,
+	TOFI_MODE_RUN,
+	TOFI_MODE_DRUN
+};
+
 enum cursor_style {
 	CURSOR_STYLE_BAR,
 	CURSOR_STYLE_BLOCK,
@@ -90,7 +96,7 @@ struct entry {
 	uint32_t clip_height;
 
 	/* Options */
-	bool drun;
+	enum tofi_mode mode;
 	bool horizontal;
 	bool hide_input;
 	char hidden_character_utf8[6];

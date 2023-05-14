@@ -80,6 +80,7 @@ _tofi()
 		--fuzzy-match
 		--require-match
 		--auto-accept-single
+		--print-index
 		--hide-input
 		--hidden-character
 		--drun-launch
