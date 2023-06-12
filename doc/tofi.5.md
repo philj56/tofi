@@ -94,6 +94,12 @@ options.
 >
 > Default: true
 
+**require-selection**=*true\|false*
+
+> If true, return an error if no selection is made.
+>
+> Default: false
+
 **auto-accept-single**=*true\|false*
 
 > If true, automatically accept a result if it is the only one

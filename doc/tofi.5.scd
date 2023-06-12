@@ -89,6 +89,12 @@ options.
 
 	Default: true
 
+*require-selection*=_true\|false_
+
+	If true, return an error if no selection is made.
+
+	Default: false
+
 *auto-accept-single*=_true|false_
 	If true, automatically accept a result if it is the only one remaining.
 	If there's only one result on startup, window creation is skipped

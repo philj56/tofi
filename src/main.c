@@ -913,6 +913,7 @@ const struct option long_options[] = {
 	{"fuzzy-match", required_argument, NULL, 0},
 	{"matching-algorithm", required_argument, NULL, 0},
 	{"require-match", required_argument, NULL, 0},
+	{"require-selection", required_argument, NULL, 0},
 	{"auto-accept-single", required_argument, NULL, 0},
 	{"print-index", required_argument, NULL, 0},
 	{"hide-input", required_argument, NULL, 0},
@@ -1192,6 +1193,7 @@ int main(int argc, char *argv[])
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
 		.use_history = true,
 		.require_match = true,
+		.require_selection = false,
 		.use_scale = true,
 	};
 	wl_list_init(&tofi.output_list);
@@ -1914,5 +1916,8 @@ int main(int argc, char *argv[])
 	wl_display_disconnect(tofi.wl_display);
 
 	log_debug("Finished, exiting.\n");
+	if (tofi.closed && tofi.require_selection) {
+		return EXIT_FAILURE;
+	}
 	return EXIT_SUCCESS;
 }

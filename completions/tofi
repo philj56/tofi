@@ -79,6 +79,7 @@ _tofi()
 		--matching-algorithm
 		--fuzzy-match
 		--require-match
+		--require-selection
 		--auto-accept-single
 		--print-index
 		--hide-input

@@ -100,6 +100,7 @@ struct tofi {
 	bool drun_launch;
 	bool drun_print_exec;
 	bool require_match;
+	bool require_selection;
 	bool auto_accept_single;
 	bool print_index;
 	bool multiple_instance;

@@ -263,6 +263,9 @@
 	# In drun mode, this is always true.
 	require-match = true
 
+	# If true, return an error if no selection is made.
+	require-selection = false
+
 	# If true, automatically accept a result if it is the only one
 	# remaining. If there's only one result on startup, window creation is
 	# skipped altogether.
