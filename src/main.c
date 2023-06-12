@@ -1921,5 +1921,8 @@ int main(int argc, char *argv[])
 	wl_display_disconnect(tofi.wl_display);
 
 	log_debug("Finished, exiting.\n");
+	if (tofi.closed) {
+		return EXIT_FAILURE;
+	}
 	return EXIT_SUCCESS;
 }
