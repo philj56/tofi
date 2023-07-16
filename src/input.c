@@ -82,7 +82,7 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	} else if (sym == XKB_KEY_Page_Down) {
 		select_next_page(tofi);
 	} else if (sym == XKB_KEY_Escape
-			|| ((key == KEY_C || key == KEY_LEFTBRACE) && ctrl)) {
+			|| ((key == KEY_C || sym == XKB_KEY_bracketleft) && ctrl)) {
 		tofi->closed = true;
 		return;
 	} else if (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter) {
