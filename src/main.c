@@ -1040,7 +1040,12 @@ static bool do_submit(struct tofi *tofi)
 		}
 	} else {
 		if (entry->mode == TOFI_MODE_PLAIN && tofi->print_index) {
-			printf("%u\n", selection + 1);
+			for (size_t i = 0; i < entry->commands.count; i++) {
+				if (res == entry->commands.buf[i].string) {
+					printf("%u\n", i + 1);
+					break;
+				}
+			}
 		} else {
 			printf("%s\n", res);
 		}
