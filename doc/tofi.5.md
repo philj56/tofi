@@ -117,6 +117,13 @@ options.
 >
 > Default: \*
 
+**physical-keybindings**=*true\|false*
+
+> If true, use physical keys for shortcuts, regardless of the current
+> keyboard layout. If false, use the current layout's keys.
+>
+> Default: true
+
 **print-index**=*true\|false*
 
 > Instead of printing the selected entry, print the 1-based index of the

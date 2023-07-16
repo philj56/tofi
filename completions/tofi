@@ -83,6 +83,7 @@ _tofi()
 		--print-index
 		--hide-input
 		--hidden-character
+		--physical-keybindings
 		--drun-launch
 		--terminal
 		--hint-font

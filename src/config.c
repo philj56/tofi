@@ -724,6 +724,11 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 			tofi->window.entry.hidden_character_utf8_length = 
 				utf32_to_utf8(ch, tofi->window.entry.hidden_character_utf8);
 		}
+	} else if (strcasecmp(option, "physical-keybindings") == 0) {
+		bool val = parse_bool(filename, lineno, value, &err);
+		if (!err) {
+			tofi->physical_keybindings = val;
+		}
 	} else if (strcasecmp(option, "drun-launch") == 0) {
 		bool val = parse_bool(filename, lineno, value, &err);
 		if (!err) {

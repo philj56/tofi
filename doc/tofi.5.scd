@@ -109,6 +109,12 @@ options.
 
 	Default: \*
 
+*physical-keybindings*=_true|false_
+	If true, use physical keys for shortcuts, regardless of the current
+	keyboard layout. If false, use the current layout's keys.
+
+	Default: true
+
 *print-index*=_true|false_
 	Instead of printing the selected entry, print the 1-based index of the
 	selection. This option has no effect in run or drun mode. If

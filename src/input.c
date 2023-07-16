@@ -9,6 +9,7 @@
 #include "unicode.h"
 
 
+static uint32_t keysym_to_key(xkb_keysym_t sym);
 static void add_character(struct tofi *tofi, xkb_keycode_t keycode);
 static void delete_character(struct tofi *tofi);
 static void delete_word(struct tofi *tofi);
@@ -28,13 +29,6 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		return;
 	}
 
-	/*
-	 * Use physical key code for shortcuts, ignoring layout changes.
-	 * Linux keycodes are 8 less than XKB keycodes.
-	 */
-	const uint32_t key = keycode - 8;
-
-	xkb_keysym_t sym = xkb_state_key_get_one_sym(tofi->xkb_state, keycode);
 	bool ctrl = xkb_state_mod_name_is_active(
 			tofi->xkb_state,
 			XKB_MOD_NAME_CTRL,
@@ -43,49 +37,64 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 			tofi->xkb_state,
 			XKB_MOD_NAME_ALT,
 			XKB_STATE_MODS_EFFECTIVE);
+	bool shift = xkb_state_mod_name_is_active(
+			tofi->xkb_state,
+			XKB_MOD_NAME_SHIFT,
+			XKB_STATE_MODS_EFFECTIVE);
 
 	uint32_t ch = xkb_state_key_get_utf32(tofi->xkb_state, keycode);
+
+	/*
+	 * Use physical key code for shortcuts by default, ignoring layout
+	 * changes. Linux keycodes are 8 less than XKB keycodes.
+	 */
+	uint32_t key = keycode - 8;
+	if (!tofi->physical_keybindings) {
+		xkb_keysym_t sym = xkb_state_key_get_one_sym(tofi->xkb_state, keycode);
+		key = keysym_to_key(sym);
+	}
+
 	/*
 	 * Alt does not affect which character is selected, so we have to check
 	 * for it explicitly.
 	 */
-	if (utf32_isprint(ch) && !alt) {
+	if (utf32_isprint(ch) && !ctrl && !alt) {
 		add_character(tofi, keycode);
-	} else if ((sym == XKB_KEY_BackSpace || key == KEY_W) && ctrl) {
+	} else if ((key == KEY_BACKSPACE || key == KEY_W) && ctrl) {
 		delete_word(tofi);
-	} else if (sym == XKB_KEY_BackSpace) {
+	} else if (key == KEY_BACKSPACE) {
 		delete_character(tofi);
 	} else if (key == KEY_U && ctrl) {
 		clear_input(tofi);
 	} else if (key == KEY_V && ctrl) {
 		paste(tofi);
-	} else if (sym == XKB_KEY_Left) {
+	} else if (key == KEY_LEFT) {
 		previous_cursor_or_result(tofi);
-	} else if (sym == XKB_KEY_Right) {
+	} else if (key == KEY_RIGHT) {
 		next_cursor_or_result(tofi);
-	} else if (sym == XKB_KEY_Up
-			|| sym == XKB_KEY_Left
-			|| sym == XKB_KEY_ISO_Left_Tab
+	} else if (key == KEY_UP
+			|| key == KEY_LEFT
+			|| (key == KEY_TAB && shift)
 			|| (key == KEY_H && alt)
 			|| ((key == KEY_K || key == KEY_P) && (ctrl || alt))) {
 		select_previous_result(tofi);
-	} else if (sym == XKB_KEY_Down
-			|| sym == XKB_KEY_Right
-			|| sym == XKB_KEY_Tab
+	} else if (key == KEY_DOWN
+			|| key == KEY_RIGHT
+			|| key == KEY_TAB
 			|| (key == KEY_L && alt)
 			|| ((key == KEY_J || key == KEY_N) && (ctrl || alt))) {
 		select_next_result(tofi);
-	} else if (sym == XKB_KEY_Home) {
+	} else if (key == KEY_HOME) {
 		reset_selection(tofi);
-	} else if (sym == XKB_KEY_Page_Up) {
+	} else if (key == KEY_PAGEUP) {
 		select_previous_page(tofi);
-	} else if (sym == XKB_KEY_Page_Down) {
+	} else if (key == KEY_PAGEDOWN) {
 		select_next_page(tofi);
-	} else if (sym == XKB_KEY_Escape
+	} else if (key == KEY_ESC
 			|| ((key == KEY_C || key == KEY_LEFTBRACE) && ctrl)) {
 		tofi->closed = true;
 		return;
-	} else if (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter) {
+	} else if (key == KEY_ENTER || key == KEY_KPENTER) {
 		tofi->submit = true;
 		return;
 	}
@@ -97,7 +106,63 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	tofi->window.surface.redraw = true;
 }
 
-void reset_selection(struct tofi *tofi) {
+static uint32_t keysym_to_key(xkb_keysym_t sym)
+{
+	switch (sym) {
+		case XKB_KEY_BackSpace:
+			return KEY_BACKSPACE;
+		case XKB_KEY_w:
+			return KEY_W;
+		case XKB_KEY_u:
+			return KEY_U;
+		case XKB_KEY_v:
+			return KEY_V;
+		case XKB_KEY_Left:
+			return KEY_LEFT;
+		case XKB_KEY_Right:
+			return KEY_RIGHT;
+		case XKB_KEY_Up:
+			return KEY_UP;
+		case XKB_KEY_ISO_Left_Tab:
+			return KEY_TAB;
+		case XKB_KEY_h:
+			return KEY_H;
+		case XKB_KEY_k:
+			return KEY_K;
+		case XKB_KEY_p:
+			return KEY_P;
+		case XKB_KEY_Down:
+			return KEY_DOWN;
+		case XKB_KEY_Tab:
+			return KEY_TAB;
+		case XKB_KEY_l:
+			return KEY_L;
+		case XKB_KEY_j:
+			return KEY_J;
+		case XKB_KEY_n:
+			return KEY_N;
+		case XKB_KEY_Home:
+			return KEY_HOME;
+		case XKB_KEY_Page_Up:
+			return KEY_PAGEUP;
+		case XKB_KEY_Page_Down:
+			return KEY_PAGEDOWN;
+		case XKB_KEY_Escape:
+			return KEY_ESC;
+		case XKB_KEY_c:
+			return KEY_C;
+		case XKB_KEY_bracketleft:
+			return KEY_LEFTBRACE;
+		case XKB_KEY_Return:
+			return KEY_ENTER;
+		case XKB_KEY_KP_Enter:
+			return KEY_KPENTER;
+	}
+	return (uint32_t)-1;
+}
+
+void reset_selection(struct tofi *tofi)
+{
 	struct entry *entry = &tofi->window.entry;
 	entry->selection = 0;
 	entry->first_result = 0;

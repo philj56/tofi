@@ -917,6 +917,7 @@ const struct option long_options[] = {
 	{"print-index", required_argument, NULL, 0},
 	{"hide-input", required_argument, NULL, 0},
 	{"hidden-character", required_argument, NULL, 0},
+	{"physical-keybindings", required_argument, NULL, 0},
 	{"drun-launch", required_argument, NULL, 0},
 	{"drun-print-exec", required_argument, NULL, 0},
 	{"terminal", required_argument, NULL, 0},
@@ -1198,6 +1199,7 @@ int main(int argc, char *argv[])
 		.use_history = true,
 		.require_match = true,
 		.use_scale = true,
+		.physical_keybindings = true,
 	};
 	wl_list_init(&tofi.output_list);
 	if (getenv("TERMINAL") != NULL) {
