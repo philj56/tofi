@@ -38,7 +38,8 @@ All config file options described in *tofi*(5) are also accepted, in the form
 
 # KEYS
 
-<Up> | <Left> | <Ctrl>-k | <Ctrl>-p | <Alt>-k | <Alt>-p | <Alt>-h
+<Up> | <Left> | <Ctrl>-k | <Ctrl>-p | <Alt>-k | <Alt>-p | <Alt>-h |
+<Shift>-<Tab>
 	Move the selection back one entry.
 
 <Down> | <Right> | <Ctrl>-j | <Ctrl>-n | <Alt>-j | <Alt>-n  | <Alt>-l | <Tab>

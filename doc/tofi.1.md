@@ -41,7 +41,7 @@ the form **--key=value**.
 ## KEYS
 
 \<Up\> \| \<Left\> \| \<Ctrl\>-k \| \<Ctrl\>-p \| \<Alt\>-k \| \<Alt\>-p
-\| \<Alt\>-h
+\| \<Alt\>-h \| \<Shift\>-\<Tab\>
 
 > Move the selection back one entry.
 
