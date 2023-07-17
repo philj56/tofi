@@ -85,10 +85,21 @@ _$XDG_STATE_HOME/tofi-drun-history_
 	Numeric count of commands selected in *tofi-drun*, to enable sorting
 	results by run count.
 
+# EXIT STATUS
+
+*tofi* exits with one of the following values:
+
+0
+	Success; a selection was made, or *tofi* was invoked with the *-h*
+	option.
+
+1
+	An error occurred, or the user exited without making a selection.
+
 # AUTHORS
 
 Philip Jones <philj56@gmail.com>
 
 # SEE ALSO
 
-*tofi*(5), *dmenu*(1) *rofi*(1)
+*tofi*(5), *dmenu*(1), *rofi*(1)
