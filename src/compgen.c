@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include "compgen.h"
 #include "history.h"
 #include "log.h"
@@ -192,7 +193,7 @@ char *compgen()
 				if (fstatat(fd, d->d_name, &sb, 0) == -1) {
 					continue;
 				}
-				if (!(sb.st_mode & S_IXUSR)) {
+				if (faccessat(fd, d->d_name, X_OK, 0) == -1) {
 					continue;
 				}
 				if (!S_ISREG(sb.st_mode)) {
