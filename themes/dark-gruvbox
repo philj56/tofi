@@ -1,0 +1,18 @@
+font = "JetBrainsMono Nerd Font"                                                                                                         
+font-size = 24          
+
+outline-width = 1
+border-width = 1
+padding-left = 0
+padding-top = 0
+padding-right = 0
+padding-bottom = 0
+
+background-color = #282828                                                                      
+text-color = #A89984                                                                            
+selection-color = #FE8019                                                                       
+
+width = 1280
+height = 720
+
+hide-cursor = true
