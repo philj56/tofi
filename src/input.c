@@ -41,6 +41,9 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 			tofi->xkb_state,
 			XKB_MOD_NAME_SHIFT,
 			XKB_STATE_MODS_EFFECTIVE);
+	bool numlock = xkb_state_led_name_is_active(
+			tofi->xkb_state,
+			XKB_LED_NAME_NUM);
 
 	uint32_t ch = xkb_state_key_get_utf32(tofi->xkb_state, keycode);
 
@@ -74,21 +77,28 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		next_cursor_or_result(tofi);
 	} else if (key == KEY_UP
 			|| key == KEY_LEFT
+			|| (key == KEY_KP8 && !numlock)
+			|| (key == KEY_KP4 && !numlock)
 			|| (key == KEY_TAB && shift)
 			|| (key == KEY_H && alt)
 			|| ((key == KEY_K || key == KEY_P) && (ctrl || alt))) {
 		select_previous_result(tofi);
 	} else if (key == KEY_DOWN
 			|| key == KEY_RIGHT
+			|| (key == KEY_KP2 && !numlock)
+			|| (key == KEY_KP6 && !numlock)
 			|| key == KEY_TAB
 			|| (key == KEY_L && alt)
 			|| ((key == KEY_J || key == KEY_N) && (ctrl || alt))) {
 		select_next_result(tofi);
-	} else if (key == KEY_HOME) {
+	} else if (key == KEY_HOME
+			|| (key == KEY_KP7 && !numlock)) {
 		reset_selection(tofi);
-	} else if (key == KEY_PAGEUP) {
+	} else if (key == KEY_PAGEUP
+			|| (key == KEY_KP9 && !numlock)) {
 		select_previous_page(tofi);
-	} else if (key == KEY_PAGEDOWN) {
+	} else if (key == KEY_PAGEDOWN
+			|| (key == KEY_KP3 && !numlock)) {
 		select_next_page(tofi);
 	} else if (key == KEY_ESC
 			|| ((key == KEY_C || key == KEY_LEFTBRACE) && ctrl)) {
@@ -157,6 +167,20 @@ static uint32_t keysym_to_key(xkb_keysym_t sym)
 			return KEY_ENTER;
 		case XKB_KEY_KP_Enter:
 			return KEY_KPENTER;
+		case XKB_KEY_KP_Home:
+			return KEY_KP7;
+		case XKB_KEY_KP_Left:
+			return KEY_KP4;
+		case XKB_KEY_KP_Up:
+			return KEY_KP8;
+		case XKB_KEY_KP_Right:
+			return KEY_KP6;
+		case XKB_KEY_KP_Down:
+			return KEY_KP2;
+		case XKB_KEY_KP_Prior:  /* equivalent to XKB_KEY_KP_Page_Up   */
+			return KEY_KP9;
+		case XKB_KEY_KP_Next:   /* equivalent to XKB_KEY_KP_Page_Down */
+			return KEY_KP3;
 	}
 	return (uint32_t)-1;
 }
