@@ -58,6 +58,10 @@ the form **--key=value**.
 
 > Move the selection forward one page.
 
+\<Backspace\> \| \<Ctrl\>-h
+
+> Delete character.
+
 \<Ctrl\>-u
 
 > Delete line.
@@ -66,7 +70,7 @@ the form **--key=value**.
 
 > Delete word.
 
-\<Enter\>
+\<Enter\> \| \<Ctrl\>-m
 
 > Confirm the current selection and quit.
 
