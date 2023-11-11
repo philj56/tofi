@@ -52,13 +52,16 @@ All config file options described in *tofi*(5) are also accepted, in the form
 <Page Down>
 	Move the selection forward one page.
 
+<Backspace> | <Ctrl>-h
+	Delete character.
+
 <Ctrl>-u
 	Delete line.
 
 <Ctrl>-w | <Ctrl>-<Backspace>
 	Delete word.
 
-<Enter>
+<Enter> | <Ctrl>-m
 	Confirm the current selection and quit.
 
 <Escape> | <Ctrl>-c | <Ctrl>-g | <Ctrl>-[

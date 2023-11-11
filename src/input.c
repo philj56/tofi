@@ -62,7 +62,8 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		add_character(tofi, keycode);
 	} else if ((key == KEY_BACKSPACE || key == KEY_W) && ctrl) {
 		delete_word(tofi);
-	} else if (key == KEY_BACKSPACE) {
+	} else if (key == KEY_BACKSPACE
+			|| (key == KEY_H && ctrl)) {
 		delete_character(tofi);
 	} else if (key == KEY_U && ctrl) {
 		clear_input(tofi);
@@ -94,7 +95,9 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 			|| ((key == KEY_C || key == KEY_LEFTBRACE || key == KEY_G) && ctrl)) {
 		tofi->closed = true;
 		return;
-	} else if (key == KEY_ENTER || key == KEY_KPENTER) {
+	} else if (key == KEY_ENTER
+			|| key == KEY_KPENTER
+			|| (key == KEY_M && ctrl)) {
 		tofi->submit = true;
 		return;
 	}
@@ -157,6 +160,8 @@ static uint32_t keysym_to_key(xkb_keysym_t sym)
 			return KEY_ENTER;
 		case XKB_KEY_KP_Enter:
 			return KEY_KPENTER;
+		case XKB_KEY_m:
+			return KEY_M;
 	}
 	return (uint32_t)-1;
 }
