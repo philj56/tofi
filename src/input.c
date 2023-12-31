@@ -94,11 +94,14 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 			|| ((key == KEY_C || key == KEY_LEFTBRACE) && ctrl)) {
 		tofi->closed = true;
 		return;
+	} else if (ctrl && (key == KEY_ENTER || key == KEY_KPENTER)) {
+		tofi->submit = true;
+		tofi->submit_extra = true;
+		return;
 	} else if (key == KEY_ENTER || key == KEY_KPENTER) {
 		tofi->submit = true;
 		return;
-	}
-
+	} 
 	if (tofi->auto_accept_single && tofi->window.entry.results.count == 1) {
 		tofi->submit = true;
 	}

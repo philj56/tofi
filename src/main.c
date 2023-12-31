@@ -1924,5 +1924,9 @@ int main(int argc, char *argv[])
 	if (tofi.closed) {
 		return EXIT_FAILURE;
 	}
-	return EXIT_SUCCESS;
+        if(tofi.submit_extra) {
+                return 2;
+        } else {
+                return EXIT_SUCCESS;
+        }
 }

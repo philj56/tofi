@@ -115,6 +115,10 @@ the form **--key=value**.
 
 > An error occurred, or the user exited without making a selection.
 
+2
+
+> Alternative Success; a selection was made, but the user held down control when confirming it. Useful for building "multi-level" select prompts. 
+
 ## AUTHORS
 
 Philip Jones \<<philj56@gmail.com>\>
