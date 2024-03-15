@@ -828,7 +828,7 @@ static void usage(bool err)
 "Basic options:\n"
 "  -h, --help                           Print this message and exit.\n"
 "  -c, --config <path>                  Specify a config file.\n"
-"      --prompt-text <string>           Prompt text.\n"
+"  -p, --prompt-text <string>           Prompt text.\n"
 "      --width <px|%>                   Width of the window.\n"
 "      --height <px|%>                  Height of the window.\n"
 "      --output <name>                  Name of output to display window on.\n"
@@ -867,7 +867,7 @@ const struct option long_options[] = {
 	{"text-cursor-background", required_argument, NULL, 0},
 	{"text-cursor-corner-radius", required_argument, NULL, 0},
 	{"text-cursor-thickness", required_argument, NULL, 0},
-	{"prompt-text", required_argument, NULL, 0},
+	{"prompt-text", required_argument, NULL, 'p'},
 	{"prompt-padding", required_argument, NULL, 0},
 	{"prompt-color", required_argument, NULL, 0},
 	{"prompt-background", required_argument, NULL, 0},
@@ -929,7 +929,7 @@ const struct option long_options[] = {
 	{"late-keyboard-init", optional_argument, NULL, 'k'},
 	{NULL, 0, NULL, 0}
 };
-const char *short_options = ":hc:";
+const char *short_options = ":hc:p:";
 
 static void parse_args(struct tofi *tofi, int argc, char *argv[])
 {
@@ -940,7 +940,7 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 	/* Handle errors ourselves. */
 	opterr = 0;
 
-	/* First pass, just check for config file, help, and errors. */
+	/* First pass, just check for config file, help, prompt and errors. */
 	optind = 1;
 	int opt = getopt_long(argc, argv, short_options, long_options, &option_index);
 	while (opt != -1) {
@@ -950,6 +950,8 @@ static void parse_args(struct tofi *tofi, int argc, char *argv[])
 		} else if (opt == 'c') {
 			config_load(tofi, optarg);
 			load_default_config = false;
+		} else if (opt == 'p') {
+                        snprintf(tofi->window.entry.prompt_text, N_ELEM(tofi->window.entry.prompt_text), "%s", optarg);
 		} else if (opt == ':') {
 			log_error("Option %s requires an argument.\n", argv[optind - 1]);
 			usage(true);
