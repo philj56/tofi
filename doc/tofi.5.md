@@ -89,8 +89,7 @@ options.
 **require-match**=*true\|false*
 
 > If true, require a match to allow a selection to be made. If false,
-> making a selection with no matches will print input to stdout. In drun
-> mode, this is always true.
+> making a selection with no matches will print input to stdout.
 >
 > Default: true
 
