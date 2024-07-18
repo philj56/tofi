@@ -91,7 +91,7 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 	} else if (key == KEY_PAGEDOWN) {
 		select_next_page(tofi);
 	} else if (key == KEY_ESC
-			|| ((key == KEY_C || key == KEY_LEFTBRACE) && ctrl)) {
+			|| ((key == KEY_C || key == KEY_LEFTBRACE || key == KEY_G) && ctrl)) {
 		tofi->closed = true;
 		return;
 	} else if (key == KEY_ENTER || key == KEY_KPENTER) {
