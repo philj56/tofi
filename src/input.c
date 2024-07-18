@@ -76,13 +76,13 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 			|| key == KEY_LEFT
 			|| (key == KEY_TAB && shift)
 			|| (key == KEY_H && alt)
-			|| ((key == KEY_K || key == KEY_P) && (ctrl || alt))) {
+			|| ((key == KEY_K || key == KEY_P || key == KEY_B) && (ctrl || alt))) {
 		select_previous_result(tofi);
 	} else if (key == KEY_DOWN
 			|| key == KEY_RIGHT
 			|| key == KEY_TAB
 			|| (key == KEY_L && alt)
-			|| ((key == KEY_J || key == KEY_N) && (ctrl || alt))) {
+			|| ((key == KEY_J || key == KEY_N || key == KEY_F) && (ctrl || alt))) {
 		select_next_result(tofi);
 	} else if (key == KEY_HOME) {
 		reset_selection(tofi);
