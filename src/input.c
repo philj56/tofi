@@ -14,6 +14,7 @@ static void add_character(struct tofi *tofi, xkb_keycode_t keycode);
 static void delete_character(struct tofi *tofi);
 static void delete_word(struct tofi *tofi);
 static void clear_input(struct tofi *tofi);
+static void complete_selection(struct tofi *tofi);
 static void paste(struct tofi *tofi);
 static void select_previous_result(struct tofi *tofi);
 static void select_next_result(struct tofi *tofi);
@@ -68,6 +69,8 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		clear_input(tofi);
 	} else if (key == KEY_V && ctrl) {
 		paste(tofi);
+	} else if (key == KEY_Y && ctrl) {
+		complete_selection(tofi);
 	} else if (key == KEY_LEFT) {
 		previous_cursor_or_result(tofi);
 	} else if (key == KEY_RIGHT) {
@@ -302,6 +305,32 @@ void clear_input(struct tofi *tofi)
 	entry->input_utf32[0] = U'\0';
 
 	input_refresh_results(tofi);
+}
+
+void complete_selection(struct tofi *tofi)
+{
+	struct entry *entry = &tofi->window.entry;
+	uint32_t selection = entry->selection + entry->first_result;
+	char *res = entry->results.buf[selection].string;
+	uint32_t len = strlen(res);
+
+	if (len + 1 < N_ELEM(entry->input_utf32)) {
+		for (size_t i = 0; i < len; ++i) {
+			entry->input_utf32[i] = res[i];
+		}
+		entry->input_utf32[len] = U'\0';
+		entry->cursor_position = len;
+	} else {
+		for (size_t i = 0; i < N_ELEM(entry->input_utf32); ++i) {
+			entry->input_utf32[i] = res[i];
+		}
+		entry->input_utf32[N_ELEM(entry->input_utf32) - 1] = U'\0';
+		entry->cursor_position = N_ELEM(entry->input_utf32) - 1;
+	}
+	entry->input_utf32_length = entry->cursor_position;
+
+	input_refresh_results(tofi);
+	tofi->window.surface.redraw = true;
 }
 
 void paste(struct tofi *tofi)

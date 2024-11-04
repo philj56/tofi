@@ -57,6 +57,9 @@ All config file options described in *tofi*(5) are also accepted, in the form
 <Ctrl>-w | <Ctrl>-<Backspace>
 	Delete word.
 
+<Ctrl>-y
+	Copy current selection into input.
+
 <Enter>
 	Confirm the current selection and quit.
 
