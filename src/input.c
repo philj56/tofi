@@ -312,20 +312,43 @@ void complete_selection(struct tofi *tofi)
 	struct entry *entry = &tofi->window.entry;
 	uint32_t selection = entry->selection + entry->first_result;
 	char *res = entry->results.buf[selection].string;
-	uint32_t len = strlen(res);
+	if (!res) {
+		return;
+	}
 
-	if (len + 1 < N_ELEM(entry->input_utf32)) {
-		for (size_t i = 0; i < len; ++i) {
-			entry->input_utf32[i] = res[i];
+	char buffer[5];
+	memset(buffer, 0, N_ELEM(buffer));
+	errno = 0;
+	bool eof = false;
+	size_t pos = 0;
+
+	entry->cursor_position = 0;
+	while (entry->cursor_position < N_ELEM(entry->input_utf32)) {
+		for (size_t i = 0; i < 4; i++) {
+			if (!res[pos]) {
+				eof = true;
+				break;
+			}
+
+			buffer[i] = res[pos];
+			pos += 1;
+			uint32_t unichar = utf8_to_utf32_validate(buffer);
+			if (unichar == (uint32_t)-2) {
+				/* The current character isn't complete yet. */
+				continue;
+			} else if (unichar == (uint32_t)-1) {
+				log_error("Invalid UTF-8 character in clipboard: %s\n", buffer);
+				break;
+			} else {
+				entry->input_utf32[entry->cursor_position] = unichar;
+				entry->cursor_position++;
+				break;
+			}
 		}
-		entry->input_utf32[len] = U'\0';
-		entry->cursor_position = len;
-	} else {
-		for (size_t i = 0; i < N_ELEM(entry->input_utf32); ++i) {
-			entry->input_utf32[i] = res[i];
+		memset(buffer, 0, N_ELEM(buffer));
+		if (eof) {
+			break;
 		}
-		entry->input_utf32[N_ELEM(entry->input_utf32) - 1] = U'\0';
-		entry->cursor_position = N_ELEM(entry->input_utf32) - 1;
 	}
 	entry->input_utf32_length = entry->cursor_position;
 
