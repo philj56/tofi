@@ -14,6 +14,7 @@ static void add_character(struct tofi *tofi, xkb_keycode_t keycode);
 static void delete_character(struct tofi *tofi);
 static void delete_word(struct tofi *tofi);
 static void clear_input(struct tofi *tofi);
+static void complete_selection(struct tofi *tofi);
 static void paste(struct tofi *tofi);
 static void select_previous_result(struct tofi *tofi);
 static void select_next_result(struct tofi *tofi);
@@ -68,6 +69,8 @@ void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 		clear_input(tofi);
 	} else if (key == KEY_V && ctrl) {
 		paste(tofi);
+	} else if (key == KEY_Y && ctrl) {
+		complete_selection(tofi);
 	} else if (key == KEY_LEFT) {
 		previous_cursor_or_result(tofi);
 	} else if (key == KEY_RIGHT) {
@@ -302,6 +305,55 @@ void clear_input(struct tofi *tofi)
 	entry->input_utf32[0] = U'\0';
 
 	input_refresh_results(tofi);
+}
+
+void complete_selection(struct tofi *tofi)
+{
+	struct entry *entry = &tofi->window.entry;
+	uint32_t selection = entry->selection + entry->first_result;
+	char *res = entry->results.buf[selection].string;
+	if (!res) {
+		return;
+	}
+
+	char buffer[5];
+	memset(buffer, 0, N_ELEM(buffer));
+	errno = 0;
+	bool eof = false;
+	size_t pos = 0;
+
+	entry->cursor_position = 0;
+	while (entry->cursor_position < N_ELEM(entry->input_utf32)) {
+		for (size_t i = 0; i < 4; i++) {
+			if (!res[pos]) {
+				eof = true;
+				break;
+			}
+
+			buffer[i] = res[pos];
+			pos += 1;
+			uint32_t unichar = utf8_to_utf32_validate(buffer);
+			if (unichar == (uint32_t)-2) {
+				/* The current character isn't complete yet. */
+				continue;
+			} else if (unichar == (uint32_t)-1) {
+				log_error("Invalid UTF-8 character in clipboard: %s\n", buffer);
+				break;
+			} else {
+				entry->input_utf32[entry->cursor_position] = unichar;
+				entry->cursor_position++;
+				break;
+			}
+		}
+		memset(buffer, 0, N_ELEM(buffer));
+		if (eof) {
+			break;
+		}
+	}
+	entry->input_utf32_length = entry->cursor_position;
+
+	input_refresh_results(tofi);
+	tofi->window.surface.redraw = true;
 }
 
 void paste(struct tofi *tofi)

@@ -66,6 +66,10 @@ the form **--key=value**.
 
 > Delete word.
 
+\<Ctrl\>-y
+
+> Copy current selection into input.
+
 \<Enter\>
 
 > Confirm the current selection and quit.
