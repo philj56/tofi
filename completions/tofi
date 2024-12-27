@@ -74,6 +74,7 @@ _tofi()
 		--clip-to-padding
 		--horizontal
 		--hide-cursor
+		--mouse-enable
 		--history
 		--history-file
 		--matching-algorithm

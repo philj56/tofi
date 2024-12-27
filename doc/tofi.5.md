@@ -36,6 +36,12 @@ options.
 >
 > Default: false
 
+**mouse-enable**=*true\|false*
+
+> Enable the mouse for selection.
+>
+> Default: false
+
 **text-cursor**=*true\|false*
 
 > Show a text cursor in the input field.
