@@ -94,6 +94,7 @@ struct tofi {
 	enum matching_algorithm matching_algorithm;
 	bool ascii_input;
 	bool hide_cursor;
+	bool mouse_enable;
 	bool use_history;
 	bool use_scale;
 	bool late_keyboard_init;

@@ -23,6 +23,20 @@ static void next_cursor_or_result(struct tofi *tofi);
 static void previous_cursor_or_result(struct tofi *tofi);
 static void reset_selection(struct tofi *tofi);
 
+void input_handle_mouse(struct tofi *tofi, mouse_event_t event)
+{
+	if (event == MOUSE_EVENT_WHEEL_UP) select_previous_result(tofi);
+	else if (event == MOUSE_EVENT_WHEEL_DOWN) select_next_result(tofi);
+	else if (event == MOUSE_EVENT_RIGHT_CLICK) {
+		tofi->closed = true;
+		return;
+	} else if (event == MOUSE_EVENT_LEFT_CLICK) {
+		tofi->submit = true;
+		return;
+	}
+	tofi->window.surface.redraw = true;
+}
+
 void input_handle_keypress(struct tofi *tofi, xkb_keycode_t keycode)
 {
 	if (tofi->xkb_state == NULL) {

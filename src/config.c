@@ -678,6 +678,11 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		if (!err) {
 			tofi->hide_cursor = val;
 		}
+	} else if (strcasecmp(option, "mouse-enable") == 0) {
+		bool val = parse_bool(filename, lineno, value, &err);
+		if (!err) {
+			tofi->mouse_enable = val;
+		}
 	} else if (strcasecmp(option, "history") == 0) {
 		bool val = parse_bool(filename, lineno, value, &err);
 		if (!err) {

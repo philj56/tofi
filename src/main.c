@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <wayland-client.h>
 #include <wayland-util.h>
+#include <linux/input-event-codes.h>
 #include <xkbcommon/xkbcommon.h>
 #include "tofi.h"
 #include "compgen.h"
@@ -313,7 +314,19 @@ static void wl_pointer_button(
 		uint32_t button,
 		enum wl_pointer_button_state state)
 {
-	/* Deliberately left blank */
+
+	struct tofi *tofi = data;
+	if (tofi->mouse_enable) {
+		if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
+			if (button == BTN_LEFT) {
+				input_handle_mouse(tofi, MOUSE_EVENT_LEFT_CLICK);
+			} else if (button == BTN_RIGHT) {
+				input_handle_mouse(tofi, MOUSE_EVENT_RIGHT_CLICK);
+			} else if (button == BTN_MIDDLE) {
+				input_handle_mouse(tofi, MOUSE_EVENT_MIDDLE_CLICK);
+			}
+		}
+	}
 }
 
 static void wl_pointer_axis(
@@ -354,7 +367,15 @@ static void wl_pointer_axis_discrete(
 		enum wl_pointer_axis axis,
 		int32_t discrete)
 {
-	/* Deliberately left blank */
+	struct tofi *tofi = data;
+	if (tofi->mouse_enable) {
+		if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL) {
+			if (discrete > 0)
+				input_handle_mouse(tofi, MOUSE_EVENT_WHEEL_DOWN);
+			else
+				input_handle_mouse(tofi, MOUSE_EVENT_WHEEL_UP);
+		}
+	}
 }
 
 static const struct wl_pointer_listener wl_pointer_listener = {
@@ -908,6 +929,7 @@ const struct option long_options[] = {
 	{"clip-to-padding", required_argument, NULL, 0},
 	{"horizontal", required_argument, NULL, 0},
 	{"hide-cursor", required_argument, NULL, 0},
+	{"mouse-enable", required_argument, NULL, 0},
 	{"history", required_argument, NULL, 0},
 	{"history-file", required_argument, NULL, 0},
 	{"fuzzy-match", required_argument, NULL, 0},
