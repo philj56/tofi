@@ -388,10 +388,11 @@ void entry_backend_pango_update(struct entry *entry)
 	/* Render our results */
 	size_t i;
 	for (i = 0; i < num_results; i++) {
+		int32_t spacing = (i == 0) ? entry->first_result_spacing : entry->result_spacing;
 		if (entry->horizontal) {
-			cairo_translate(cr, logical_rect.x + logical_rect.width + entry->result_spacing, 0);
+			cairo_translate(cr, logical_rect.x + logical_rect.width + spacing, 0);
 		} else {
-			cairo_translate(cr, 0, logical_rect.height + entry->result_spacing);
+			cairo_translate(cr, 0, logical_rect.height + spacing);
 		}
 		if (entry->num_results == 0) {
 			if (size_overflows(entry, 0, 0)) {

@@ -55,6 +55,7 @@ _tofi()
 		--alternate-result-background
 		--alternate-result-background-padding
 		--alternate-result-background-corner-radius
+		--first-result-spacing
 		--result-spacing
 		--min-input-width
 		--border-width

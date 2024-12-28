@@ -154,6 +154,9 @@
 	# If 0, tofi will draw as many results as it can fit in the window.
 	num-results = 0
 
+	# Spacing between results and input in pixels. Can be negative.
+	first-result-spacing = 0
+
 	# Spacing between results in pixels. Can be negative.
 	result-spacing = 0
 

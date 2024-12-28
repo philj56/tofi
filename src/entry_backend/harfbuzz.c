@@ -732,10 +732,11 @@ void entry_backend_harfbuzz_update(struct entry *entry)
 	/* Render our results */
 	size_t i;
 	for (i = 0; i < num_results; i++) {
+		int32_t spacing = (i == 0) ? entry->first_result_spacing : entry->result_spacing;
 		if (entry->horizontal) {
-			cairo_translate(cr, extents.x_advance + entry->result_spacing, 0);
+			cairo_translate(cr, extents.x_advance + spacing, 0);
 		} else {
-			cairo_translate(cr, 0, entry->harfbuzz.line_spacing / 64.0 + entry->result_spacing);
+			cairo_translate(cr, 0, entry->harfbuzz.line_spacing / 64.0 + spacing);
 		}
 		if (entry->num_results == 0) {
 			if (size_overflows(entry, 0, 0)) {

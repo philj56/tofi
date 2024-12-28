@@ -420,6 +420,11 @@ options.
 	Corner radius of the selected result background.
 	Default: 0
 
+*first-result-spacing*=_px_
+	Spacing between results and input. Can be negative.
+
+	Default: 0
+
 *result-spacing*=_px_
 	Spacing between results. Can be negative.
 

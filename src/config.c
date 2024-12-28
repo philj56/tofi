@@ -536,6 +536,11 @@ bool parse_option(struct tofi *tofi, const char *filename, size_t lineno, const 
 		if (!err) {
 			tofi->window.entry.input_width = val;
 		}
+	} else if (strcasecmp(option, "first-result-spacing") == 0) {
+		int32_t val = parse_int32(filename, lineno, value, &err);
+		if (!err) {
+			tofi->window.entry.first_result_spacing = val;
+		}
 	} else if (strcasecmp(option, "result-spacing") == 0) {
 		int32_t val = parse_int32(filename, lineno, value, &err);
 		if (!err) {
