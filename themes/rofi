@@ -1,0 +1,26 @@
+
+font = "mono"
+font-size = 12 
+text-color = #002b36
+background-color = #fdf6e3
+
+placeholder-color = #586375
+selection-color = #fdf6e3
+selection-background = #586e75
+selection-background-padding = 4,-1,4,-1
+alternate-result-background = #eee8d5
+alternate-result-background-padding = 4,-1,4,-1
+clip-to-padding = false
+
+outline-width = 0
+border-color = #fdf6e3
+border-width = 8
+
+placeholder-text = "Type to filter"
+
+result-spacing = 8
+result-vert-spacing = 8
+result-hori-spacing = -51
+
+width = 50%
+height = 40%

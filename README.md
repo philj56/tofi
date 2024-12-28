@@ -145,6 +145,9 @@ tweak them to look correct on your display.
 [`themes/soy-milk`](themes/soy-milk)
 ![Soy milk theme screenshot](screenshot_soy_milk.png)
 
+[`themes/rofi`](themes/rofi)
+![Rofi theme screenshot](screenshot_rofi.png)
+
 ## Performance
 
 By default, tofi isn't really any faster than its alternatives. However, when
