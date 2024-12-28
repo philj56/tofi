@@ -487,12 +487,12 @@ options.
 **results-vert-spacing**=*px*
 > Vertical spacing before results. Can be negative.
 >
-> Default 0
+> Default: 0
 
 **results-hori-spacing**=*px*
 > Horizontal spacing before results. Can be negative.
 >
-> Default 0
+> Default: 0
 
 **result-spacing**=*px*
 
