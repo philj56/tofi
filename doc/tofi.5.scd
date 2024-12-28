@@ -38,7 +38,7 @@ options.
 
 	Default: false
 
-*mouse-enable*=_true|false_
+*mouse*=_true|false_
 	Enable the mouse for selection.
 
 	Default: false

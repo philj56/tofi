@@ -239,7 +239,7 @@
 	hide-cursor = false
 
 	# Enable the use of the mouse for selection
-	mouse-enable = false
+	mouse = false
 
 	# Show a text cursor in the input field.
 	text-cursor = false

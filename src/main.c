@@ -929,7 +929,7 @@ const struct option long_options[] = {
 	{"clip-to-padding", required_argument, NULL, 0},
 	{"horizontal", required_argument, NULL, 0},
 	{"hide-cursor", required_argument, NULL, 0},
-	{"mouse-enable", required_argument, NULL, 0},
+	{"mouse", required_argument, NULL, 0},
 	{"history", required_argument, NULL, 0},
 	{"history-file", required_argument, NULL, 0},
 	{"fuzzy-match", required_argument, NULL, 0},

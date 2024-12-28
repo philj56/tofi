@@ -36,7 +36,7 @@ options.
 >
 > Default: false
 
-**mouse-enable**=*true\|false*
+**mouse**=*true\|false*
 
 > Enable the mouse for selection.
 >
