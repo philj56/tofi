@@ -40,13 +40,13 @@ the form **--key=value**.
 
 ## KEYS
 
-\<Up\> \| \<Left\> \| \<Ctrl\>-k \| \<Ctrl\>-p \| \<Alt\>-k \| \<Alt\>-p
-\| \<Alt\>-h \| \<Shift\>-\<Tab\>
+\<Up\> \| \<Left\> \| \<Ctrl\>-k \| \<Ctrl\>-p \| \<Ctrl\>-b \|
+\<Alt\>-k \| \<Alt\>-p \| \<Alt\>-h \| \<Shift\>-\<Tab\>
 
 > Move the selection back one entry.
 
-\<Down\> \| \<Right\> \| \<Ctrl\>-j \| \<Ctrl\>-n \| \<Alt\>-j \|
-\<Alt\>-n \| \<Alt\>-l \| \<Tab\>
+\<Down\> \| \<Right\> \| \<Ctrl\>-j \| \<Ctrl\>-n \| \<Ctrl\>-f \|
+\<Alt\>-j \| \<Alt\>-n \| \<Alt\>-l \| \<Tab\>
 
 > Move the selection forward one entry.
 
@@ -70,7 +70,7 @@ the form **--key=value**.
 
 > Confirm the current selection and quit.
 
-\<Escape\> \| \<Ctrl\>-c \| \<Ctrl\>-\[
+\<Escape\> \| \<Ctrl\>-c \| \<Ctrl\>-g \| \<Ctrl\>-\[
 
 > Quit without making a selection.
 

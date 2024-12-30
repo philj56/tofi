@@ -38,11 +38,12 @@ All config file options described in *tofi*(5) are also accepted, in the form
 
 # KEYS
 
-<Up> | <Left> | <Ctrl>-k | <Ctrl>-p | <Alt>-k | <Alt>-p | <Alt>-h |
+<Up> | <Left> | <Ctrl>-k | <Ctrl>-p | <Ctrl>-b | <Alt>-k | <Alt>-p | <Alt>-h |
 <Shift>-<Tab>
 	Move the selection back one entry.
 
-<Down> | <Right> | <Ctrl>-j | <Ctrl>-n | <Alt>-j | <Alt>-n  | <Alt>-l | <Tab>
+<Down> | <Right> | <Ctrl>-j | <Ctrl>-n | <Ctrl>-f | <Alt>-j | <Alt>-n  | <Alt>-l |
+<Tab>
 	Move the selection forward one entry.
 
 <Page Up>
@@ -60,7 +61,7 @@ All config file options described in *tofi*(5) are also accepted, in the form
 <Enter>
 	Confirm the current selection and quit.
 
-<Escape> | <Ctrl>-c | <Ctrl>-[
+<Escape> | <Ctrl>-c | <Ctrl>-g | <Ctrl>-[
 	Quit without making a selection.
 
 # FILES
