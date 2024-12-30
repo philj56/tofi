@@ -233,7 +233,13 @@ struct desktop_vec drun_generate_cached()
 				free(cache_path);
 				return apps;
 			}
+			errno = 0;
 			FILE *cache = fopen(cache_path, "wb");
+			if (cache == NULL) {
+				log_error("Error creating drun cache: %s.\n", strerror(errno));
+				free(cache_path);
+				return apps;
+			}
 			desktop_vec_save(&apps, cache);
 			fclose(cache);
 			free(cache_path);
@@ -265,14 +271,27 @@ struct desktop_vec drun_generate_cached()
 		log_indent();
 		apps = drun_generate();
 		log_unindent();
+		errno = 0;
 		FILE *cache = fopen(cache_path, "wb");
-		desktop_vec_save(&apps, cache);
-		fclose(cache);
+		if (cache == NULL) {
+			log_error("Failed to update cache: %s.\n", strerror(errno));
+		} else {
+			desktop_vec_save(&apps, cache);
+			fclose(cache);
+		}
 	} else {
 		log_debug("Cache up to date, loading.\n");
+		errno = 0;
 		FILE *cache = fopen(cache_path, "rb");
-		apps = desktop_vec_load(cache);
-		fclose(cache);
+		if (cache == NULL) {
+			log_error("Failed to load cache: %s.\n", strerror(errno));
+			log_indent();
+			apps = drun_generate();
+			log_unindent();
+		} else {
+			apps = desktop_vec_load(cache);
+			fclose(cache);
+		}
 	}
 	free(cache_path);
 	return apps;
