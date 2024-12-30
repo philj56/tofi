@@ -1192,10 +1192,7 @@ int main(int argc, char *argv[])
 				.cursor_theme.thickness = 2
 			}
 		},
-		.anchor =  ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
-			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
+		.anchor = 0,
 		.use_history = true,
 		.require_match = true,
 		.use_scale = true,
