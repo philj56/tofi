@@ -136,7 +136,7 @@ void string_ref_vec_history_sort(struct string_ref_vec *restrict vec, struct his
 	/*
 	 * To find elements without assuming the vector is pre-sorted, we use a
 	 * hash table, which results in O(N+M) work (rather than O(N*M) for
-	 * linear search.
+	 * linear search).
 	 */
 	GHashTable *hash = g_hash_table_new(g_str_hash, g_str_equal);
 	for (size_t i = 0; i < vec->count; i++) {
