@@ -1007,8 +1007,7 @@ static bool do_submit(struct tofi *tofi)
 	char *res = entry->results.buf[selection].string;
 
 	if (tofi->window.entry.results.count == 0) {
-		/* Always require a match in drun mode. */
-		if (tofi->require_match || entry->mode == TOFI_MODE_DRUN) {
+		if (tofi->require_match) {
 			return false;
 		} else {
 			printf("%s\n", entry->input_utf8);
