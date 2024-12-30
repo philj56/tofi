@@ -154,6 +154,12 @@
 	# If 0, tofi will draw as many results as it can fit in the window.
 	num-results = 0
 
+	# Vertical spacing before results. Can be negative.
+	results-vert-spacing = 0
+
+	# Horizontal spacing before results. Can be negative.
+	results-hori-spacing = 0
+
 	# Spacing between results in pixels. Can be negative.
 	result-spacing = 0
 

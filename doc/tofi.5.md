@@ -484,6 +484,16 @@ options.
 
 > Corner radius of the selected result background. Default: 0
 
+**results-vert-spacing**=*px*
+> Vertical spacing before results. Can be negative.
+>
+> Default: 0
+
+**results-hori-spacing**=*px*
+> Horizontal spacing before results. Can be negative.
+>
+> Default: 0
+
 **result-spacing**=*px*
 
 > Spacing between results. Can be negative.

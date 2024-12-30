@@ -9,6 +9,7 @@ outline-width = 0
 border-width = 0
 background-color = #000000
 min-input-width = 120
+result-hori-spacing = 15
 result-spacing = 15
 padding-top = 0
 padding-bottom = 0

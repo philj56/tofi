@@ -11,6 +11,7 @@ height = 48
 outline-width = 0
 border-width = 0
 min-input-width = 120
+result-hori-spacing = 30
 result-spacing = 30
 padding-top = 8
 padding-bottom = 0
