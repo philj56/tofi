@@ -38,6 +38,11 @@ options.
 
 	Default: false
 
+*mouse*=_true|false_
+	Enable the mouse for selection.
+
+	Default: false
+
 *text-cursor*=_true|false_
 	Show a text cursor in the input field.
 
