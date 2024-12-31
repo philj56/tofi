@@ -356,7 +356,7 @@ void drun_print(const char *filename, const char *terminal_command)
 			log_warning("This probably isn't what you want.\n");
 			log_warning("See the --terminal option documentation in the man page.\n");
 		} else {
-			fputs(terminal_command, stdout);
+			fprintf(stdout, terminal_command, pieces.buf[0].string, pieces.buf[0].string);
 			fputc(' ', stdout);
 		}
 	}
